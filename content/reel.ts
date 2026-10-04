@@ -1,11 +1,11 @@
 // Diapositivas del carrete del acto I, tal cual v4 (PHOTOS en actOneCarrusel()). Placeholder:
-// dos vídeos locales y el resto hotlinkeado de Pexels, que sirve CORS (hace falta para texturas).
+// dos vídeos de Vimeo y el resto hotlinkeado de Pexels, que sirve CORS (hace falta para texturas).
 
 import type { ReelSlide } from "@/blocks/reel/slides";
 
 export const reelSlides: ReelSlide[] = [
-  { kind: "video", cover: "/media/motor.jpg", video: "/media/motor.mp4", place: "Rodando al amanecer" },
-  { kind: "video", cover: "/media/surf.jpg", video: "/media/surf.mp4", place: "Sesión de olas" },
+  { kind: "video", cover: "/media/motor.jpg", vimeo: "1232830439", place: "Rodando al amanecer" },
+  { kind: "video", cover: "/media/surf.jpg", vimeo: "1232830440", place: "Sesión de olas" },
   { kind: "photo", pexels: "16824426/pexels-photo-16824426/free-photo-of-hombre-lineas-aventura-casco", place: "Primer largo, pared norte" },
   { kind: "photo", pexels: "11897874/pexels-photo-11897874", place: "Dunas de viento, Erg Chebbi" },
   { kind: "photo", pexels: "4611989/pexels-photo-4611989", place: "Waimea Bay, Hawái" },

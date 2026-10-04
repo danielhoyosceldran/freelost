@@ -1,5 +1,6 @@
 import type { FlexCarousel } from "@/lib/webgl/flex-carousel/FlexCarousel";
 import { coverOf, hiResOf, type ReelSlide } from "./slides";
+import { VimeoClip } from "./vimeo";
 
 /**
  * Vista de proyecto del carrete, port 1:1 de enterProject()/exitProject() de v4. Imperativa a
@@ -8,7 +9,7 @@ import { coverOf, hiResOf, type ReelSlide } from "./slides";
  *
  * Fases (clases en el root): splitting (las demás fotos se apartan, la lente se endereza) →
  * loading (el anillo del marco se rellena con la carga real) → in-project (el marco ha crecido
- * a pantalla completa y el vídeo arranca). Al salir, la página vuelve a la foto vista.
+ * a pantalla completa y el vídeo arranca). Los vídeos son de Vimeo (ver vimeo.ts). Al salir, la página vuelve a la foto vista.
  */
 
 export interface ProjectElements {
@@ -43,7 +44,6 @@ interface Options {
 }
 
 const GROW_MS = 600;
-const VIDEO_STALL_MS = 2500;
 const SEEK_PER_PX = 0.01;
 const SCRUB_HIDE_MS = 700;
 const SCRUB_FILL_MS = 320;
@@ -51,7 +51,7 @@ const SCRUB_FILL_MS = 320;
 export class ProjectView {
   private open = false;
   private index = -1;
-  private video: HTMLVideoElement | null = null;
+  private video: VimeoClip | null = null;
   private loadToken = 0;
   private abort: AbortController | null = null;
   private hiObjectUrl: string | null = null;
@@ -101,7 +101,11 @@ export class ProjectView {
 
     let loaded: Promise<unknown>;
     if (this.video) {
-      loaded = this.loadVideoFully(this.video, token);
+      const v = this.video;
+      this.setProgress(0);
+      loaded = v.load((p) => {
+        if (token === this.loadToken && this.video === v) this.setProgress(p);
+      });
     } else {
       this.abort = new AbortController();
       loaded = this.loadHiRes(i, token, this.abort.signal).then((hiUrl) => {
@@ -135,9 +139,7 @@ export class ProjectView {
     el.close.setAttribute("inert", "");
     this.hideScrub();
     if (this.video) {
-      this.video.pause();
-      this.video.removeAttribute("src");
-      this.video.load();
+      this.video.destroy();
       this.video = null;
     }
     el.media.replaceChildren();
@@ -163,10 +165,9 @@ export class ProjectView {
     if (!this.open || !(e instanceof WheelEvent)) return;
     const v = this.video;
     if (!v) return;
-    const d = v.duration;
-    if (!d || !isFinite(d)) return;
+    if (!v.duration) return;
     const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-    v.currentTime = Math.max(0, Math.min(d - 0.05, v.currentTime + delta * SEEK_PER_PX));
+    v.seekBy(delta * SEEK_PER_PX);
     this.showScrub();
   }
 
@@ -272,14 +273,8 @@ export class ProjectView {
     el.media.classList.add(cls.fromCard);
 
     if (slide.kind === "video") {
-      const v = document.createElement("video");
-      v.className = cls.current;
-      v.poster = slide.cover;
-      v.preload = "auto";
-      v.playsInline = true;
-      v.loop = true;
-      v.src = slide.video;
-      el.media.appendChild(v);
+      const v = new VimeoClip(slide.vimeo, slide.hash, slide.cover, cls.current);
+      el.media.appendChild(v.el);
       this.video = v;
     } else {
       const img = document.createElement("img");
@@ -337,58 +332,9 @@ export class ProjectView {
     }
   }
 
-  /** Espera a tener el vídeo entero en búfer (o a que se atasque VIDEO_STALL_MS). */
-  private loadVideoFully(v: HTMLVideoElement, token: number) {
-    return new Promise<void>((resolve) => {
-      let stall = 0;
-      let done = false;
-
-      const finish = () => {
-        if (done) return;
-        done = true;
-        clearTimeout(stall);
-        v.removeEventListener("progress", onProgress);
-        v.removeEventListener("durationchange", onProgress);
-        v.removeEventListener("canplaythrough", onReady);
-        v.removeEventListener("error", finish);
-        if (token === this.loadToken) this.setProgress(1);
-        resolve();
-      };
-
-      const onProgress = () => {
-        if (token !== this.loadToken) return finish();
-        const d = v.duration;
-        if (!d || !isFinite(d) || !v.buffered.length) return;
-        const end = v.buffered.end(v.buffered.length - 1);
-        this.setProgress(end / d);
-        if (end >= d - 0.15) finish();
-        else if (stall) {
-          clearTimeout(stall);
-          stall = window.setTimeout(finish, VIDEO_STALL_MS);
-        }
-      };
-
-      const onReady = () => {
-        onProgress();
-        if (!done && !stall) stall = window.setTimeout(finish, VIDEO_STALL_MS);
-      };
-
-      v.addEventListener("progress", onProgress);
-      v.addEventListener("durationchange", onProgress);
-      v.addEventListener("canplaythrough", onReady);
-      v.addEventListener("error", finish);
-      v.load();
-    });
-  }
-
   private startPlayback() {
     const v = this.video;
-    if (!v) return;
-    v.play().catch(() => {
-      if (this.video !== v) return;
-      v.muted = true;
-      v.play().catch(() => {});
-    });
+    v?.play();
   }
 
   // ---------- scrub ----------
@@ -398,7 +344,7 @@ export class ProjectView {
 
   private scrubRatio() {
     const v = this.video;
-    if (!v || !v.duration || !isFinite(v.duration)) return 0;
+    if (!v || !v.duration) return 0;
     return Math.max(0, Math.min(1, v.currentTime / v.duration));
   }
 

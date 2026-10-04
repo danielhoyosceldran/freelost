@@ -221,6 +221,42 @@
 .media > img:not(.current) {
   opacity: 0;
 }
+/* Vídeo de Vimeo (vimeo.ts): un iframe no tiene object-fit, así que se dimensiona en unidades
+   de contenedor con la proporción del vídeo (--ar) para cubrir el marco mientras crece. Sin
+   eventos de puntero: la rueda tiene que llegar a la página para el scrub. */
+.media > div {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+  transition: transform var(--reel-split-ease);
+}
+.fromCard > div {
+  transform: scale(1.08);
+}
+.media > div > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.media > div > iframe {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100cqw, 100cqh * var(--ar, 1.7778));
+  height: max(100cqh, 100cqw / var(--ar, 1.7778));
+  translate: -50% -50%;
+  border: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.media > div:global(.is-playing) > iframe {
+  opacity: 1;
+}
 
 .bar {
   position: absolute;
