@@ -1,0 +1,85 @@
+/* Sección equipo: bloques estáticos (visor 3D + descripción). Port 1:1 del CSS gear- de v4. */
+.block {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+@media (min-width: 768px) {
+  .block {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* Bloque invertido: texto a la izquierda alineado a la derecha, modelo a la derecha. Se
+     reordena con `order` y no en el DOM para que en móvil, donde el bloque se apila, el modelo
+     siga quedando arriba igual que en el resto de bloques. */
+  .reverse > .viewer {
+    order: 2;
+  }
+  .reverse > .copy {
+    order: 1;
+    text-align: right;
+  }
+  /* La regla decorativa degrada hacia el borde exterior del texto */
+  .reverse .rule {
+    background: linear-gradient(270deg, rgba(238, 214, 127, 0.55), rgba(238, 214, 127, 0));
+  }
+}
+
+.viewer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: 70vh;
+}
+/* El canvas lo crea GearViewer. Es interactivo: al pasar por encima el modelo se orienta hacia
+   el puntero. */
+.viewer canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: pan-y;
+}
+/* Halo dorado detrás del modelo, la misma nota de color que el resto del sitio */
+.viewer::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 62%;
+  height: 62%;
+  transform: translate(-50%, -50%);
+  background: rgba(212, 175, 55, 0.05);
+  border-radius: 9999px;
+  filter: blur(90px);
+  pointer-events: none;
+}
+
+.index {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(238, 214, 127, 0.75);
+}
+.rule {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(238, 214, 127, 0.55), rgba(238, 214, 127, 0));
+}
+.lead {
+  font-family: var(--font-cormorant), serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.55;
+  color: rgba(226, 228, 235, 0.8);
+}
+
+@media (max-width: 767px) {
+  .lead {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+}
