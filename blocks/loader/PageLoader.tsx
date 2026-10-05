@@ -4,54 +4,77 @@ import { useEffect, useRef, useState } from "react";
 import { assetRegistry } from "@/core/assets/registry";
 import { useLifecycle } from "@/core/lifecycle/store";
 import { scrollController } from "@/core/scroll/controller";
+import { LOGO_F, LOGO_L, LOGO_VIEWBOX } from "@/lib/brand/logo";
 import type { LoaderProps } from "./index";
 
-const EASE = 8; // 1/s — suavizado de lo mostrado hacia lo real
+const EASE = 7; // 1/s: suavizado de lo mostrado hacia lo real
 
-// Timecode a 25 fps del tiempo de carga, en el idioma de la web (HH:MM:SS:FF).
-const pad2 = (n: number) => String(n).padStart(2, "0");
-const timecode = (ms: number) => {
-  const f = Math.floor(ms / 40);
-  return `${pad2(Math.floor(f / 90000))}:${pad2(Math.floor(f / 1500) % 60)}:${pad2(Math.floor(f / 25) % 60)}:${pad2(f % 25)}`;
-};
+// Los dos trazos miden lo mismo en vertical (la F de 80 a 1227, la L de 370 a 1517, en unidades
+// del viewBox): el relleno de la F baja desde su punta y el de la L sube desde la suya, y
+// llegan a la vez.
+const F_TOP = 80;
+const L_BOTTOM = 1517;
+const SPAN = 1147;
 
 /**
- * Círculo negro (box-start.svg) que se llena de amarillo (box-end.svg) con el progreso REAL:
- * lo que aportan los bloques críticos (assetRegistry) y las fuentes. Nada de lo diferido
- * (three.js, .glb, vídeos) cuenta. Se renderiza en el HTML estático, así que tapa la página
- * desde el primer frame, antes de hidratar.
+ * La marca se monta delante de la película.
+ * 1. Entrada (CSS, arranca con el primer pintado, antes de hidratar): la F cae desde arriba y
+ *    la L sube desde abajo, deslizando por la costura que las separa, y encajan.
+ * 2. Relleno (JS): los trazos se llenan del color de acento con el progreso REAL, lo que aportan
+ *    los bloques críticos (el vídeo del hero) y las fuentes. No empieza hasta que han encajado.
+ * 3. Apertura (CSS): el velo se parte por la costura y cada mitad sale en la dirección de su
+ *    trazo, la izquierda hacia arriba y la derecha hacia abajo. La marca del hero, idéntica y en
+ *    el mismo sitio, queda debajo; esta se desvanece encima y el acento pasa a blanco.
  */
-export function PageLoader({ minMs, maxMs, fonts, color }: LoaderProps) {
+export function PageLoader({ minMs, maxMs, fonts, color, label }: LoaderProps) {
   const [gone, setGone] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const fillRef = useRef<SVGRectElement>(null);
-  const pctRef = useRef<HTMLSpanElement>(null);
-  const tcRef = useRef<HTMLSpanElement>(null);
+  const markRef = useRef<HTMLDivElement>(null);
+  const fRef = useRef<SVGRectElement>(null);
+  const lRef = useRef<SVGRectElement>(null);
 
   useEffect(() => {
     const root = rootRef.current;
-    const fill = fillRef.current;
-    if (!root || !fill) return;
+    const mark = markRef.current;
+    const fClip = fRef.current;
+    const lClip = lRef.current;
+    if (!root || !mark || !fClip || !lClip) return;
 
     const { markReady } = useLifecycle.getState();
+    let alive = true;
 
     let fontsDone = !fonts || !document.fonts;
     if (!fontsDone) document.fonts.ready.then(() => (fontsDone = true), () => (fontsDone = true));
+
+    // La entrada es una animación CSS que puede haber acabado antes de hidratar; si es así (o
+    // con movimiento reducido, sin animación) la lista llega vacía y el relleno arranca ya.
+    let fillFrom = -1;
+    const entries = Array.from(mark.querySelectorAll(".pl-blade")).flatMap((b) => b.getAnimations());
+    const startFill = () => {
+      if (alive) fillFrom = performance.now();
+    };
+    Promise.all(entries.map((a) => a.finished)).then(startFill, startFill);
 
     const t0 = performance.now();
     let lastTs = t0;
     let shown = 0;
     let raf = 0;
     let finished = false;
+    let fallback = 0;
+
+    const onMarkFaded = (e: TransitionEvent) => {
+      if (e.target === mark && e.propertyName === "opacity") setGone(true);
+    };
 
     const finish = () => {
       if (finished) return;
       finished = true;
-      // Arriba del todo antes de destapar: la primera escena empieza en su 0%.
       scrollController.scrollTo(0, "instant");
       root.classList.add("is-done");
-      root.addEventListener("transitionend", () => setGone(true), { once: true });
       markReady();
+      mark.addEventListener("transitionend", onMarkFaded);
+      // Por si transitionend no llega (pestaña en segundo plano): nunca dejar el velo montado.
+      fallback = window.setTimeout(() => setGone(true), 3500);
     };
 
     const frame = (ts: number) => {
@@ -63,18 +86,19 @@ export function PageLoader({ minMs, maxMs, fonts, color }: LoaderProps) {
       const total = Math.max(1, assets.total + (fonts ? 1 : 0));
       const done = assets.done + (fonts && fontsDone ? 1 : 0);
 
-      // Lo real, pero sin poder ir más rápido que minMs: así el relleno siempre se ve subir
-      // aunque todo venga de caché. Pasado maxMs se da por cargado.
+      // Lo real, pero sin ir más rápido que minMs desde que encajan: así el relleno siempre se
+      // ve subir aunque todo venga de caché. Pasado maxMs se da por cargado.
       const real = elapsed >= maxMs ? 1 : done / total;
-      const target = Math.min(real, elapsed / minMs);
+      const pace = fillFrom < 0 ? 0 : (ts - fillFrom) / minMs;
+      const target = Math.min(real, pace);
       shown += (target - shown) * (1 - Math.exp(-EASE * dt));
       if (target >= 1 && 1 - shown < 0.004) shown = 1;
 
-      const pct = Math.round(shown * 100);
-      fill.setAttribute("y", (100 * (1 - shown)).toFixed(2));
-      if (pctRef.current) pctRef.current.textContent = `${String(pct).padStart(3, "0")}%`;
-      if (tcRef.current) tcRef.current.textContent = timecode(elapsed);
-      root.setAttribute("aria-valuenow", String(pct));
+      const h = (shown * SPAN).toFixed(1);
+      fClip.setAttribute("height", h);
+      lClip.setAttribute("y", (L_BOTTOM - shown * SPAN).toFixed(1));
+      lClip.setAttribute("height", h);
+      root.setAttribute("aria-valuenow", String(Math.round(shown * 100)));
 
       if (shown >= 1) return finish();
       raf = requestAnimationFrame(frame);
@@ -82,7 +106,10 @@ export function PageLoader({ minMs, maxMs, fonts, color }: LoaderProps) {
     raf = requestAnimationFrame(frame);
 
     return () => {
+      alive = false;
       cancelAnimationFrame(raf);
+      clearTimeout(fallback);
+      mark.removeEventListener("transitionend", onMarkFaded);
     };
   }, [minMs, maxMs, fonts]);
 
@@ -93,27 +120,32 @@ export function PageLoader({ minMs, maxMs, fonts, color }: LoaderProps) {
       ref={rootRef}
       id="page-loader"
       role="progressbar"
-      aria-label="Cargando"
+      aria-label={label}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={0}
     >
-      <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <clipPath id="pl-clip">
-            <rect width="100" height="100" rx="50" fill="white" />
-          </clipPath>
-        </defs>
-        <g clipPath="url(#pl-clip)">
-          <rect width="100" height="100" rx="50" fill="black" />
-          <rect ref={fillRef} y="100" width="100" height="100" fill={color} />
-        </g>
-      </svg>
-      <div className="pl-readout">
-        <span ref={tcRef}>00:00:00:00</span>
-        <span ref={pctRef} className="pl-pct" style={{ color }}>
-          000%
-        </span>
+      <div className="pl-veil pl-veil-l" />
+      <div className="pl-veil pl-veil-r" />
+      <div ref={markRef} className="pl-mark brand-mark" aria-hidden="true">
+        <div className="pl-blade pl-blade-f">
+          <svg viewBox={LOGO_VIEWBOX}>
+            <clipPath id="pl-fill-f">
+              <rect ref={fRef} x="566" y={F_TOP} width="422" height="0" />
+            </clipPath>
+            <path className="pl-outline" d={LOGO_F} />
+            <path d={LOGO_F} style={{ fill: color }} clipPath="url(#pl-fill-f)" />
+          </svg>
+        </div>
+        <div className="pl-blade pl-blade-l">
+          <svg viewBox={LOGO_VIEWBOX}>
+            <clipPath id="pl-fill-l">
+              <rect ref={lRef} x="566" y={L_BOTTOM} width="422" height="0" />
+            </clipPath>
+            <path className="pl-outline" d={LOGO_L} />
+            <path d={LOGO_L} style={{ fill: color }} clipPath="url(#pl-fill-l)" />
+          </svg>
+        </div>
       </div>
     </div>
   );

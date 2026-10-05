@@ -1,21 +1,27 @@
 @import "tailwindcss";
 
-/* Tokens de diseño portados 1:1 del tailwind.config inline de mockup/v4.
-   Las familias apuntan a las variables que crea next/font en app/layout.tsx. */
+/* Tokens de free lost. La paleta sale de la película del hero: el negro tira al azul de sus
+   sombras, el blanco es el de su cielo y el acento es el naranja del sol bajo y las hojas de
+   otoño, el complementario del verde azulado del etalonaje. */
 @theme {
+  --color-ink: #060a0c;
+  --color-paper: #eef1f0;
+  --color-ember: #e0602a;
+
+  /* Archivo con su eje de anchura: condensada para el nombre, expandida para la marca. */
+  --font-sans: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+
+  /* Heredado de v4: solo lo usan los bloques que aún no se han rediseñado (reel, gear,
+     contact, footer, modal, toast). Se va con ellos. */
   --color-void: #030406;
   --color-abyss: #06080b;
   --color-surface: #0b0e13;
-
   --color-gold-100: #faf2d3;
   --color-gold-200: #f5e6ac;
   --color-gold-300: #eed67f;
   --color-gold-400: #e4c354;
   --color-gold-500: #d4af37;
   --color-gold-600: #aa8820;
-
-  /* Grises de Tailwind v3 (el CDN que usa v4). Los de Tailwind v4 están en oklch y salen un
-     punto más fríos: con estos el texto secundario queda idéntico al mockup. */
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
   --color-gray-200: #e5e7eb;
@@ -27,10 +33,16 @@
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
   --color-gray-950: #030712;
+  --font-serif: Georgia, serif;
+  --font-display: var(--font-archivo), sans-serif;
+}
 
-  --font-serif: var(--font-cormorant), Georgia, serif;
-  --font-display: var(--font-cinzel), serif;
-  --font-sans: var(--font-syne), sans-serif;
+:root {
+  color-scheme: dark;
+  /* Altura de la marca. La comparten el loader y el hero para que una quede justo encima de la
+     otra al pasar de uno a otro. */
+  --mark-h: clamp(168px, 36svh, 380px);
+  --gutter: clamp(1.25rem, 2.6vw, 2.5rem);
 }
 
 /* El preflight de Tailwind v3 ponía cursor:pointer en los botones; el de v4 ya no. */
@@ -42,10 +54,33 @@
 }
 
 body {
-  background-color: #030406;
-  color: #f1f2f6;
+  background-color: var(--color-ink);
+  color: var(--color-paper);
   overflow-x: hidden;
   cursor: default;
+}
+
+::selection {
+  background: var(--color-ember);
+  color: var(--color-ink);
+}
+
+/* La marca de free lost centrada en el viewport (la del loader y el hueco de partida del hero).
+   422/1441 es la proporción del logo. */
+.brand-mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: var(--mark-h);
+  width: calc(var(--mark-h) * 0.29285);
+  translate: -50% -50%;
+  overflow: visible;
+}
+.brand-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 /* Clases propias de v4 para lo que las utilidades no expresan bien. En @layer components para
@@ -113,38 +148,80 @@ body {
   50% { transform: translateY(-9px); }
 }
 
-/* Pantalla de carga (blocks/loader). CSS plano y no utilidades: tiene que tapar la página desde
-   el primer frame del HTML estático. z-index por encima del cursor (100). */
+/* Pantalla de carga (blocks/loader). CSS plano y global: tiene que tapar la página desde el
+   primer frame del HTML estático, y la entrada de los trazos corre sin esperar a hidratar. */
 #page-loader {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  background: #030406;
-  color: #f1f2f6;
-  font-family: var(--font-syne), sans-serif;
-  transition: opacity 0.7s ease, visibility 0s linear 0.7s;
+  overflow: hidden;
+  /* La costura entre los dos trazos, a +32/1441 de la altura de la marca a la derecha del centro. */
+  --seam: calc(50% + var(--mark-h) * 0.02235);
 }
-#page-loader.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
-#page-loader svg { width: 72px; height: 72px; display: block; }
-#page-loader .pl-readout {
-  display: flex;
-  align-items: baseline;
-  gap: 18px;
-  font-size: 10px;
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  color: rgba(241, 242, 246, 0.45);
-  font-variant-numeric: tabular-nums;
+
+/* El velo son dos mitades partidas por la costura. Al abrirse cada una sale como su trazo:
+   la izquierda (la F) hacia arriba, la derecha (la L) hacia abajo. */
+.pl-veil {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--color-ink);
+  transition: transform 1.1s cubic-bezier(0.7, 0, 0.2, 1);
 }
-#page-loader .pl-pct { font-size: 12px; letter-spacing: 0.2em; }
-/* Mientras carga no se hace scroll. v4 lo hacía con una clase puesta por script; :has() lo
-   ata al propio velo y no necesita JS antes de hidratar. Es temporal: overflow en <html> rompe
-   los sticky, pero detrás de un velo opaco no se ve, y se quita antes de enseñar la página. */
+.pl-veil-l { left: 0; width: calc(var(--seam) + 1px); }
+.pl-veil-r { left: var(--seam); right: 0; }
+#page-loader.is-done .pl-veil-l { transform: translateY(-100%); }
+#page-loader.is-done .pl-veil-r { transform: translateY(100%); }
+
+/* Mientras el velo sale, la marca con el acento se funde sobre la blanca del hero, que está
+   debajo en el mismo sitio; esa después vuela a la esquina (blocks/hero). */
+.pl-mark { transition: opacity 0.45s ease 0.55s; }
+#page-loader.is-done .pl-mark { opacity: 0; }
+#page-loader.is-done { pointer-events: none; }
+
+.pl-blade { position: absolute; inset: 0; }
+.pl-blade svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+.pl-outline {
+  fill: rgb(238 241 240 / 0.05);
+  stroke: rgb(238 241 240 / 0.6);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Entrada: cada trazo recorre su camino vertical por la costura, se pasa un pelo y encaja. */
+.pl-blade-f { animation: pl-drop 1.3s 0.2s both; }
+.pl-blade-l { animation: pl-rise 1.3s 0.2s both; }
+.pl-blade .pl-outline { animation: pl-lock 0.7s ease-out 1.42s both; }
+
+@keyframes pl-drop {
+  0% { transform: translateY(-100vh); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  80% { transform: translateY(1.6%); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  100% { transform: translateY(0); }
+}
+@keyframes pl-rise {
+  0% { transform: translateY(100vh); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  80% { transform: translateY(-1.6%); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  100% { transform: translateY(0); }
+}
+/* El golpe del encaje: el contorno se enciende un instante. */
+@keyframes pl-lock {
+  0% { stroke: rgb(238 241 240 / 0.6); }
+  18% { stroke: rgb(238 241 240 / 1); }
+  100% { stroke: rgb(238 241 240 / 0.6); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-blade-f, .pl-blade-l, .pl-blade .pl-outline { animation: none; }
+  .pl-veil { transition: opacity 0.6s ease; }
+  #page-loader.is-done .pl-veil-l,
+  #page-loader.is-done .pl-veil-r { transform: none; opacity: 0; }
+  .pl-mark { transition-delay: 0.3s; }
+}
+
+/* Mientras carga no se hace scroll. :has() lo ata al propio velo y no necesita JS antes de
+   hidratar. Es temporal: overflow en <html> rompe los sticky, pero detrás de un velo opaco no
+   se ve, y se quita antes de enseñar la página. */
 html:has(#page-loader:not(.is-done)) { overflow: hidden; }
 
 /* Cursor cinematográfico (components/ui/Cursor.tsx) */

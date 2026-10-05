@@ -2,17 +2,20 @@ import { z } from "zod";
 import { defineBlock } from "../types";
 import { PageLoader } from "./PageLoader";
 
-// Pantalla de carga. Va en la lista `before` de la página (fuera de <main>), para quedar por
-// encima del cursor como en v4. Sin este bloque, la página está 'ready' desde el primer frame.
+// Pantalla de carga con la marca de free lost. Va en la lista `before` de la página (fuera de
+// <main>) para quedar por encima de todo. Sin este bloque, la página está 'ready' desde el
+// primer frame.
 export const loaderSchema = z.object({
-  /** Duración mínima: con caché llena no debe parpadear. */
-  minMs: z.number().default(1000),
-  /** Techo: si un CDN no responde, no dejar al usuario encerrado. */
+  /** Duración mínima del relleno: con caché llena tiene que verse subir, no parpadear. */
+  minMs: z.number().default(900),
+  /** Techo: si el vídeo no responde, no dejar al usuario encerrado. */
   maxMs: z.number().default(15000),
   /** Esperar también a document.fonts.ready. */
   fonts: z.boolean().default(true),
-  /** Color del relleno (v4: amarillo de box-end.svg). */
-  color: z.string().default("#FFD83D"),
+  /** Color con el que se llenan los trazos una vez encajados (admite var(--token)). */
+  color: z.string(),
+  /** Nombre accesible de la barra de progreso. */
+  label: z.string(),
 });
 
 export type LoaderProps = z.output<typeof loaderSchema>;

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, type ReactNode } from "react";
-import { assetRegistry } from "@/core/assets/registry";
+import { assetRegistry, type AssetTask } from "@/core/assets/registry";
 import { useLifecycle } from "./store";
 
 interface Slot {
@@ -44,10 +44,10 @@ export function useReleaseHold() {
 }
 
 /**
- * Para bloques `critical`: entrega las promesas que la pantalla de carga debe esperar.
- * Solo cuenta la primera llamada.
+ * Para bloques `critical`: entrega las tareas que la pantalla de carga debe esperar (promesas, o
+ * `{ done, progress }` si el bloque sabe cuánto lleva). Solo cuenta la primera llamada.
  */
 export function useCriticalAssets() {
   const { index } = useBlockSlot();
-  return useCallback((tasks: readonly Promise<unknown>[]) => assetRegistry.provide(index, tasks), [index]);
+  return useCallback((tasks: readonly (Promise<unknown> | AssetTask)[]) => assetRegistry.provide(index, tasks), [index]);
 }

@@ -1,0 +1,254 @@
+/* Primera pantalla. La película manda: todo lo demás son créditos en los márgenes del plano,
+   como en un cartón de título, y la marca en el centro. */
+
+.hero {
+  position: relative;
+  height: 100svh;
+  height: 100dvh;
+  min-height: 520px;
+  overflow: hidden;
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.film {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Solo para que los créditos se lean sobre cielo claro; el centro del plano queda limpio. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgb(6 10 12 / 0.5) 0%, rgb(6 10 12 / 0) 20%),
+    linear-gradient(to top, rgb(6 10 12 / 0.78) 0%, rgb(6 10 12 / 0.32) 26%, rgb(6 10 12 / 0) 48%);
+}
+
+/* La marca en reposo: en la esquina, al lado del nombre del estudio. */
+.lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.mark {
+  display: block;
+  flex: none;
+  height: 56px;
+  width: calc(56px * 0.29285);
+  overflow: visible;
+  fill: var(--color-paper);
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* Del centro a la esquina, cuando el velo ya ha salido y la marca del loader se ha fundido. */
+.markFlying {
+  transition: transform 1.3s cubic-bezier(0.65, 0, 0.15, 1) 1.05s;
+}
+
+/* ---------- márgenes ---------- */
+
+.top {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--gutter);
+}
+
+.studio {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-stretch: 125%;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.controls {
+  display: flex;
+  gap: 0.25rem;
+  margin-right: -0.6rem;
+}
+
+.control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  min-width: 44px;
+  justify-content: center;
+  padding: 0 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  font-stretch: 112%;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgb(238 241 240 / 0.78);
+  transition: color 0.25s ease;
+}
+
+.control svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.5;
+}
+
+.control:hover,
+.control[aria-pressed="true"] {
+  color: var(--color-paper);
+}
+
+.control[aria-pressed="true"] svg {
+  color: var(--color-ember);
+}
+
+.control:focus-visible {
+  outline: 1px solid var(--color-ember);
+  outline-offset: -6px;
+}
+
+.credits {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: var(--gutter);
+}
+
+.name {
+  font-size: clamp(2.75rem, 6.4vw, 6rem);
+  font-weight: 800;
+  font-stretch: 72%;
+  line-height: 0.86;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+}
+
+/* Cada palabra entra desde debajo de su propia línea de corte. */
+.line {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  /* El recorte no puede comerse las astas: un poco de aire abajo, devuelto con el margen. */
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+
+.word {
+  display: inline-block;
+}
+
+.role {
+  margin-top: 1rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  font-stretch: 112%;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(238 241 240 / 0.74);
+}
+
+.slogan {
+  max-width: 16ch;
+  font-size: clamp(1.125rem, 1.7vw, 1.6rem);
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.15;
+  text-align: right;
+  text-wrap: balance;
+}
+
+/* ---------- entrada, cuando el velo del loader se abre ---------- */
+
+.word {
+  transform: translateY(105%);
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(1.35s + var(--i, 0) * 0.09s);
+}
+
+.role,
+.slogan,
+.studio,
+.controls {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.role {
+  transition-delay: 1.7s;
+}
+
+.slogan {
+  transition-delay: 1.82s;
+}
+
+/* El nombre del estudio aparece cuando la marca aterriza a su lado. */
+.studio,
+.controls {
+  transition-delay: 2.05s;
+}
+
+.hero[data-ready] .word,
+.hero[data-ready] .role,
+.hero[data-ready] .slogan,
+.hero[data-ready] .studio,
+.hero[data-ready] .controls {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- móvil ---------- */
+
+@media (max-width: 720px) {
+  .mark {
+    height: 44px;
+    width: calc(44px * 0.29285);
+  }
+
+  .credits {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+
+  /* Nombre y apellido en dos líneas: a este ancho una sola quedaría pequeña. */
+  .line {
+    display: block;
+  }
+
+  .name {
+    font-size: clamp(2.75rem, 15vw, 4.5rem);
+  }
+
+  .role {
+    margin-top: 0.85rem;
+  }
+
+  .slogan {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word,
+  .role,
+  .slogan,
+  .studio,
+  .controls {
+    transform: none;
+    transition: opacity 0.4s ease;
+    transition-delay: 0s;
+  }
+}
