@@ -2,14 +2,18 @@
 version: 1
 slug: "content-pages-home-ts"
 primary_target: "content/pages/home.ts"
-related_targets: ["blocks/hero/Hero.tsx","blocks/loader/PageLoader.tsx"]
+related_targets: ["blocks/hero/Hero.tsx","blocks/loader/PageLoader.tsx","blocks/reel/Reel.tsx","blocks/gear/GearStage.tsx"]
 ---
 
-# Home: loader + hero (v1)
+# Home: loader → hero → projects → what I use
 
-Scope: the home route, v1 = loader + hero only. Visitor mode: **Experience**: the film leads from the first viewport.
+Scope: the home route. Sections: loader, hero, projects carousel (12 real films, full playback from local transcodes), "Lo que uso" (3 gear models, names only). Visitor mode: **Experience**: the film leads from the first viewport.
 Audience and job: see PRODUCT.md. Constraints: static export, local media for v1 (Vimeo later), ES/EN/CA later via content files.
-Unresolved: contact email, social URLs, what follows the hero (reel, gear scroll sequence, contact), locale routing.
+Unresolved: contact email, social URLs, real film titles (captions are provisional, from file names), real gear list, the close of the page (contact/footer), locale routing.
+
+Sections after the first viewport:
+- **Projects:** the WebGL strip. Its entry is scroll-driven along the last 70% of the stage's arrival: each card rides a cubic arc from below-right into its slot, banking with the tangent, and the lens forms at the end. "PROYECTOS" title top-left; ember 1px tick and caption fade in at the end of the arc. No gate: plain scroll into the next section.
+- **Lo que uso:** a pinned scene, one viewport per object. The object fills the stage and turns with the scroll. When the next one comes in, the outgoing object rises and fades while the incoming one rises from below. The name list at bottom-left is the index (clickable) and the progress (ember 1px fill).
 
 ## Direction contract
 

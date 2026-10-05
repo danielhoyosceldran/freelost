@@ -1,4 +1,4 @@
-import { clamp01, easeInOut, easeOut, easeOutQuint } from "@/lib/easing";
+import { clamp01, easeInOut, easeOut } from "@/lib/easing";
 import { clampToEdge, createProgram, createVao } from "../gl";
 import { cardFragment, cardVertex, lensFragment, lensVertex } from "./shaders";
 
@@ -14,6 +14,10 @@ import { cardFragment, cardVertex, lensFragment, lensVertex } from "./shaders";
  * posición es función lineal del progreso que le dan (applyProgress), y el centrado de cada
  * foto lo remata el imán de la escena. El "focus on click" del original se reaprovecha como la
  * separación al entrar en un proyecto (setFocus): las demás se apartan y la lente se endereza.
+ *
+ * La entrada también la pilota el scroll (applyIntro): cada tarjeta llega a su sitio por una
+ * trayectoria curva desde abajo a la derecha, ladeándose con la tangente como un coche en una
+ * curva, y la lente se forma cuando ya casi han llegado. Si se vuelve a subir, se deshace.
  */
 
 export interface LensConfig {
@@ -39,8 +43,6 @@ export interface FlexCarouselOptions {
   /** Alto de tarjeta como fracción del alto del lienzo (lo lee de la variable CSS en cada resize). */
   readCardFrac: () => number;
   onActive: (index: number) => void;
-  /** Fin de la intro. */
-  onRevealed: () => void;
 }
 
 export interface CardHit {
@@ -68,7 +70,7 @@ interface Metrics {
 interface IntroFx {
   sceneAlpha: number;
   strength: number;
-  card: ((rel: number) => { alpha: number; x: number; y: number; scale: number }) | null;
+  card: ((rel: number, cardH: number) => { alpha: number; x: number; y: number; scale: number; angle: number }) | null;
 }
 
 // Todas las tarjetas 3:4 (el fit "portrait" del original): el shader recorta cada foto tipo
@@ -77,7 +79,10 @@ const RATIO = 3 / 4;
 const GAP = 0;
 const RADIUS = 0; // estética plana de la web (el original lo permite redondeado)
 const PIXEL_BUDGET = 4.5e6; // techo de píxeles del lienzo (baja el dpr en pantallas grandes)
-const INTRO_S = { rise: 2.1, fade: 0.35 };
+/** Fracción de la entrada que se espera la tarjeta más alejada del centro (la del centro sale ya). */
+const INTRO_STAGGER = 0.38;
+/** Cuánto de la tangente de la trayectoria se convierte en giro de la tarjeta (1 = todo). */
+const INTRO_BANK = 0.24;
 
 export class FlexCarousel {
   /** Una promesa por portada; resuelve con load o con error (la pantalla de carga las cuenta). */
@@ -110,7 +115,6 @@ export class FlexCarousel {
   private visible = true;
   private dirty = true;
   private destroyed = false;
-  private started = false;
   private lastP = 0;
   private pos = 0;
   private lastPos: number | null = null;
@@ -120,7 +124,7 @@ export class FlexCarousel {
   private active = -1;
   private instances: CardHit[] = [];
   private projectIndex = -1;
-  private readonly intro = { kind: "rise" as "rise" | "fade", t: 0, running: false, done: false };
+  private introT = 0;
   private readonly focus = { t: 0, v: 0, target: 0 };
 
   /** null si no hay WebGL2: el bloque cae a su modo sin carrete. */
@@ -183,9 +187,11 @@ export class FlexCarousel {
 
   // ---------- API ----------
 
-  /** Arranca la intro. Espera a que se levante la pantalla de carga: detrás del velo se perdería. */
-  start() {
-    this.started = true;
+  /** Entrada, 0 = fuera, 1 = en su sitio. La da el bloque a partir del scroll; es reversible. */
+  applyIntro(t: number) {
+    const v = clamp01(t);
+    if (v === this.introT) return;
+    this.introT = v;
     this.wake();
   }
 
@@ -194,7 +200,7 @@ export class FlexCarousel {
   }
 
   get introDone() {
-    return this.intro.done;
+    return this.introT >= 1;
   }
 
   get activeIndex() {
@@ -226,7 +232,7 @@ export class FlexCarousel {
    * a esta foto", no abrirla. De cerca a lejos porque la del centro se pinta encima.
    */
   hitTest(clientX: number, clientY: number): CardHit | null {
-    if (this.projectIndex >= 0 || !this.intro.done) return null;
+    if (this.projectIndex >= 0 || !this.introDone) return null;
     const r = this.host.getBoundingClientRect();
     const x = clientX - r.left;
     const y = clientY - r.top;
@@ -367,32 +373,45 @@ export class FlexCarousel {
 
   private introEffects(): IntroFx {
     const e: IntroFx = { sceneAlpha: 1, strength: 1, card: null };
-    const intro = this.intro;
-    if (!intro.running && !intro.done) {
-      e.sceneAlpha = 0;
-      e.strength = 0;
-      return e;
-    }
-    const t = intro.done ? 1 : intro.t;
+    const t = this.introT;
     if (t >= 1) return e;
-    if (intro.kind === "rise") {
-      // Las tarjetas suben desde abajo, en abanico desde el centro, y la lente se forma cuando
-      // ya están casi en su sitio.
-      e.strength = easeInOut((t - 0.3) / 0.65);
-      e.card = (rel) => {
-        const delay = Math.min(Math.abs(rel) / (this.width * 0.6), 1) * 0.34;
-        const local = clamp01((t - delay) / 0.6);
-        return {
-          alpha: clamp01(local * 4),
-          x: 0,
-          y: (1 - easeOutQuint(local)) * this.height * 0.62,
-          scale: 0.5 + 0.5 * easeInOut((local - 0.18) / 0.82),
-        };
-      };
-    } else {
+    if (this.o.reduced) {
+      // Sin trayectoria: la cinta aparece en su sitio con el mismo tramo de scroll.
       e.sceneAlpha = easeOut(t);
       e.strength = easeOut(t);
+      return e;
     }
+    const { width: W, height: H } = this;
+    // La lente se forma al final, cuando las tarjetas ya casi han llegado: en el viaje van planas.
+    e.strength = easeInOut((t - 0.6) / 0.4);
+    e.card = (rel, cardH) => {
+      const delay = Math.min(Math.abs(rel) / W, 1) * INTRO_STAGGER;
+      const local = clamp01((t - delay) / (1 - INTRO_STAGGER));
+      const u = easeOut(local);
+      // Bézier cúbica relativa al destino (0,0): nace bajo el borde inferior, a la derecha, sube
+      // casi en vertical y gira hacia la izquierda hasta entrar en la fila en horizontal.
+      const ax = W * 0.42;
+      const ay = H / 2 + cardH / 2 + H * 0.12;
+      const p0x = ax, p0y = ay;
+      const p1x = ax, p1y = ay * 0.18;
+      const p2x = ax * 0.38, p2y = 0;
+      const v = 1 - u;
+      const x = v * v * v * p0x + 3 * v * v * u * p1x + 3 * v * u * u * p2x;
+      const y = v * v * v * p0y + 3 * v * v * u * p1y + 3 * v * u * u * p2y;
+      // Tangente (derivada) para ladear la tarjeta. Al llegar apunta a la izquierda (-x): ahí el
+      // giro es 0; en la subida, vertical, el giro es el máximo.
+      const tx = 3 * v * v * (p1x - p0x) + 6 * v * u * (p2x - p1x) + 3 * u * u * (0 - p2x);
+      const ty = 3 * v * v * (p1y - p0y) + 6 * v * u * (p2y - p1y) + 3 * u * u * (0 - p2y);
+      let ang = Math.atan2(ty, tx) - Math.PI;
+      if (ang < -Math.PI) ang += 2 * Math.PI;
+      return {
+        alpha: clamp01(local * 6),
+        x,
+        y,
+        scale: 0.62 + 0.38 * easeInOut(local),
+        angle: ang * INTRO_BANK,
+      };
+    };
     return e;
   }
 
@@ -405,14 +424,14 @@ export class FlexCarousel {
     const homeY = height / 2;
     const shrink = 1 - this.o.squeeze * this.energy;
     const hidden = this.projectIndex; // la tapa el marco del proyecto
-    const draws: { i: number; rel: number; x: number; y: number; cw: number; ch: number; alpha: number }[] = [];
+    const draws: { i: number; rel: number; x: number; y: number; cw: number; ch: number; alpha: number; angle: number }[] = [];
 
     for (let i = 0; i < this.n; i++) {
       if (i === hidden) continue;
       const w = m.widths[i];
       const rel = m.centers[i] - this.pos;
       if (Math.abs(rel) - w / 2 > width + 40) continue;
-      const fx = effects.card ? effects.card(rel) : null;
+      const fx = effects.card ? effects.card(rel, m.cardH) : null;
       // El encogido por velocidad escala también la distancia al centro, no solo la tarjeta:
       // si no, con GAP = 0 se abrirían huecos entre fotos al correr.
       let x = homeX + rel * shrink + (fx ? fx.x : 0);
@@ -428,7 +447,9 @@ export class FlexCarousel {
       }
       const cw = w * scale;
       if (alpha <= 0.001 || x + cw / 2 < -40 || x - cw / 2 > width + 40) continue;
-      draws.push({ i, rel, x, y: homeY + (fx ? fx.y : 0), cw, ch: m.cardH * scale, alpha });
+      const y = homeY + (fx ? fx.y : 0);
+      if (y - m.cardH / 2 > height + 40) continue; // aún bajo el borde, en su trayectoria
+      draws.push({ i, rel, x, y, cw, ch: m.cardH * scale, alpha, angle: fx ? fx.angle : 0 });
     }
     // De lejos a cerca: la del centro se pinta la última, encima de todo.
     draws.sort((a, b) => Math.abs(b.rel) - Math.abs(a.rel));
@@ -452,6 +473,7 @@ export class FlexCarousel {
       const slot = this.slots[d.i];
       gl.bindTexture(gl.TEXTURE_2D, slot.tex);
       gl.uniform4f(cu.uRect, d.x, d.y, d.cw + 2, d.ch + 2);
+      gl.uniform1f(cu.uAngle, d.angle);
       gl.uniform2f(cu.uSize, d.cw, d.ch);
       gl.uniform2f(cu.uImage, slot.image[0], slot.image[1]);
       gl.uniform1f(cu.uAlpha, d.alpha);
@@ -500,22 +522,8 @@ export class FlexCarousel {
     const dt = Math.min(0.05, Math.max(0.001, (now - this.last) / 1000));
     this.last = now;
     const m = this.metrics();
-    const { intro, focus, o } = this;
+    const { focus, o } = this;
     let animating = false;
-
-    if (!intro.running && !intro.done && this.started) {
-      intro.kind = o.reduced ? "fade" : "rise";
-      intro.running = true;
-    }
-    if (intro.running) {
-      intro.t = Math.min(1, intro.t + dt / INTRO_S[intro.kind]);
-      if (intro.t >= 1) {
-        intro.running = false;
-        intro.done = true;
-        o.onRevealed();
-      }
-      animating = true;
-    }
 
     this.pos = this.posAt(m, this.lastP);
     if (this.lastPos === null) this.lastPos = this.pos;

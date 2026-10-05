@@ -3,8 +3,9 @@
 
 .hero {
   position: relative;
+  /* svh y no dvh: con la página haciendo scroll, dvh cambiaría al plegarse la barra del móvil y
+     la película daría un salto. */
   height: 100svh;
-  height: 100dvh;
   min-height: 520px;
   overflow: hidden;
   background: var(--color-ink);

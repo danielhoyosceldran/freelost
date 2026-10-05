@@ -9,6 +9,6 @@ export const pexels = (id: string, width: number) =>
   `https://images.pexels.com/photos/${id}.jpeg?auto=compress&cs=tinysrgb&w=${width}`;
 
 /** Portada que se pinta en la cinta. */
-export const coverOf = (s: ReelSlide) => (s.kind === "video" ? s.cover : pexels(s.pexels, 1400));
+export const coverOf = (s: ReelSlide) => (s.kind === "photo" ? pexels(s.pexels, 1400) : s.cover);
 /** Versión grande para la vista de proyecto. */
-export const hiResOf = (s: ReelSlide) => (s.kind === "video" ? s.cover : pexels(s.pexels, 2560));
+export const hiResOf = (s: ReelSlide) => (s.kind === "photo" ? pexels(s.pexels, 2560) : s.cover);

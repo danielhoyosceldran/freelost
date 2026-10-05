@@ -1,5 +1,5 @@
-/* Carrete del acto I (FlexCarousel de React Bits portado a WebGL2). Port 1:1 del CSS aoc- de
-   mockup/v4; el prefijo lo sustituye el scoping del CSS module.
+/* Carrete de proyectos (FlexCarousel de React Bits portado a WebGL2). La mecánica viene del
+   CSS aoc- de mockup/v4; el aspecto es el de free lost: tinta, blanco y un solo acento.
 
    position:absolute (no fixed) para quedar anclado al escenario sticky de la escena: así el
    carrete desaparece con ella en vez de quedar flotando sobre lo que viene después.
@@ -10,21 +10,21 @@
 .root {
   --reel-card: 0.6;
   --reel-band-h: calc(var(--reel-card) * 100%);
-  --reel-bone: #f1f2f6;
-  --reel-gold-deep: #d4af37;
-  --reel-marker-h: 10px;
+  /* Entrada (0..1), la escribe el JS desde el scroll. El HUD se enciende en el último tramo. */
+  --intro: 0;
+  --reel-hud: clamp(0, calc((var(--intro) - 0.72) * 3.6), 1);
+  --reel-marker-h: 12px;
   --reel-split-ease: 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
   --reel-grow-ease: 0.6s cubic-bezier(0.65, 0, 0.35, 1);
   --reel-bar-w: 1px;
-  --reel-bar-track: rgba(241, 242, 246, 0.14);
-  --reel-bar-fill: #fff;
+  --reel-bar-track: rgb(238 241 240 / 0.14);
+  --reel-bar-fill: var(--color-ember);
   --reel-close-size: 52px;
   --reel-close-inset: 26px;
 
   position: absolute;
   inset: 0;
-  color: var(--reel-bone);
-  font-family: var(--font-cormorant), Georgia, serif;
+  color: var(--color-paper);
 }
 
 /* Fases (las pone el JS en el root): splitting → loading → inProject; revealed al acabar la
@@ -34,19 +34,22 @@
   cursor: progress;
 }
 
-.seq {
+/* Título de la sección, arriba a la izquierda como los créditos del hero. Entra con el final del
+   viaje de las tarjetas, desde debajo de su línea. */
+.title {
   position: absolute;
-  top: 2.5rem;
-  left: 50%;
-  transform: translateX(-50%);
+  top: var(--gutter);
+  left: var(--gutter);
   z-index: 40;
-  font-family: var(--font-syne), sans-serif;
-  font-size: 10px;
+  font-size: clamp(2rem, 4.2vw, 4rem);
+  font-weight: 800;
+  font-stretch: 72%;
+  line-height: 0.86;
+  letter-spacing: -0.012em;
   text-transform: uppercase;
-  letter-spacing: 0.4em;
-  color: #6b7280;
   pointer-events: none;
-  white-space: nowrap;
+  opacity: var(--reel-hud);
+  translate: 0 calc((1 - var(--reel-hud)) * 14px);
   transition: opacity 0.2s ease;
 }
 
@@ -57,10 +60,10 @@
   transform: translateX(-50%);
   width: 1px;
   height: var(--reel-marker-h);
-  background: #fff;
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 255, 255, 0.35);
+  background: var(--color-ember);
   z-index: 15;
   pointer-events: none;
+  opacity: var(--reel-hud);
   transition: opacity 0.2s ease;
 }
 
@@ -72,6 +75,7 @@
   inset: 0;
   z-index: 5;
   outline: none;
+  pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -105,22 +109,24 @@
   text-align: center;
   z-index: 12;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.9s ease;
+  opacity: var(--reel-hud);
+  transition: opacity 0.2s ease;
 }
-.revealed .caption {
-  opacity: 1;
+/* Clase de fase: el JS la pone con la entrada completa (el CSS module solo exporta nombres con
+   declaraciones). Hasta entonces las tarjetas no responden al puntero. */
+.revealed .flex {
+  pointer-events: auto;
 }
 .count {
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
-  font-family: var(--font-cinzel), serif;
-  font-weight: 700;
+  font-weight: 500;
+  font-stretch: 112%;
   font-size: 11px;
   line-height: 1;
-  letter-spacing: 0.34em;
-  color: var(--reel-gold-deep);
+  letter-spacing: 0.22em;
+  color: rgb(238 241 240 / 0.6);
   font-variant-numeric: lining-nums tabular-nums;
 }
 .slash {
@@ -129,7 +135,8 @@
 .digits {
   display: inline-flex;
   letter-spacing: 0;
-  gap: 0.34em;
+  gap: 0.08em;
+  color: var(--color-paper);
 }
 .digit {
   display: inline-block;
@@ -145,11 +152,13 @@
   height: 1em;
 }
 .place {
-  font-style: italic;
-  font-weight: 300;
-  font-size: 19px;
-  line-height: 1.4;
-  color: rgba(241, 242, 246, 0.62);
+  font-weight: 600;
+  font-stretch: 88%;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--color-paper);
 }
 .enter {
   animation: reel-title 0.52s cubic-bezier(0.22, 1, 0.36, 1);
@@ -189,7 +198,7 @@
 .frame {
   position: fixed; /* el marco crece a 100vw/100vh: fixed lo saca del root */
   overflow: visible;
-  background: #000;
+  background: var(--color-ink);
   pointer-events: auto;
 }
 .growing {
@@ -254,7 +263,20 @@
   opacity: 0;
   transition: opacity 0.3s;
 }
-.media > div:global(.is-playing) > iframe {
+/* Película local (clip.ts): <video> con object-fit, invisible hasta el primer fotograma. */
+.media > div > video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.media > div:global(.is-playing) > iframe,
+.media > div:global(.is-playing) > video {
   opacity: 1;
 }
 
@@ -278,7 +300,6 @@
   stroke: var(--reel-bar-fill);
   stroke-width: var(--reel-bar-w);
   vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 12px rgba(255, 255, 255, 0.35));
 }
 
 /* Línea de tiempo del scrub: aparece a media pantalla mientras la rueda mueve el vídeo. Todo el
@@ -301,7 +322,7 @@
 .scrubFill {
   width: 100%;
   height: 100%;
-  background: #fff;
+  background: var(--color-ember);
   transform-origin: 0 50%;
   transform: scaleX(0);
   will-change: transform;
@@ -347,11 +368,15 @@
 
 .splitting .caption,
 .splitting .marker,
-.splitting .seq,
+.splitting .title,
 .inProject .caption,
 .inProject .marker,
-.inProject .seq {
+.inProject .title {
   opacity: 0;
+}
+.close:focus-visible {
+  outline: 1px solid var(--color-ember);
+  outline-offset: -8px;
 }
 
 @media (max-width: 700px) {
@@ -360,7 +385,7 @@
     --reel-close-inset: 16px;
   }
   .place {
-    font-size: 16px;
+    font-size: 17px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

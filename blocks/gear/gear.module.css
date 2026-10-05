@@ -1,39 +1,46 @@
-/* Sección equipo: bloques estáticos (visor 3D + descripción). Port 1:1 del CSS gear- de v4. */
-.block {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
-  align-items: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+/* "Lo que uso": escenario clavado. Título arriba a la izquierda (como en el carrete), el objeto
+   ocupa el escenario y la lista de nombres abajo a la izquierda hace de índice y de progreso. */
+
+.stage {
+  position: absolute;
+  inset: 0;
+  color: var(--color-paper);
 }
-@media (min-width: 768px) {
-  .block {
-    grid-template-columns: 1fr 1fr;
-  }
-  /* Bloque invertido: texto a la izquierda alineado a la derecha, modelo a la derecha. Se
-     reordena con `order` y no en el DOM para que en móvil, donde el bloque se apila, el modelo
-     siga quedando arriba igual que en el resto de bloques. */
-  .reverse > .viewer {
-    order: 2;
-  }
-  .reverse > .copy {
-    order: 1;
-    text-align: right;
-  }
-  /* La regla decorativa degrada hacia el borde exterior del texto */
-  .reverse .rule {
-    background: linear-gradient(270deg, rgba(238, 214, 127, 0.55), rgba(238, 214, 127, 0));
-  }
+
+.title {
+  position: absolute;
+  top: var(--gutter);
+  left: var(--gutter);
+  z-index: 2;
+  font-size: clamp(2rem, 4.2vw, 4rem);
+  font-weight: 800;
+  font-stretch: 72%;
+  line-height: 0.86;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+}
+
+.stack {
+  position: absolute;
+  top: 8vh;
+  bottom: 8vh;
+  left: 34%;
+  right: var(--gutter);
+}
+
+/* Las cajas se apilan; el scroll decide cuál se ve (opacidad, subida y escala desde el JS). */
+.box {
+  position: absolute;
+  inset: 0;
+  will-change: opacity, transform;
 }
 
 .viewer {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  max-height: 70vh;
+  position: absolute;
+  inset: 0;
 }
-/* El canvas lo crea GearViewer. Es interactivo: al pasar por encima el modelo se orienta hacia
-   el puntero. */
+
+/* El canvas lo crea GearViewer. Al pasar por encima el modelo se orienta hacia el puntero. */
 .viewer canvas {
   position: absolute;
   inset: 0;
@@ -42,44 +49,80 @@
   cursor: grab;
   touch-action: pan-y;
 }
-/* Halo dorado detrás del modelo, la misma nota de color que el resto del sitio */
-.viewer::before {
-  content: "";
+
+.list {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 62%;
-  height: 62%;
-  transform: translate(-50%, -50%);
-  background: rgba(212, 175, 55, 0.05);
-  border-radius: 9999px;
-  filter: blur(90px);
-  pointer-events: none;
+  left: var(--gutter);
+  bottom: var(--gutter);
+  z-index: 2;
+  width: min(30%, 26rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
-.index {
-  font-family: var(--font-syne), sans-serif;
-  font-size: 10px;
-  letter-spacing: 0.4em;
+.item {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0;
+  text-align: left;
+}
+
+.name {
+  display: block;
+  font-size: clamp(1.5rem, 2.6vw, 2.6rem);
+  font-weight: 800;
+  font-stretch: 72%;
+  line-height: 0.9;
   text-transform: uppercase;
-  color: rgba(238, 214, 127, 0.75);
-}
-.rule {
-  height: 1px;
-  background: linear-gradient(90deg, rgba(238, 214, 127, 0.55), rgba(238, 214, 127, 0));
-}
-.lead {
-  font-family: var(--font-cormorant), serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: 17px;
-  line-height: 1.55;
-  color: rgba(226, 228, 235, 0.8);
+  color: rgb(238 241 240 / 0.3);
+  transition: color 0.35s ease;
 }
 
-@media (max-width: 767px) {
-  .lead {
-    font-size: 15px;
-    line-height: 1.45;
+.item:hover .name {
+  color: rgb(238 241 240 / 0.62);
+}
+
+.item[aria-current] .name {
+  color: var(--color-paper);
+}
+
+/* Cuánto del tramo de cada objeto se ha recorrido. */
+.track {
+  display: block;
+  height: 1px;
+  margin-top: 0.65rem;
+  background: rgb(238 241 240 / 0.14);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--color-ember);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+
+.item:focus-visible {
+  outline: 1px solid var(--color-ember);
+  outline-offset: 4px;
+}
+
+@media (max-width: 720px) {
+  .stack {
+    top: 14vh;
+    bottom: 34vh;
+    left: var(--gutter);
+  }
+
+  .list {
+    width: auto;
+    right: var(--gutter);
+    gap: 0.1rem;
+  }
+
+  .name {
+    font-size: 1.6rem;
   }
 }

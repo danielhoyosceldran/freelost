@@ -9,12 +9,14 @@ interface Slot {
   index: number;
   /** Índices de los bloques con holdsBelow que tiene por encima. */
   heldBy: readonly number[];
+  /** El manifest lo marca `critical`: la pantalla de carga lo espera. */
+  critical: boolean;
 }
 
-const SlotContext = createContext<Slot>({ index: -1, heldBy: [] });
+const SlotContext = createContext<Slot>({ index: -1, heldBy: [], critical: false });
 
 /** Lo pone BlockRenderer alrededor de cada bloque; los bloques no lo usan directamente. */
-export function BlockSlot({ index, heldBy, critical, children }: Slot & { critical: boolean; children: ReactNode }) {
+export function BlockSlot({ index, heldBy, critical, children }: Slot & { children: ReactNode }) {
   // En el primer commit, aunque el bloque cargue su código más tarde: el loader no puede
   // llegar al 100% sin saber que este bloque existe.
   useEffect(() => {
@@ -23,7 +25,7 @@ export function BlockSlot({ index, heldBy, critical, children }: Slot & { critic
     return () => assetRegistry.unexpect(index);
   }, [critical, index]);
 
-  return <SlotContext.Provider value={{ index, heldBy }}>{children}</SlotContext.Provider>;
+  return <SlotContext.Provider value={{ index, heldBy, critical }}>{children}</SlotContext.Provider>;
 }
 
 export function useBlockSlot() {
@@ -46,8 +48,16 @@ export function useReleaseHold() {
 /**
  * Para bloques `critical`: entrega las tareas que la pantalla de carga debe esperar (promesas, o
  * `{ done, progress }` si el bloque sabe cuánto lleva). Solo cuenta la primera llamada.
+ *
+ * Si el manifest no es `critical` no hace nada: así un bloque puede ir arriba (crítico) o más
+ * abajo en la página (no crítico, el carrete tras el hero) sin tocar su código.
  */
 export function useCriticalAssets() {
-  const { index } = useBlockSlot();
-  return useCallback((tasks: readonly (Promise<unknown> | AssetTask)[]) => assetRegistry.provide(index, tasks), [index]);
+  const { index, critical } = useBlockSlot();
+  return useCallback(
+    (tasks: readonly (Promise<unknown> | AssetTask)[]) => {
+      if (critical) assetRegistry.provide(index, tasks);
+    },
+    [index, critical],
+  );
 }

@@ -4,10 +4,10 @@ import { defineBlock } from "../types";
 import { Reel } from "./Reel";
 import { slideSchema } from "./schema";
 
-// Acto I de v4: carrete de fotos WebGL2 pilotado por el scroll de la página, con imán, puerta
-// de esfuerzo al final y vista de proyecto al pulsar la foto del centro.
+// Carrete de proyectos: WebGL2 pilotado por el scroll de la página, con imán, entrada por una
+// curva al llegar, vista de proyecto al pulsar la tarjeta del centro y puerta opcional al final.
 export const reelSchema = z.object({
-  anchor: z.string().default("act-one"),
+  anchor: z.string().default("proyectos"),
   /**
    * Alto del spacer. 700vh y no 400: el scroll avanza las fotos de una en una, y a 400vh cada
    * foto duraba ~1,5 muescas de rueda y se leía como un barrido; a 700vh son ~3.
@@ -19,7 +19,7 @@ export const reelSchema = z.object({
   gate: gateSchema.optional(),
   labels: z
     .object({
-      sequence: z.string().default("Secuencia 00 · Proyectos"),
+      title: z.string().default("Proyectos"),
       carousel: z.string().default("Carrete de fotografías"),
       project: z.string().default("Proyecto"),
       close: z.string().default("Salir del proyecto"),
@@ -56,6 +56,8 @@ export const reel = defineBlock({
   schema: reelSchema,
   Component: Reel,
   preload: "eager",
-  critical: true,
+  // Va debajo del hero: la pantalla de carga no espera a sus portadas, que entran con su fundido
+  // mientras el visitante aún está en la película.
+  critical: false,
   holdsBelow: true,
 });

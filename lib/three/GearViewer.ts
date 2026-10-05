@@ -7,7 +7,11 @@ import { studioEquirect } from "./studio";
 /**
  * Visor 3D de un elemento de equipo: carga su modelo, lo encuadra y lo deja girando despacio
  * sobre su eje vertical. Al pasar el puntero, el giro casi se para y el modelo se orienta hacia
- * él. Port 1:1 de createViewer()/renderViewers() de v4.
+ * él. Base: createViewer()/renderViewers() de v4.
+ *
+ * Dentro de una escena de scroll, el bloque puede tomar el control: setSpin() ata el giro al
+ * scroll (el modelo persigue ese ángulo con suavizado) y setActive(false) deja de renderizar un
+ * visor que no se ve, aunque su caja esté en pantalla.
  *
  * Este módulo arrastra three.js + GLTFLoader (~700 KB): el bloque lo importa dinámicamente cuando
  * le toca (useWarm), nunca en el bundle inicial.
@@ -35,6 +39,7 @@ const PROP_SPEED = 30; // rad/s
 const MAX_TILT_Y = 0.42; // rad que el modelo se gira hacia el puntero (horizontal)
 const MAX_TILT_X = 0.22; // ídem en vertical
 const SMOOTHING = 0.08; // 0 = no sigue al puntero, 1 = lo sigue sin inercia
+const SPIN_SMOOTHING = 0.12; // ídem para el giro atado al scroll: la rueda va a saltos
 // Los modelos pesan bastante (el dron ronda los 14 MB): solo se descargan cuando su bloque se
 // acerca al viewport, y solo se renderiza el visor que está en pantalla.
 const LOAD_MARGIN = "200px 0px";
@@ -51,6 +56,9 @@ export class GearViewer {
   private readonly io: IntersectionObserver;
   // El giro se lleva en spinY aparte de la inclinación para que ambos se sumen sin pisarse.
   private readonly state = { spinY: 0, tiltX: 0, tiltY: 0, targetTiltX: 0, targetTiltY: 0, hover: false };
+  /** Ángulo que marca el scroll; null = giro automático. */
+  private spinTarget: number | null = null;
+  private active = true;
   private props: Prop[] = [];
   private loaded = false;
   private visible = false;
@@ -76,12 +84,13 @@ export class GearViewer {
     this.scene.environment = pmrem.fromEquirectangular(studioEquirect()).texture;
     pmrem.dispose();
 
-    // Iluminación (tono dorado acorde a la identidad del sitio)
-    this.scene.add(new THREE.HemisphereLight(0xfff6da, 0x0b0e13, 0.55));
+    // Iluminación: cielo blanco frío y suelo de tinta, como el resto del sitio; el contraluz lleva
+    // el acento (el naranja del sol bajo) para despegar el perfil del fondo.
+    this.scene.add(new THREE.HemisphereLight(0xeef1f0, 0x060a0c, 0.55));
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
     keyLight.position.set(4, 5, 6);
     this.scene.add(keyLight);
-    const rimLight = new THREE.DirectionalLight(0xeed67f, 1.1);
+    const rimLight = new THREE.DirectionalLight(0xe0602a, 1.3);
     rimLight.position.set(-5, -2, -4);
     this.scene.add(rimLight);
 
@@ -104,6 +113,19 @@ export class GearViewer {
       { rootMargin: LOAD_MARGIN },
     );
     this.io.observe(host);
+  }
+
+  /** Giro atado al scroll (rad), o null para volver al giro automático. */
+  setSpin(angle: number | null) {
+    this.spinTarget = angle;
+    this.play();
+  }
+
+  /** false: no renderiza (otro visor ocupa el escenario). */
+  setActive(on: boolean) {
+    if (on === this.active) return;
+    this.active = on;
+    if (on) this.play();
   }
 
   destroy() {
@@ -155,14 +177,14 @@ export class GearViewer {
   }
 
   private play() {
-    if (this.raf || this.destroyed) return;
+    if (this.raf || this.destroyed || !this.visible || !this.active) return;
     this.last = performance.now();
     this.raf = requestAnimationFrame(this.frame);
   }
 
   private frame = (now: number) => {
     this.raf = 0;
-    if (this.destroyed || !this.visible) return;
+    if (this.destroyed || !this.visible || !this.active) return;
     const dt = Math.min(0.05, (now - this.last) / 1000);
     this.last = now;
     const st = this.state;
@@ -173,7 +195,8 @@ export class GearViewer {
     st.tiltX += (st.targetTiltX - st.tiltX) * k;
     st.tiltY += (st.targetTiltY - st.tiltY) * k;
 
-    st.spinY += ROTATION_SPEED * (st.hover ? HOVER_SPIN_FACTOR : 1) * dt;
+    if (this.spinTarget === null) st.spinY += ROTATION_SPEED * (st.hover ? HOVER_SPIN_FACTOR : 1) * dt;
+    else st.spinY += (this.spinTarget - st.spinY) * (1 - Math.pow(1 - SPIN_SMOOTHING, dt * 60));
     this.group.rotation.y = st.spinY + st.tiltY;
     this.group.rotation.x = BASE_TILT_X + st.tiltX;
     this.props.forEach((p) => p.node.rotateY(p.dir * PROP_SPEED * dt));

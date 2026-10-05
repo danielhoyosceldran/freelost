@@ -1,4 +1,5 @@
 import type Player from "@vimeo/player";
+import type { Clip } from "./clip";
 
 /**
  * Clip de Vimeo para la vista de proyecto. Hace de <video> para project.ts: carga con progreso,
@@ -11,7 +12,7 @@ import type Player from "@vimeo/player";
 
 const STALL_MS = 2500;
 
-export class VimeoClip {
+export class VimeoClip implements Clip {
   readonly el: HTMLElement;
   private readonly iframe: HTMLIFrameElement;
   private player: Player | null = null;

@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { useCriticalAssets } from "@/core/lifecycle/BlockSlot";
-import { useReady } from "@/core/lifecycle/store";
+import { useLifecycle, useReady } from "@/core/lifecycle/store";
 import { LOGO_F, LOGO_L, LOGO_VIEWBOX } from "@/lib/brand/logo";
 import type { HeroProps } from "./index";
 import styles from "./hero.module.css";
@@ -105,6 +105,26 @@ export function Hero({ studio, name, role, slogan, sloganLang, film, labels }: H
     v.currentTime = 0;
     v.play().catch(() => {});
   }, [ready]);
+
+  // Fuera de pantalla (el visitante ya está en el carrete) se pausa: no tiene sentido descodificar
+  // 1080p detrás de otra escena WebGL. Al volver sigue, salvo que la pausa fuera del visitante.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    let autoPaused = false;
+    const io = new IntersectionObserver(([entry]) => {
+      if (!useLifecycle.getState().ready) return;
+      if (!entry.isIntersecting && !v.paused) {
+        autoPaused = true;
+        v.pause();
+      } else if (entry.isIntersecting && autoPaused) {
+        autoPaused = false;
+        v.play().catch(() => {});
+      }
+    });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
 
   // El estado de los botones sale del propio vídeo, no de lo que se pidió.
   useEffect(() => {

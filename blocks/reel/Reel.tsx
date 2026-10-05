@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useCriticalAssets } from "@/core/lifecycle/BlockSlot";
-import { useLifecycle } from "@/core/lifecycle/store";
 import { scrollController } from "@/core/scroll/controller";
 import { ScrollGate } from "@/core/scroll/ScrollGate";
 import { ScrollScene, useScene } from "@/core/scroll/ScrollScene";
@@ -16,10 +15,15 @@ import { coverOf } from "./slides";
 
 const PIN_OWNER = "reel:project";
 const DIGITS = Array.from({ length: 10 }, (_, n) => n);
+/**
+ * La entrada de las tarjetas ocupa el último tramo de la llegada del escenario: empieza cuando
+ * su borde superior está a esta fracción de pantalla del techo y termina justo al clavarse.
+ */
+const INTRO_LEAD = 0.7;
 
 export function Reel({ anchor, height, warmAt, gate, ...stage }: ReelProps) {
   return (
-    <ScrollScene anchor={anchor} height={height} warmAt={warmAt} className="bg-void">
+    <ScrollScene anchor={anchor} height={height} warmAt={warmAt} className="bg-ink">
       <ReelStage {...stage} />
       {gate && <ScrollGate {...gate} />}
     </ScrollScene>
@@ -63,12 +67,12 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
         });
       const place = placeRef.current;
       if (place) {
-        place.textContent = slides[i].place;
+        place.textContent = slides[i].caption;
         place.classList.remove(styles.enter);
         void place.offsetWidth; // reinicia la animación de entrada del título
         place.classList.add(styles.enter);
       }
-      if (liveRef.current) liveRef.current.textContent = `${slides[i].place}, ${i + 1} ${labels.of} ${n}`;
+      if (liveRef.current) liveRef.current.textContent = `${slides[i].caption}, ${i + 1} ${labels.of} ${n}`;
     },
     [slides, labels.of, n],
   );
@@ -89,7 +93,6 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
       reduced,
       readCardFrac: () => parseFloat(getComputedStyle(root).getPropertyValue("--reel-card")),
       onActive: setCaption,
-      onRevealed: () => root.classList.add(styles.revealed),
     });
 
     if (!carousel) {
@@ -155,10 +158,17 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
     // Motor único: el avance de la escena ES la posición de la cinta.
     const offProgress = scene.subscribe((p) => carousel.applyProgress(p));
 
-    // La intro espera a que se levante la pantalla de carga.
-    const startIfReady = (ready: boolean) => ready && carousel.start();
-    startIfReady(useLifecycle.getState().ready);
-    const offReady = useLifecycle.subscribe((s) => startIfReady(s.ready));
+    // Entrada por la curva, pilotada por el scroll de llegada (antes de que la escena empiece a
+    // contar). --intro deja que el CSS encienda el pie de foto y el título al final del viaje.
+    const applyIntro = () => {
+      const lead = window.innerHeight * INTRO_LEAD;
+      const t = clamp01((window.scrollY - (scene.top() - lead)) / lead);
+      carousel.applyIntro(t);
+      root.style.setProperty("--intro", t.toFixed(3));
+      root.classList.toggle(styles.revealed, t >= 1);
+    };
+    applyIntro();
+    const offIntro = scrollController.subscribe(applyIntro);
 
     let hover = "";
     const onPointerMove = (e: PointerEvent) => {
@@ -220,7 +230,7 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
       window.removeEventListener("resize", onResize);
       close.removeEventListener("click", onClose);
       offProgress();
-      offReady();
+      offIntro();
       view.destroy();
       releaseInput?.();
       scrollController.unpin(PIN_OWNER);
@@ -233,7 +243,7 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
   return (
     <div ref={rootRef} className={styles.root}>
       {/* Dentro del root y no fuera: así se apaga con el resto del HUD al entrar en un proyecto. */}
-      <span className={styles.seq}>{labels.sequence}</span>
+      <h2 className={styles.title}>{labels.title}</h2>
 
       <div className={styles.marker} />
 

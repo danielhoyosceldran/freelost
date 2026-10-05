@@ -1,5 +1,6 @@
 import type { FlexCarousel } from "@/lib/webgl/flex-carousel/FlexCarousel";
 import { coverOf, hiResOf, type ReelSlide } from "./slides";
+import { LocalClip, type Clip } from "./clip";
 import { VimeoClip } from "./vimeo";
 
 /**
@@ -9,7 +10,8 @@ import { VimeoClip } from "./vimeo";
  *
  * Fases (clases en el root): splitting (las demás fotos se apartan, la lente se endereza) →
  * loading (el anillo del marco se rellena con la carga real) → in-project (el marco ha crecido
- * a pantalla completa y el vídeo arranca). Los vídeos son de Vimeo (ver vimeo.ts). Al salir, la página vuelve a la foto vista.
+ * a pantalla completa y el vídeo arranca). Los vídeos son locales (clip.ts) o de Vimeo (vimeo.ts).
+ * Al salir, la página vuelve a la foto vista.
  */
 
 export interface ProjectElements {
@@ -51,7 +53,7 @@ const SCRUB_FILL_MS = 320;
 export class ProjectView {
   private open = false;
   private index = -1;
-  private video: VimeoClip | null = null;
+  private video: Clip | null = null;
   private loadToken = 0;
   private abort: AbortController | null = null;
   private hiObjectUrl: string | null = null;
@@ -272,14 +274,17 @@ export class ProjectView {
     // Nace con el zoom de la tarjeta (ver .fromCard) y lo suelta en el frame siguiente.
     el.media.classList.add(cls.fromCard);
 
-    if (slide.kind === "video") {
-      const v = new VimeoClip(slide.vimeo, slide.hash, slide.cover, cls.current);
+    if (slide.kind === "film" || slide.kind === "video") {
+      const v =
+        slide.kind === "film"
+          ? new LocalClip(slide.src, slide.cover, cls.current)
+          : new VimeoClip(slide.vimeo, slide.hash, slide.cover, cls.current);
       el.media.appendChild(v.el);
       this.video = v;
     } else {
       const img = document.createElement("img");
       img.className = cls.current;
-      img.alt = slide.place;
+      img.alt = slide.caption;
       img.draggable = false;
       img.src = coverOf(slide);
       el.media.appendChild(img);
