@@ -10,8 +10,8 @@ export const home = {
   before: [{ type: "loader", props: { color: "var(--color-ember)", label: "Cargando" } }],
   main: [
     { type: "hero", props: heroContent },
-    // ~30vh de scroll por proyecto (una pantalla de margen): 12 → 440vh. Sin puerta al final.
-    { type: "reel", props: { slides: reelSlides, height: "440vh" } },
+    // Una pantalla; la cinta se arrastra. Lente y física en los defaults del bloque.
+    { type: "reel", props: { slides: reelSlides } },
     { type: "gear", props: gearContent },
     { type: "contact", props: contactContent },
   ],

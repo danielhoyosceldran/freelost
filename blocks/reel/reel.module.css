@@ -1,14 +1,22 @@
 /* Carrete de proyectos (FlexCarousel de React Bits portado a WebGL2). La mecánica viene del
    CSS aoc- de mockup/v4; el aspecto es el de free lost: tinta, blanco y un solo acento.
 
-   position:absolute (no fixed) para quedar anclado al escenario sticky de la escena: así el
-   carrete desaparece con ella en vez de quedar flotando sobre lo que viene después.
+   La sección mide una pantalla y la página pasa por encima con su scroll normal: la cinta se
+   mueve arrastrando (la maneja el motor, no el scroll).
 
-   --reel-card es la altura de la foto como FRACCIÓN de la altura del escenario (sin unidades):
-   el JS la lee para dimensionar las tarjetas y el CSS la usa para colocar el cabezal y el pie de
-   foto, así los dos no pueden desincronizarse. */
+   --reel-card es la altura de la tarjeta como FRACCIÓN de la altura de la sección (sin
+   unidades): el JS la lee para dimensionar las tarjetas y el CSS la usa para colocar la marca y
+   el pie, así los dos no pueden desincronizarse. 0,5 es el "card height" del panel de React Bits. */
+.section {
+  position: relative;
+  height: 100svh;
+  min-height: 560px;
+  overflow: hidden;
+  background: var(--color-ink);
+}
+
 .root {
-  --reel-card: 0.6;
+  --reel-card: 0.5;
   --reel-band-h: calc(var(--reel-card) * 100%);
   --reel-marker-h: 12px;
   --reel-split-ease: 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -73,9 +81,9 @@
   opacity: 1;
 }
 
-/* El lienzo ocupa todo el escenario: la lente curva las fotos hacia arriba y hacia abajo en los
-   laterales, así que necesita alto de sobra fuera de la banda. Sin entradas propias:
-   touch-action pan-y deja el gesto vertical a la página, que es quien mueve la cinta. */
+/* El lienzo ocupa toda la sección: la lente curva las tarjetas hacia arriba y hacia abajo en los
+   laterales, así que necesita alto de sobra fuera de la banda. touch-action pan-y: el gesto
+   vertical es de la página y el horizontal del carrete (el motor lo arrastra). */
 .flex {
   position: absolute;
   inset: 0;
@@ -92,11 +100,17 @@
   width: 100%;
   height: 100%;
 }
+.revealed .flex {
+  cursor: grab;
+}
 .flex[data-hover="open"] {
   cursor: zoom-in;
 }
 .flex[data-hover="seek"] {
   cursor: pointer;
+}
+.flex[data-dragging] {
+  cursor: grabbing;
 }
 
 /* Pie de foto: título que entra desde abajo en cada cambio y contador con dígitos de carrete
@@ -389,8 +403,10 @@
 }
 
 @media (max-width: 700px) {
+  /* Tarjetas 16:9: con 0,26 del alto, la del centro ocupa casi todo el ancho del móvil y las
+     vecinas asoman a los lados, que es lo que invita a arrastrar. */
   .root {
-    --reel-card: 0.38;
+    --reel-card: 0.26;
     --reel-close-inset: 16px;
   }
   .place {

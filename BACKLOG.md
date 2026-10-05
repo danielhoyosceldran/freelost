@@ -41,8 +41,10 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 
 - [ ] Revisión final (finish review) con capturas de escritorio y móvil, y su veredicto.
 - [ ] `DESIGN.md` + `.impeccable/design.json` a partir de lo construido.
-- [ ] Ajustar en dispositivo: el rise del carrete en móvil (`--reel-card: 0.38`), el encuadre de
-      los modelos 3D en el nuevo escenario, el desencaje del hero en móvil.
+- [ ] Ajustar en dispositivo: el carrete en móvil (`--reel-card: 0.26`, tarjetas 16:9), el
+      encuadre de los modelos 3D en el nuevo escenario, el desencaje del hero en móvil.
+- [ ] Carrete: probar en ordenador la lente del panel de React Bits (0,74 × 1,18, 65°…) con las
+      portadas 16:9; si curva demasiado, retocar `lens` en `blocks/reel/index.ts`.
 - [ ] Detector: el marco de la vista de proyecto anima `left/top/width/height`
       (`blocks/reel/reel.module.css`, `.growing`). Pasarlo a FLIP con `transform`.
 
@@ -52,7 +54,8 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       `Reveal`, `core/ui/store.ts`, el bloque `cut`, y en `app/globals.css` los tokens dorados y
       las clases `.glass-card`, `.action-pill`, `.btn-flat-gold`, `.text-glow-*`,
       `.irregular-cut-*`, `.scroll-reveal`, `.animate-float`, `.custom-cursor`.
-- [ ] `core/scroll/ScrollGate.tsx`: la puerta ya no se usa en la home. Decidir si se queda.
+- [ ] `core/scroll/ScrollGate.tsx`, `core/scroll/useScrollMagnet.ts` y `core/scroll/schemas.ts`:
+      ya no los usa ningún bloque (el carrete se arrastra). Decidir si se quedan en el núcleo.
 
 ## Hecho
 
@@ -62,5 +65,7 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [x] Salida del hero: el plano se desencaja (encoge y se ladea) con el scroll.
 - [x] Carrete de proyectos con las 12 películas reales y reproducción completa en local.
 - [x] Entrada del carrete: pausa al llegar y después el rise de React Bits.
+- [x] Carrete con la física de React Bits: arrastre con inercia, bucle infinito, ajuste natural,
+      hueco 12 px, rueda vertical libre para la página; lente de los bordes solo en ordenador.
 - [x] "Lo que uso": escena clavada, un objeto por tramo, giro con el scroll.
 - [x] Sección de contacto y pie (solo estilo, sin funcionalidad).

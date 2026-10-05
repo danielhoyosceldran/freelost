@@ -3,17 +3,20 @@ import { clampToEdge, createProgram, createVao } from "../gl";
 import { cardFragment, cardVertex, lensFragment, lensVertex } from "./shaders";
 
 /**
- * Carrete de fotos: FlexCarousel de React Bits (reactbits.dev/components/flex-carousel)
- * portado a WebGL2 a pelo, sin React ni OGL. Port 1:1 de actOneCarrusel() de mockup/v4.
+ * Carrete de proyectos: FlexCarousel de React Bits (reactbits.dev/components/flex-carousel)
+ * portado a WebGL2 a pelo, sin React ni OGL. La física, la intro "rise", el ajuste "natural" y el
+ * bucle infinito siguen el código del original (src/content/Components/FlexCarousel); lo que
+ * cambia está anotado donde ocurre.
  *
- * Dos pasadas: las fotos se pintan como tarjetas planas en un render target, y una segunda
- * pasada a pantalla completa lo mira a través de una "lente" invisible que curva los laterales
- * y separa el color en los bordes (dispersión).
+ * Dos pasadas: las tarjetas se pintan planas en un render target, y una segunda pasada a
+ * pantalla completa lo mira a través de una "lente" invisible que curva los laterales y separa
+ * el color en los bordes (dispersión). La lente se puede apagar (setLens): en móvil no se usa.
  *
- * Sin entradas propias (ni rueda, ni arrastre, ni flechas, ni muelle de posición, ni bucle): la
- * posición es función lineal del progreso que le dan (applyProgress), y el centrado de cada
- * foto lo remata el imán de la escena. El "focus on click" del original se reaprovecha como la
- * separación al entrar en un proyecto (setFocus): las demás se apartan y la lente se endereza.
+ * Entradas propias, como el original con captureWheel = false: arrastre con inercia y muelle
+ * hacia la tarjeta más cercana, flechas izquierda/derecha, Inicio/Fin, y la rueda solo si es
+ * horizontal (el gesto lateral del trackpad); la vertical es de la página. El "focus on click"
+ * del original se sustituye por la vista de proyecto del bloque: onSelect al pulsar la del
+ * centro (o al llegar a una lateral pulsada), y setFocus/setProject para su coreografía.
  */
 
 export interface LensConfig {
@@ -33,12 +36,20 @@ export interface FlexCarouselOptions {
   lens: LensConfig;
   /** Cuánto se deforma la lente con la velocidad de la cinta (muelle). */
   liquid: number;
-  /** Cuánto encogen las tarjetas con la velocidad del scroll. */
+  /** Cuánto encogen las tarjetas con la velocidad de la cinta. */
   squeeze: number;
+  /** Separación entre tarjetas (px). */
+  gap: number;
+  /** Ancho/alto fijo de todas las tarjetas; sin él, "natural": el de cada portada. */
+  aspect?: number;
+  /** Proporción supuesta mientras una portada natural no ha cargado. */
+  fallbackAspect: number;
   reduced: boolean;
   /** Alto de tarjeta como fracción del alto del lienzo (lo lee de la variable CSS en cada resize). */
   readCardFrac: () => number;
   onActive: (index: number) => void;
+  /** Se pulsa la tarjeta del centro (o Intro/Espacio con el foco en el carrete). */
+  onSelect: (index: number) => void;
   /** Fin de la intro. */
   onRevealed: () => void;
 }
@@ -54,6 +65,7 @@ export interface CardHit {
 interface Slot {
   tex: WebGLTexture;
   image: [number, number];
+  aspect: number;
   color: [number, number, number];
   loaded: boolean;
   ready: number;
@@ -63,6 +75,8 @@ interface Metrics {
   cardH: number;
   widths: number[];
   centers: number[];
+  /** Largo de una vuelta completa (todas las tarjetas y sus huecos). */
+  loop: number;
 }
 
 interface IntroFx {
@@ -71,16 +85,17 @@ interface IntroFx {
   card: ((rel: number) => { alpha: number; x: number; y: number; scale: number }) | null;
 }
 
-// Todas las tarjetas 3:4 (el fit "portrait" del original): el shader recorta cada foto tipo
-// cover dentro de ese marco. Sin hueco entre ellas: la fila se lee como una tira de película.
-const RATIO = 3 / 4;
-const GAP = 0;
-const RADIUS = 0; // estética plana de la web (el original lo permite redondeado)
+const RADIUS = 0; // estética plana de la web
 const PIXEL_BUDGET = 4.5e6; // techo de píxeles del lienzo (baja el dpr en pantallas grandes)
 const INTRO_S = { rise: 2.1, fade: 0.35 };
+/** Si alguna portada no llega, la intro no la espera más que esto (como el original). */
+const INTRO_WAIT_MS = 3500;
+
+/** Distancia con signo más corta en un bucle de largo `size` (el wrap del original). */
+const wrap = (value: number, size: number) => ((((value + size / 2) % size) + size) % size) - size / 2;
 
 export class FlexCarousel {
-  /** Una promesa por portada; resuelve con load o con error (la pantalla de carga las cuenta). */
+  /** Una promesa por portada; resuelve con load o con error. */
   readonly loads: Promise<void>[];
 
   private readonly gl: WebGL2RenderingContext;
@@ -110,17 +125,43 @@ export class FlexCarousel {
   private visible = true;
   private dirty = true;
   private destroyed = false;
-  private started = false;
-  private lastP = 0;
+  private lensOn = true;
+  private lensT = 1;
+
+  // Posición de la cinta (px a lo largo de la fila), su objetivo y su velocidad.
   private pos = 0;
-  private lastPos: number | null = null;
+  private goal = 0;
+  private vel = 0;
+  private mode: "spring" | "wheel" = "spring";
+  private wheelAt = 0;
+  private layout: Metrics | null = null;
+  private lastPos = 0;
   private energy = 0;
   private deform = 0;
   private deformVel = 0;
   private active = -1;
+  /** Lateral pulsada: al llegar al centro, se abre (el focus.pending del original). */
+  private pending = -1;
   private instances: CardHit[] = [];
   private projectIndex = -1;
-  private readonly intro = { kind: "rise" as "rise" | "fade", t: 0, running: false, done: false };
+  private readonly pointer = {
+    down: false,
+    id: -1,
+    touch: false,
+    startX: 0,
+    startY: 0,
+    startPos: 0,
+    dragging: false,
+    samples: [] as { x: number; t: number }[],
+  };
+  private readonly intro = {
+    kind: "rise" as "rise" | "fade",
+    t: 0,
+    requested: false,
+    requestedAt: 0,
+    running: false,
+    done: false,
+  };
   private readonly focus = { t: 0, v: 0, target: 0 };
 
   /** null si no hay WebGL2: el bloque cae a su modo sin carrete. */
@@ -163,7 +204,14 @@ export class FlexCarousel {
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
       clampToEdge(gl);
-      const slot: Slot = { tex, image: [1, 1], color: [0.5, 0.5, 0.5], loaded: false, ready: 0 };
+      const slot: Slot = {
+        tex,
+        image: [1, 1],
+        aspect: o.aspect ?? o.fallbackAspect,
+        color: [0.5, 0.5, 0.5],
+        loaded: false,
+        ready: 0,
+      };
       loads.push(this.loadCover(slot, src));
       return slot;
     });
@@ -178,14 +226,26 @@ export class FlexCarousel {
     this.visObs.observe(host);
     document.addEventListener("visibilitychange", this.onVisibility);
 
+    host.addEventListener("pointerdown", this.onPointerDown);
+    host.addEventListener("pointermove", this.onPointerMove);
+    host.addEventListener("pointerup", this.onPointerUp);
+    host.addEventListener("pointercancel", this.onPointerCancel);
+    host.addEventListener("wheel", this.onWheel, { passive: false });
+    host.addEventListener("keydown", this.onKeyDown);
+
     this.resize();
   }
 
   // ---------- API ----------
 
-  /** Arranca la intro. Espera a que se levante la pantalla de carga: detrás del velo se perdería. */
+  /**
+   * Pide la intro. Arranca en cuanto las portadas han cargado (o pasados INTRO_WAIT_MS), como el
+   * original; el bloque decide cuándo pedirla (al llegar a la sección, tras la pausa).
+   */
   start() {
-    this.started = true;
+    if (this.intro.requested) return;
+    this.intro.requested = true;
+    this.intro.requestedAt = performance.now();
     this.wake();
   }
 
@@ -201,10 +261,10 @@ export class FlexCarousel {
     return this.active;
   }
 
-  /** Motor único: la posición de la cinta es el progreso de la escena. Se ignora en un proyecto. */
-  applyProgress(p: number) {
-    if (this.projectIndex >= 0) return;
-    this.lastP = clamp01(p);
+  /** Lente de los bordes encendida o no (en móvil va plana). Transición corta, no salto. */
+  setLens(on: boolean) {
+    this.lensOn = on;
+    if (this.o.reduced) this.lensT = on ? 1 : 0;
     this.wake();
   }
 
@@ -222,8 +282,7 @@ export class FlexCarousel {
 
   /**
    * Hit test contra los rectángulos planos de la última pasada (antes de la lente), como el
-   * original: en los laterales la foto curvada no coincide al píxel, pero ahí solo se pide "ir
-   * a esta foto", no abrirla. De cerca a lejos porque la del centro se pinta encima.
+   * original. De cerca a lejos porque la del centro se pinta encima.
    */
   hitTest(clientX: number, clientY: number): CardHit | null {
     if (this.projectIndex >= 0 || !this.intro.done) return null;
@@ -241,7 +300,7 @@ export class FlexCarousel {
   cardRect(i: number) {
     const m = this.metrics();
     const r = this.host.getBoundingClientRect();
-    const cx = r.left + this.width / 2 + (m.centers[i] - this.posAt(m, this.lastP));
+    const cx = r.left + this.width / 2 + wrap(m.centers[i] - this.pos, m.loop);
     return { left: cx - m.widths[i] / 2, top: r.top + this.height / 2 - m.cardH / 2, width: m.widths[i], height: m.cardH };
   }
 
@@ -255,7 +314,6 @@ export class FlexCarousel {
     this.canvas.width = Math.max(2, Math.round(this.width * this.dpr));
     this.canvas.height = Math.max(2, Math.round(this.height * this.dpr));
     this.sizeTarget(this.canvas.width, this.canvas.height);
-    this.lastPos = null; // el cambio de ancho no es velocidad: que no encoja las tarjetas
     this.wake();
   }
 
@@ -267,9 +325,167 @@ export class FlexCarousel {
     this.resizeObs.disconnect();
     this.visObs.disconnect();
     document.removeEventListener("visibilitychange", this.onVisibility);
+    const h = this.host;
+    h.removeEventListener("pointerdown", this.onPointerDown);
+    h.removeEventListener("pointermove", this.onPointerMove);
+    h.removeEventListener("pointerup", this.onPointerUp);
+    h.removeEventListener("pointercancel", this.onPointerCancel);
+    h.removeEventListener("wheel", this.onWheel);
+    h.removeEventListener("keydown", this.onKeyDown);
+    h.removeAttribute("data-dragging");
     this.gl.getExtension("WEBGL_lose_context")?.loseContext();
     this.canvas.remove();
   }
+
+  // ---------- entradas ----------
+
+  private local(e: PointerEvent): [number, number] {
+    const r = this.host.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  }
+
+  /** Mientras hay un proyecto abierto o la intro no ha acabado, la cinta no se toca. */
+  private get locked() {
+    return this.projectIndex >= 0 || this.focus.target > 0 || !this.intro.done;
+  }
+
+  private onPointerDown = (e: PointerEvent) => {
+    if (e.button > 0 || this.locked) return;
+    const [x, y] = this.local(e);
+    const p = this.pointer;
+    p.down = true;
+    p.id = e.pointerId;
+    p.touch = e.pointerType === "touch";
+    p.startX = x;
+    p.startY = y;
+    p.startPos = this.pos;
+    p.dragging = false;
+    p.samples = [{ x, t: performance.now() }];
+    this.pending = -1;
+    // Coger la cinta en marcha la para en seco, como una mano sobre la película.
+    if (Math.abs(this.vel) > 40) {
+      this.goal = this.pos;
+      this.vel = 0;
+    }
+    this.wake();
+  };
+
+  private onPointerMove = (e: PointerEvent) => {
+    const p = this.pointer;
+    if (!p.down || e.pointerId !== p.id) return;
+    const [x, y] = this.local(e);
+    const dx = x - p.startX;
+    const dy = y - p.startY;
+    const slop = p.touch ? 10 : 5;
+    if (!p.dragging) {
+      // En táctil, un gesto vertical es scroll de la página: se suelta y no se arrastra.
+      if (p.touch && Math.abs(dy) > slop && Math.abs(dy) > Math.abs(dx)) {
+        p.down = false;
+        return;
+      }
+      if (Math.abs(dx) <= slop) return;
+      p.dragging = true;
+      p.startX = x;
+      p.startPos = this.pos;
+      try {
+        this.host.setPointerCapture(e.pointerId);
+      } catch {
+        /* sin captura: se sigue arrastrando mientras el puntero esté encima */
+      }
+      this.host.setAttribute("data-dragging", "");
+    }
+    this.pos = p.startPos - (x - p.startX);
+    this.goal = this.pos;
+    this.vel = 0;
+    const now = performance.now();
+    p.samples.push({ x, t: now });
+    while (p.samples.length > 2 && now - p.samples[0].t > 100) p.samples.shift();
+    this.wake();
+  };
+
+  private onPointerUp = (e: PointerEvent) => {
+    const p = this.pointer;
+    if (!p.down || e.pointerId !== p.id) return;
+    p.down = false;
+    this.host.removeAttribute("data-dragging");
+    const m = this.metrics();
+    if (p.dragging) {
+      p.dragging = false;
+      // Velocidad de los últimos 100 ms. Si el dedo se paró antes de soltar, no hay lanzamiento.
+      const now = performance.now();
+      const first = p.samples[0];
+      const last = p.samples[p.samples.length - 1];
+      let velocity = 0;
+      if (first && last && last.t > first.t && now - last.t < 70) {
+        velocity = -((last.x - first.x) / (last.t - first.t)) * 1000;
+      }
+      this.vel = velocity;
+      const landing = this.snapPoint(m, this.pos + velocity * 0.32);
+      this.goal = landing;
+      // Un golpe rápido que no llega a cambiar de tarjeta pasa igualmente a la siguiente.
+      if (Math.abs(velocity) > 400 && Math.abs(landing - this.pos) < 1) this.step(m, velocity > 0 ? 1 : -1);
+      this.mode = "spring";
+      this.wake();
+      return;
+    }
+    // Clic: la del centro se abre; una lateral viene al centro y se abre al llegar.
+    const hit = this.hitTest(e.clientX, e.clientY);
+    if (!hit) return;
+    if (hit.index === this.active && Math.abs(this.goal - this.pos) < 2) {
+      this.o.onSelect(hit.index);
+    } else {
+      const rel = (hit.x0 + hit.x1) / 2 - this.width / 2;
+      this.goal = this.snapPoint(m, this.pos + rel);
+      this.mode = "spring";
+      this.pending = hit.index;
+      this.wake();
+    }
+  };
+
+  private onPointerCancel = () => {
+    const p = this.pointer;
+    p.down = false;
+    p.dragging = false;
+    this.host.removeAttribute("data-dragging");
+    this.goal = this.snapPoint(this.metrics(), this.pos);
+    this.mode = "spring";
+    this.wake();
+  };
+
+  /**
+   * Rueda: solo la horizontal (el gesto lateral del trackpad, o mayúsculas + rueda). La vertical
+   * no se toca: es el scroll de la página (captureWheel = false del original).
+   */
+  private onWheel = (e: WheelEvent) => {
+    if (e.ctrlKey || this.locked) return;
+    let dx = e.deltaX;
+    let dy = e.deltaY;
+    if (e.shiftKey && Math.abs(dx) < Math.abs(dy)) {
+      dx = dy;
+      dy = 0;
+    }
+    if (Math.abs(dx) <= Math.abs(dy)) return;
+    e.preventDefault();
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? this.height : 1;
+    this.goal += Math.max(-120, Math.min(120, dx * unit)) * 1.25;
+    this.mode = "wheel";
+    this.wheelAt = performance.now();
+    this.pending = -1;
+    this.wake();
+  };
+
+  /** Flechas laterales e Inicio/Fin. Las verticales se quedan para la página. */
+  private onKeyDown = (e: KeyboardEvent) => {
+    if (this.locked) return;
+    const m = this.metrics();
+    if (e.key === "ArrowRight") this.step(m, 1);
+    else if (e.key === "ArrowLeft") this.step(m, -1);
+    else if (e.key === "Home") this.goTo(m, 0);
+    else if (e.key === "End") this.goTo(m, this.n - 1);
+    else if ((e.key === "Enter" || e.key === " ") && this.active >= 0) this.o.onSelect(this.active);
+    else return;
+    e.preventDefault();
+  };
 
   // ---------- carga ----------
 
@@ -279,12 +495,13 @@ export class FlexCarousel {
       img.crossOrigin = "anonymous";
       img.decoding = "async";
       img.onload = () => {
-        // La promesa resuelve aunque el carrete ya no exista: la pantalla de carga la cuenta.
         if (!this.destroyed) this.upload(slot, img);
         resolve();
       };
       // Un error cuenta como cargado; la tarjeta se queda en su gris.
       img.onerror = () => {
+        slot.loaded = true;
+        slot.ready = 0;
         this.wake();
         resolve();
       };
@@ -303,6 +520,7 @@ export class FlexCarousel {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     if (this.aniso) gl.texParameterf(gl.TEXTURE_2D, this.aniso.TEXTURE_MAX_ANISOTROPY_EXT, 8);
     slot.image = [img.naturalWidth || 1, img.naturalHeight || 1];
+    slot.aspect = slot.image[0] / slot.image[1];
     // Color medio: placeholder mientras la textura entra con fundido.
     try {
       const probe = document.createElement("canvas");
@@ -340,29 +558,70 @@ export class FlexCarousel {
 
   // ---------- geometría ----------
 
-  /** Ancho = RATIO × alto, igual para todas. Centros acumulados en una fila sin bucle. */
+  /** Ancho = proporción × alto (fija o la de cada portada). Centros acumulados con su hueco. */
   private metrics(): Metrics {
     const cardH = Math.max(24, this.cardFrac * this.height);
-    const widths = this.slots.map(() => RATIO * cardH);
+    const widths = this.slots.map((s) => (this.o.aspect ?? s.aspect) * cardH);
     const centers: number[] = [];
     let cursor = 0;
     for (const w of widths) {
       centers.push(cursor + w / 2);
-      cursor += w + GAP;
+      cursor += w + this.o.gap;
     }
-    return { cardH, widths, centers };
+    return { cardH, widths, centers, loop: Math.max(cursor, 1) };
+  }
+
+  private nearest(m: Metrics, at: number) {
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < m.centers.length; i++) {
+      const dist = Math.abs(wrap(m.centers[i] - at, m.loop));
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  private snapPoint(m: Metrics, at: number) {
+    return at + wrap(m.centers[this.nearest(m, at)] - at, m.loop);
   }
 
   /**
-   * Mapeo LINEAL por foto: el progreso se reparte en N-1 tramos iguales y cada tramo recorre la
-   * distancia entre dos centros. Así cada foto queda centrada exactamente en p = i/(N-1), que es
-   * lo que asume el imán, aunque los anchos llegaran a ser distintos.
+   * Cambio de geometría (resize, o una portada natural que llega con otra proporción): se
+   * mantiene la tarjeta que había en el centro y el desplazamiento proporcional dentro de ella.
    */
-  private posAt(m: Metrics, p: number) {
-    if (this.n < 2) return m.centers[0];
-    const f = clamp01(p) * (this.n - 1);
-    const i = Math.min(this.n - 2, Math.floor(f));
-    return m.centers[i] + (f - i) * (m.centers[i + 1] - m.centers[i]);
+  private remap(from: Metrics, to: Metrics, at: number) {
+    const i = this.nearest(from, at);
+    const offset = wrap(at - from.centers[i], from.loop);
+    const cycles = Math.round((at - offset - from.centers[i]) / from.loop);
+    return cycles * to.loop + to.centers[i] + offset * (to.widths[i] / from.widths[i]);
+  }
+
+  private step(m: Metrics, delta: number) {
+    let at = this.snapPoint(m, this.goal);
+    let index = this.nearest(m, at);
+    for (let k = 0; k < Math.abs(delta); k++) {
+      const next = (index + (delta > 0 ? 1 : this.n - 1)) % this.n;
+      at +=
+        delta > 0
+          ? m.widths[index] / 2 + this.o.gap + m.widths[next] / 2
+          : -(m.widths[next] / 2 + this.o.gap + m.widths[index] / 2);
+      index = next;
+    }
+    this.goal = at;
+    this.mode = "spring";
+    this.pending = -1;
+    this.wake();
+  }
+
+  private goTo(m: Metrics, index: number) {
+    const i = ((index % this.n) + this.n) % this.n;
+    this.goal += wrap(m.centers[i] - this.goal, m.loop);
+    this.mode = "spring";
+    this.pending = -1;
+    this.wake();
   }
 
   private introEffects(): IntroFx {
@@ -403,32 +662,34 @@ export class FlexCarousel {
     const { lens } = this.o;
     const homeX = width / 2;
     const homeY = height / 2;
-    const shrink = 1 - this.o.squeeze * this.energy;
+    const shrink = 1 - clamp01(this.o.squeeze) * this.energy;
     const hidden = this.projectIndex; // la tapa el marco del proyecto
     const draws: { i: number; rel: number; x: number; y: number; cw: number; ch: number; alpha: number }[] = [];
 
     for (let i = 0; i < this.n; i++) {
       if (i === hidden) continue;
       const w = m.widths[i];
-      const rel = m.centers[i] - this.pos;
-      if (Math.abs(rel) - w / 2 > width + 40) continue;
-      const fx = effects.card ? effects.card(rel) : null;
-      // El encogido por velocidad escala también la distancia al centro, no solo la tarjeta:
-      // si no, con GAP = 0 se abrirían huecos entre fotos al correr.
-      let x = homeX + rel * shrink + (fx ? fx.x : 0);
-      const scale = shrink * (fx ? fx.scale : 1);
-      let alpha = fx ? fx.alpha : 1;
-      if (focusEase > 0 && i !== this.projectIndex) {
-        // Separación al entrar en un proyecto: las demás se apartan hacia su lado y se apagan,
-        // las más cercanas primero.
-        const order = Math.min(Math.abs(rel) / width, 1) * 0.25;
-        const part = easeInOut(clamp01(this.focus.t) * 1.25 - order);
-        x += Math.sign(rel) * part * width * 0.7;
-        alpha *= 1 - part;
+      const baseRel = wrap(m.centers[i] - this.pos, m.loop);
+      // Bucle: la misma tarjeta puede verse más de una vez si la vuelta es más corta que la pantalla.
+      for (let k = -3; k <= 3; k++) {
+        const rel = baseRel + k * m.loop;
+        if (Math.abs(rel) - w / 2 > width + 40) continue;
+        const fx = effects.card ? effects.card(rel) : null;
+        let x = homeX + rel + (fx ? fx.x : 0);
+        const scale = shrink * (fx ? fx.scale : 1);
+        let alpha = fx ? fx.alpha : 1;
+        if (focusEase > 0) {
+          // Separación al entrar en un proyecto: las demás se apartan hacia su lado y se apagan,
+          // las más cercanas primero.
+          const order = Math.min(Math.abs(rel) / width, 1) * 0.25;
+          const part = easeInOut(clamp01(this.focus.t) * 1.25 - order);
+          x += Math.sign(rel) * part * width * 0.7;
+          alpha *= 1 - part;
+        }
+        const cw = w * scale;
+        if (alpha <= 0.001 || x + cw / 2 < -40 || x - cw / 2 > width + 40) continue;
+        draws.push({ i, rel, x, y: homeY + (fx ? fx.y : 0), cw, ch: m.cardH * scale, alpha });
       }
-      const cw = w * scale;
-      if (alpha <= 0.001 || x + cw / 2 < -40 || x - cw / 2 > width + 40) continue;
-      draws.push({ i, rel, x, y: homeY + (fx ? fx.y : 0), cw, ch: m.cardH * scale, alpha });
     }
     // De lejos a cerca: la del centro se pinta la última, encima de todo.
     draws.sort((a, b) => Math.abs(b.rel) - Math.abs(a.rel));
@@ -487,8 +748,9 @@ export class FlexCarousel {
     gl.uniform1f(lu.uFlow, lens.bend * (halfW + halfH) * 0.45);
     gl.uniform1f(lu.uCurl, lens.curl);
     gl.uniform1f(lu.uDispersion, lens.dispersion * 0.12 * (1 + Math.abs(this.deform) * liquid * 1.2));
-    // La lente se endereza al entrar en un proyecto: el marco crece desde una tarjeta plana.
-    gl.uniform1f(lu.uStrength, effects.strength * (1 - focusEase));
+    // La lente se endereza al entrar en un proyecto (el marco crece desde una tarjeta plana) y
+    // no existe si está apagada (móvil).
+    gl.uniform1f(lu.uStrength, effects.strength * (1 - focusEase) * easeInOut(this.lensT));
     gl.uniform1f(lu.uSceneAlpha, effects.sceneAlpha);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
@@ -500,12 +762,26 @@ export class FlexCarousel {
     const dt = Math.min(0.05, Math.max(0.001, (now - this.last) / 1000));
     this.last = now;
     const m = this.metrics();
-    const { intro, focus, o } = this;
+    const { intro, focus, o, pointer } = this;
     let animating = false;
 
-    if (!intro.running && !intro.done && this.started) {
-      intro.kind = o.reduced ? "fade" : "rise";
-      intro.running = true;
+    // Geometría nueva: la cinta se recoloca sobre la misma tarjeta (ver remap).
+    if (this.layout && this.layout.loop !== m.loop) {
+      this.pos = this.remap(this.layout, m, this.pos);
+      this.goal = this.remap(this.layout, m, this.goal);
+      pointer.startPos = this.pos;
+      animating = true;
+    }
+    this.layout = m;
+
+    if (intro.requested && !intro.running && !intro.done) {
+      const settled = this.slots.every((s) => s.loaded);
+      if (settled || now - intro.requestedAt > INTRO_WAIT_MS) {
+        this.goal = this.snapPoint(m, this.goal);
+        this.pos = this.goal;
+        intro.kind = o.reduced ? "fade" : "rise";
+        intro.running = true;
+      } else animating = true; // seguir mirando hasta que lleguen
     }
     if (intro.running) {
       intro.t = Math.min(1, intro.t + dt / INTRO_S[intro.kind]);
@@ -517,20 +793,58 @@ export class FlexCarousel {
       animating = true;
     }
 
-    this.pos = this.posAt(m, this.lastP);
-    if (this.lastPos === null) this.lastPos = this.pos;
-    // "Energía": velocidad de la cinta suavizada. Encoge un poco las tarjetas mientras corre,
-    // que es lo que da la sensación de materia elástica del original.
-    const vel = (this.pos - this.lastPos) / dt;
-    const travel = Math.abs(vel);
+    // La rueda lateral se deja llevar y, 150 ms después del último evento, encaja.
+    if (this.mode === "wheel" && now - this.wheelAt > 150) {
+      this.goal = this.snapPoint(m, this.goal);
+      this.mode = "spring";
+    }
+    if (!pointer.dragging && this.projectIndex < 0) {
+      // Muelle críticamente amortiguado, integrado en pasos de 1/240 s: estable a cualquier fps.
+      const stiffness = this.mode === "wheel" ? 80 : 55;
+      const damping = 2 * Math.sqrt(stiffness);
+      const steps = Math.ceil(dt / (1 / 240));
+      const h = dt / steps;
+      for (let i = 0; i < steps; i++) {
+        const acc = stiffness * (this.goal - this.pos) - damping * this.vel;
+        this.vel += acc * h;
+        this.pos += this.vel * h;
+      }
+      if (Math.abs(this.goal - this.pos) < 0.05 && Math.abs(this.vel) < 0.5) {
+        this.pos = this.goal;
+        this.vel = 0;
+      } else animating = true;
+    } else if (pointer.dragging) animating = true;
+
+    // Sin derivas numéricas: a varias vueltas del origen, se recoloca todo una vuelta exacta.
+    if (Math.abs(this.pos) > m.loop * 8) {
+      const shift = Math.round(this.pos / m.loop) * m.loop;
+      this.pos -= shift;
+      this.goal -= shift;
+      pointer.startPos -= shift;
+    }
+
+    const idx = this.projectIndex >= 0 ? this.projectIndex : this.nearest(m, this.pos);
+    if (idx !== this.active) {
+      this.active = idx;
+      o.onActive(idx);
+    }
+
+    // La lateral pulsada ya ha llegado al centro: se abre.
+    if (this.pending >= 0 && this.mode === "spring" && Math.abs(this.goal - this.pos) < 1.5 && Math.abs(this.vel) < 30) {
+      const p = this.pending;
+      this.pending = -1;
+      if (idx === p) o.onSelect(p);
+    }
+
+    // "Energía": velocidad de la cinta suavizada. Encoge un poco las tarjetas mientras corre.
+    const travel = Math.abs(this.pos - this.lastPos) / dt;
     this.lastPos = this.pos;
     const target = o.reduced ? 0 : Math.min(travel / 2600, 1);
     this.energy += (target - this.energy) * (1 - Math.exp(-dt / (target > this.energy ? 0.07 : 0.35)));
     if (this.energy > 0.001) animating = true;
     else this.energy = 0;
-    // Deformación "liquid": muelle subamortiguado hacia la velocidad con signo, así la lente
-    // rebota un poco al parar en vez de volver en seco.
-    const push = Math.max(-1, Math.min(1, vel / 2200));
+    // Deformación "liquid": muelle subamortiguado hacia la velocidad con signo.
+    const push = Math.max(-1, Math.min(1, this.vel / 2200));
     const dk = 120;
     this.deformVel += (dk * (push - this.deform) - 2 * Math.sqrt(dk) * 0.32 * this.deformVel) * dt;
     this.deform += this.deformVel * dt;
@@ -538,12 +852,6 @@ export class FlexCarousel {
     else {
       this.deform = 0;
       this.deformVel = 0;
-    }
-
-    const idx = this.projectIndex >= 0 ? this.projectIndex : this.n < 2 ? 0 : Math.round(this.lastP * (this.n - 1));
-    if (idx !== this.active) {
-      this.active = idx;
-      o.onActive(idx);
     }
 
     const k = 64;
@@ -555,8 +863,15 @@ export class FlexCarousel {
     } else animating = true;
     const focusEase = o.reduced ? focus.target : easeInOut(clamp01(focus.t));
 
+    // Lente: entra y sale en 0,4 s al cambiar de dispositivo (girar la tableta, redimensionar).
+    const lensGoal = this.lensOn ? 1 : 0;
+    if (this.lensT !== lensGoal) {
+      this.lensT = lensGoal > this.lensT ? Math.min(1, this.lensT + dt / 0.4) : Math.max(0, this.lensT - dt / 0.4);
+      animating = true;
+    }
+
     for (const s of this.slots) {
-      if (s.loaded && s.ready < 1) {
+      if (s.loaded && s.ready < 1 && s.image[0] > 1) {
         s.ready = Math.min(1, s.ready + dt / 0.45);
         animating = true;
       }
@@ -566,7 +881,7 @@ export class FlexCarousel {
       this.dirty = false;
       this.draw(m, focusEase, this.introEffects());
     }
-    if (this.visible && animating) this.raf = requestAnimationFrame(this.frame);
+    if (this.visible && (animating || pointer.down)) this.raf = requestAnimationFrame(this.frame);
   };
 
   private wake() {

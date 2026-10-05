@@ -1,13 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { useCriticalAssets } from "@/core/lifecycle/BlockSlot";
-import { scrollController } from "@/core/scroll/controller";
+import { useCriticalAssets, useReleaseHold } from "@/core/lifecycle/BlockSlot";
 import { useLifecycle } from "@/core/lifecycle/store";
-import { ScrollGate } from "@/core/scroll/ScrollGate";
-import { ScrollScene, useScene } from "@/core/scroll/ScrollScene";
-import { useScrollMagnet } from "@/core/scroll/useScrollMagnet";
-import { clamp01, pad2 } from "@/lib/easing";
+import { scrollController } from "@/core/scroll/controller";
+import { pad2 } from "@/lib/easing";
 import { FlexCarousel } from "@/lib/webgl/flex-carousel/FlexCarousel";
 import type { ReelProps } from "./index";
 import { ProjectView } from "./project";
@@ -17,34 +14,26 @@ import { coverOf } from "./slides";
 const PIN_OWNER = "reel:project";
 const DIGITS = Array.from({ length: 10 }, (_, n) => n);
 /**
- * Llegada a la sección: cuando al escenario le queda menos de esta fracción de pantalla para
- * clavarse, entra el título; RISE_DELAY ms después, las tarjetas suben (el "rise" de React Bits).
- * La pausa es a propósito: primero se llega a la sección y luego aparece el material.
+ * Llegada a la sección: cuando su borde superior está a esta fracción de pantalla del techo,
+ * entra el título; RISE_DELAY ms después, las tarjetas suben (el "rise" de React Bits). La pausa
+ * es a propósito: primero se llega a la sección y luego aparece el material.
  */
 const ARRIVE_AT = 0.15;
 const RISE_DELAY = 550;
-
-export function Reel({ anchor, height, warmAt, gate, ...stage }: ReelProps) {
-  return (
-    <ScrollScene anchor={anchor} height={height} warmAt={warmAt} className="bg-ink">
-      <ReelStage {...stage} />
-      {gate && <ScrollGate {...gate} />}
-    </ScrollScene>
-  );
-}
-
-type StageProps = Omit<ReelProps, "anchor" | "height" | "warmAt" | "gate">;
+/** Lente de los bordes: solo con ratón o trackpad (ordenador), no en táctil. */
+const LENS_QUERY = "(hover: hover) and (pointer: fine)";
 
 /**
  * Monta el motor WebGL (FlexCarousel) y la vista de proyecto (ProjectView) y los conecta con el
- * núcleo: progreso de la escena → cinta, imán, pin de la página con un proyecto abierto, y la
- * intro esperando a 'ready'. No re-renderiza nunca: todo lo que cambia va por refs.
+ * núcleo: llegada → título y rise, pin de la página con un proyecto abierto, y el hold de los
+ * bloques de debajo. No re-renderiza nunca: todo lo que cambia va por refs.
  */
-function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
-  const scene = useScene();
+export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeeze }: ReelProps) {
   const provide = useCriticalAssets();
+  const releaseHold = useReleaseHold();
   const n = slides.length;
 
+  const sectionRef = useRef<HTMLElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const digitRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -80,37 +69,44 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
     [slides, labels.of, n],
   );
 
-  useScrollMagnet({ count: () => n, enabled: () => !viewRef.current?.isOpen });
-
   useEffect(() => {
     const root = rootRef.current!;
     const host = hostRef.current!;
     const close = closeRef.current!;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // La vista de proyecto se crea después que el motor (lo necesita), pero el motor ya avisa
+    // de las selecciones: se le pasa por esta referencia.
+    let select: (i: number) => void = () => {};
     const carousel = FlexCarousel.create(host, {
       covers: slides.map(coverOf),
       lens,
       liquid,
       squeeze,
+      gap,
+      aspect,
+      fallbackAspect: 16 / 9,
       reduced,
       readCardFrac: () => parseFloat(getComputedStyle(root).getPropertyValue("--reel-card")),
       onActive: setCaption,
+      onSelect: (i) => select(i),
       onRevealed: () => root.classList.add(styles.revealed),
     });
 
     if (!carousel) {
-      // Sin WebGL2 no hay carrete, pero la escena (y la puerta) tienen que seguir funcionando:
-      // el pie de foto sigue al scroll y no hay nada que esperar.
+      // Sin WebGL2 no hay carrete: queda el título y el pie de la primera, y no se retiene a
+      // nadie de debajo.
       console.warn("[carrete] WebGL2 no disponible");
-      root.classList.add(styles.revealed);
-      provide([]);
-      let last = -1;
-      return scene.subscribe((p) => {
-        const i = Math.round(clamp01(p) * (n - 1));
-        if (i !== last) setCaption((last = i));
-      });
+      root.classList.add(styles.arrived, styles.revealed);
+      setCaption(0);
+      releaseHold();
+      return;
     }
+
+    const lensMq = matchMedia(LENS_QUERY);
+    const syncLens = () => carousel.setLens(lensMq.matches);
+    syncLens();
+    lensMq.addEventListener("change", syncLens);
 
     provide(carousel.loads);
 
@@ -140,45 +136,45 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
       {
         slides,
         reduced,
-        // Con un proyecto abierto la página se clava: el scroll ya no pilota la cinta. La rueda
-        // pasa a ser scrub del vídeo (y con foto no hace nada, pero no mueve la página).
+        // Con un proyecto abierto la página se clava y la rueda pasa a ser scrub del vídeo (con
+        // foto no hace nada, pero no mueve la página).
         onOpen: () => {
           scrollController.pin(PIN_OWNER);
           releaseInput = scrollController.captureInput((_delta, e) => view.onInput(e));
         },
-        // Al salir, la página vuelve al punto que deja centrada la foto vista, en vez de
-        // recolocar la cinta: la página es el motor.
-        onClose: (i) => {
+        // La tarjeta vista sigue en el centro: solo hay que soltar la página.
+        onClose: () => {
           releaseInput?.();
           releaseInput = null;
           scrollController.unpin(PIN_OWNER);
-          scrollController.scrollTo(scene.yAt(n > 1 ? i / (n - 1) : 0), "instant");
-          carousel.applyProgress(scene.progress());
         },
       },
     );
     viewRef.current = view;
-
-    // Motor único: el avance de la escena ES la posición de la cinta.
-    const offProgress = scene.subscribe((p) => carousel.applyProgress(p));
+    select = (i) => view.enter(i);
 
     // Llegada: una sola vez. El título entra ya; las tarjetas, tras la pausa. La intro corre con
     // su propio reloj (no la pilota el scroll), así que se ve entera aunque se siga bajando.
     let riseTimer = 0;
     let arrived = false;
     const checkArrival = () => {
-      if (arrived || !useLifecycle.getState().ready) return;
-      if (scene.top() - window.scrollY > window.innerHeight * ARRIVE_AT) return;
+      const section = sectionRef.current;
+      if (arrived || !section || !useLifecycle.getState().ready) return;
+      if (section.getBoundingClientRect().top > window.innerHeight * ARRIVE_AT) return;
       arrived = true;
       root.classList.add(styles.arrived);
       riseTimer = window.setTimeout(() => carousel.start(), RISE_DELAY);
+      // Ya estamos aquí: lo de debajo (three.js de "Lo que uso") puede empezar a cargar.
+      releaseHold();
     };
     checkArrival();
     const offIntro = scrollController.subscribe(checkArrival);
 
+    // Cursor: "open" sobre la del centro, "seek" sobre una lateral. El arrastre lo marca el motor
+    // con data-dragging (y el CSS pone la mano cerrada).
     let hover = "";
     const onPointerMove = (e: PointerEvent) => {
-      const hit = carousel.hitTest(e.clientX, e.clientY);
+      const hit = host.hasAttribute("data-dragging") ? null : carousel.hitTest(e.clientX, e.clientY);
       const next = hit ? (hit.index === carousel.activeIndex ? "open" : "seek") : "";
       if (next === hover) return;
       hover = next;
@@ -189,28 +185,6 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
       hover = "";
       host.removeAttribute("data-hover");
     };
-    let downX = 0;
-    let downY = 0;
-    const onPointerDown = (e: PointerEvent) => {
-      downX = e.clientX;
-      downY = e.clientY;
-    };
-    const onPointerUp = (e: PointerEvent) => {
-      if (Math.hypot(e.clientX - downX, e.clientY - downY) > 4) return; // un gesto, no un clic
-      const hit = carousel.hitTest(e.clientX, e.clientY);
-      if (!hit) return;
-      // La del centro abre su proyecto; cualquier otra lleva la PÁGINA hasta ella (mover la
-      // cinta directamente la desincronizaría del scroll).
-      if (hit.index === carousel.activeIndex) view.enter(hit.index);
-      else scene.seek(n > 1 ? hit.index / (n - 1) : 0);
-    };
-    const onHostKey = (e: KeyboardEvent) => {
-      if (view.isOpen || !carousel.introDone) return;
-      if (e.key === "Enter" || e.key === " ") {
-        view.enter(Math.max(carousel.activeIndex, 0));
-        e.preventDefault();
-      }
-    };
     const onDocKey = (e: KeyboardEvent) => {
       if (view.isOpen && e.key === "Escape") view.exit();
     };
@@ -219,9 +193,6 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
 
     host.addEventListener("pointermove", onPointerMove);
     host.addEventListener("pointerleave", onPointerLeave);
-    host.addEventListener("pointerdown", onPointerDown);
-    host.addEventListener("pointerup", onPointerUp);
-    host.addEventListener("keydown", onHostKey);
     document.addEventListener("keydown", onDocKey);
     window.addEventListener("resize", onResize);
     close.addEventListener("click", onClose);
@@ -229,13 +200,10 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
     return () => {
       host.removeEventListener("pointermove", onPointerMove);
       host.removeEventListener("pointerleave", onPointerLeave);
-      host.removeEventListener("pointerdown", onPointerDown);
-      host.removeEventListener("pointerup", onPointerUp);
-      host.removeEventListener("keydown", onHostKey);
+      lensMq.removeEventListener("change", syncLens);
       document.removeEventListener("keydown", onDocKey);
       window.removeEventListener("resize", onResize);
       close.removeEventListener("click", onClose);
-      offProgress();
       offIntro();
       clearTimeout(riseTimer);
       view.destroy();
@@ -245,10 +213,11 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
       carousel.destroy();
       root.classList.remove(styles.revealed, styles.arrived);
     };
-  }, [scene, provide, slides, lens, liquid, squeeze, n, setCaption]);
+  }, [provide, releaseHold, slides, gap, aspect, lens, liquid, squeeze, setCaption]);
 
   return (
-    <div ref={rootRef} className={styles.root}>
+    <section ref={sectionRef} id={anchor} className={styles.section}>
+      <div ref={rootRef} className={styles.root}>
       {/* Dentro del root y no fuera: así se apaga con el resto del HUD al entrar en un proyecto. */}
       <h2 className={styles.title}>{labels.title}</h2>
 
@@ -300,5 +269,6 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
       </section>
       <button ref={closeRef} className={styles.close} type="button" inert aria-label={labels.close} />
     </div>
+    </section>
   );
 }
