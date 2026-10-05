@@ -4,6 +4,8 @@ import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { useCriticalAssets } from "@/core/lifecycle/BlockSlot";
 import { useLifecycle, useReady } from "@/core/lifecycle/store";
+import { ScrollScene, useSceneProgress } from "@/core/scroll/ScrollScene";
+import { clamp01, easeInOut } from "@/lib/easing";
 import { LOGO_F, LOGO_L, LOGO_VIEWBOX } from "@/lib/brand/logo";
 import type { HeroProps } from "./index";
 import styles from "./hero.module.css";
@@ -18,8 +20,23 @@ function bufferedFromStart(v: HTMLVideoElement) {
   return 0;
 }
 
-export function Hero({ studio, name, role, slogan, sloganLang, film, labels }: HeroProps) {
+/**
+ * La primera pantalla es una escena corta: mientras dura, la película se desencaja (encoge y se
+ * ladea un poco, separándose de los bordes) y los créditos se van. Después la escena se suelta y
+ * el plano ya suelto sube mientras llega el carrete.
+ */
+export function Hero({ exit, ...stage }: HeroProps) {
+  return (
+    <ScrollScene height={exit.height} className="bg-ink">
+      <HeroStage {...stage} exit={exit} />
+    </ScrollScene>
+  );
+}
+
+function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit }: HeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const chromeRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<SVGSVGElement>(null);
   const slotRef = useRef<HTMLSpanElement>(null);
   const reduceRef = useRef(false);
@@ -126,6 +143,22 @@ export function Hero({ studio, name, role, slogan, sloganLang, film, labels }: H
     return () => io.disconnect();
   }, []);
 
+  // Salida: el progreso de la escena desencaja el plano. Estilo directo, sin re-render.
+  useSceneProgress((p) => {
+    const frame = frameRef.current;
+    const chrome = chromeRef.current;
+    if (!frame || !chrome) return;
+    const e = easeInOut(p);
+    if (!reduceRef.current) {
+      frame.style.transform = e > 0 ? `scale(${(1 - (1 - exit.scale) * e).toFixed(4)}) rotate(${(exit.tilt * e).toFixed(3)}deg)` : "";
+    }
+    // Los créditos se van en la primera mitad: el plano suelto se queda solo.
+    const c = clamp01(e * 1.8);
+    chrome.style.opacity = c > 0 ? String(1 - c) : "";
+    chrome.style.transform = c > 0 && !reduceRef.current ? `translateY(${(-c * 4).toFixed(2)}vh)` : "";
+    chrome.style.visibility = c >= 1 ? "hidden" : "";
+  });
+
   // El estado de los botones sale del propio vídeo, no de lo que se pidió.
   useEffect(() => {
     const v = videoRef.current;
@@ -157,7 +190,8 @@ export function Hero({ studio, name, role, slogan, sloganLang, film, labels }: H
   const words = name.split(/\s+/);
 
   return (
-    <section className={styles.hero} data-ready={ready || undefined}>
+    <div className={styles.hero} data-ready={ready || undefined}>
+      <div ref={frameRef} className={styles.frame}>
       <video
         ref={videoRef}
         className={styles.film}
@@ -172,11 +206,14 @@ export function Hero({ studio, name, role, slogan, sloganLang, film, labels }: H
           <source key={s.src} src={s.src} media={s.media} type="video/mp4" />
         ))}
       </video>
-      <div className={styles.scrim} aria-hidden="true" />
+        <div className={styles.scrim} aria-hidden="true" />
+      </div>
 
       {/* Hueco invisible con la geometría de la marca del loader: el punto de partida del vuelo. */}
       <span ref={slotRef} className="brand-mark" aria-hidden="true" />
 
+      {/* Créditos y controles: se van juntos al desencajarse el plano. */}
+      <div ref={chromeRef} className={styles.chrome}>
       <header className={styles.top}>
         <div className={styles.lockup}>
           <svg ref={markRef} className={styles.mark} viewBox={LOGO_VIEWBOX} aria-hidden="true">
@@ -222,6 +259,7 @@ export function Hero({ studio, name, role, slogan, sloganLang, film, labels }: H
           {slogan}
         </p>
       </div>
-    </section>
+      </div>
+    </div>
   );
 }

@@ -2,17 +2,19 @@
 version: 1
 slug: "content-pages-home-ts"
 primary_target: "content/pages/home.ts"
-related_targets: ["blocks/hero/Hero.tsx","blocks/loader/PageLoader.tsx","blocks/reel/Reel.tsx","blocks/gear/GearStage.tsx"]
+related_targets: ["blocks/hero/Hero.tsx","blocks/loader/PageLoader.tsx","blocks/reel/Reel.tsx","blocks/gear/GearStage.tsx","blocks/contact/Contact.tsx"]
 ---
 
-# Home: loader → hero → projects → what I use
+# Home: loader → hero → projects → what I use → contact
 
 Scope: the home route. Sections: loader, hero, projects carousel (12 real films, full playback from local transcodes), "Lo que uso" (3 gear models, names only). Visitor mode: **Experience**: the film leads from the first viewport.
 Audience and job: see PRODUCT.md. Constraints: static export, local media for v1 (Vimeo later), ES/EN/CA later via content files.
-Unresolved: contact email, social URLs, real film titles (captions are provisional, from file names), real gear list, the close of the page (contact/footer), locale routing.
+Unresolved: contact email, social URLs, real film titles (captions are provisional, from file names), real gear list, locale routing.
 
 Sections after the first viewport:
-- **Projects:** the WebGL strip. Its entry is scroll-driven along the last 70% of the stage's arrival: each card rides a cubic arc from below-right into its slot, banking with the tangent, and the lens forms at the end. "PROYECTOS" title top-left; ember 1px tick and caption fade in at the end of the arc. No gate: plain scroll into the next section.
+- **Hero exit:** the hero is a short pinned scene (165vh). On scroll, the film frame comes unseated: it scales to 0.84 and tilts -1.5deg, while the credits and controls leave in the first half. Then the scene releases.
+- **Projects:** the WebGL strip. On arrival (the stage within 15% of pinning), the "PROYECTOS" title enters first. After a 550ms pause the cards play React Bits' time-based "rise" (fanning up from the centre, the lens forming as they land). The ember 1px tick and the caption appear when the rise ends. No gate: plain scroll into the next section.
+- **Contact (close):** full-viewport ink section. A giant outline logo (1px, paper 16%) is cropped at the right; on entry its F drops and its L rises, as in the loader. The title HABLEMOS DE TU PRÓXIMO RODAJE uses the same word-mask reveal as the hero name. The email is a large light link whose underline fills with ember; Instagram/Vimeo are small tracked links. Links are inert until real data exists. The footer repeats the mark+studio lockup, the legal line and the slogan.
 - **Lo que uso:** a pinned scene, one viewport per object. The object fills the stage and turns with the scroll. When the next one comes in, the outgoing object rises and fades while the incoming one rises from below. The name list at bottom-left is the index (clickable) and the progress (ember 1px fill).
 
 ## Direction contract

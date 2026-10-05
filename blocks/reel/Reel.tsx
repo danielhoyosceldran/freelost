@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useCriticalAssets } from "@/core/lifecycle/BlockSlot";
 import { scrollController } from "@/core/scroll/controller";
+import { useLifecycle } from "@/core/lifecycle/store";
 import { ScrollGate } from "@/core/scroll/ScrollGate";
 import { ScrollScene, useScene } from "@/core/scroll/ScrollScene";
 import { useScrollMagnet } from "@/core/scroll/useScrollMagnet";
@@ -16,10 +17,12 @@ import { coverOf } from "./slides";
 const PIN_OWNER = "reel:project";
 const DIGITS = Array.from({ length: 10 }, (_, n) => n);
 /**
- * La entrada de las tarjetas ocupa el último tramo de la llegada del escenario: empieza cuando
- * su borde superior está a esta fracción de pantalla del techo y termina justo al clavarse.
+ * Llegada a la sección: cuando al escenario le queda menos de esta fracción de pantalla para
+ * clavarse, entra el título; RISE_DELAY ms después, las tarjetas suben (el "rise" de React Bits).
+ * La pausa es a propósito: primero se llega a la sección y luego aparece el material.
  */
-const INTRO_LEAD = 0.7;
+const ARRIVE_AT = 0.15;
+const RISE_DELAY = 550;
 
 export function Reel({ anchor, height, warmAt, gate, ...stage }: ReelProps) {
   return (
@@ -93,6 +96,7 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
       reduced,
       readCardFrac: () => parseFloat(getComputedStyle(root).getPropertyValue("--reel-card")),
       onActive: setCaption,
+      onRevealed: () => root.classList.add(styles.revealed),
     });
 
     if (!carousel) {
@@ -158,17 +162,19 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
     // Motor único: el avance de la escena ES la posición de la cinta.
     const offProgress = scene.subscribe((p) => carousel.applyProgress(p));
 
-    // Entrada por la curva, pilotada por el scroll de llegada (antes de que la escena empiece a
-    // contar). --intro deja que el CSS encienda el pie de foto y el título al final del viaje.
-    const applyIntro = () => {
-      const lead = window.innerHeight * INTRO_LEAD;
-      const t = clamp01((window.scrollY - (scene.top() - lead)) / lead);
-      carousel.applyIntro(t);
-      root.style.setProperty("--intro", t.toFixed(3));
-      root.classList.toggle(styles.revealed, t >= 1);
+    // Llegada: una sola vez. El título entra ya; las tarjetas, tras la pausa. La intro corre con
+    // su propio reloj (no la pilota el scroll), así que se ve entera aunque se siga bajando.
+    let riseTimer = 0;
+    let arrived = false;
+    const checkArrival = () => {
+      if (arrived || !useLifecycle.getState().ready) return;
+      if (scene.top() - window.scrollY > window.innerHeight * ARRIVE_AT) return;
+      arrived = true;
+      root.classList.add(styles.arrived);
+      riseTimer = window.setTimeout(() => carousel.start(), RISE_DELAY);
     };
-    applyIntro();
-    const offIntro = scrollController.subscribe(applyIntro);
+    checkArrival();
+    const offIntro = scrollController.subscribe(checkArrival);
 
     let hover = "";
     const onPointerMove = (e: PointerEvent) => {
@@ -231,12 +237,13 @@ function ReelStage({ slides, labels, lens, liquid, squeeze }: StageProps) {
       close.removeEventListener("click", onClose);
       offProgress();
       offIntro();
+      clearTimeout(riseTimer);
       view.destroy();
       releaseInput?.();
       scrollController.unpin(PIN_OWNER);
       viewRef.current = null;
       carousel.destroy();
-      root.classList.remove(styles.revealed);
+      root.classList.remove(styles.revealed, styles.arrived);
     };
   }, [scene, provide, slides, lens, liquid, squeeze, n, setCaption]);
 

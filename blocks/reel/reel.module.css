@@ -10,9 +10,6 @@
 .root {
   --reel-card: 0.6;
   --reel-band-h: calc(var(--reel-card) * 100%);
-  /* Entrada (0..1), la escribe el JS desde el scroll. El HUD se enciende en el último tramo. */
-  --intro: 0;
-  --reel-hud: clamp(0, calc((var(--intro) - 0.72) * 3.6), 1);
   --reel-marker-h: 12px;
   --reel-split-ease: 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
   --reel-grow-ease: 0.6s cubic-bezier(0.65, 0, 0.35, 1);
@@ -34,8 +31,8 @@
   cursor: progress;
 }
 
-/* Título de la sección, arriba a la izquierda como los créditos del hero. Entra con el final del
-   viaje de las tarjetas, desde debajo de su línea. */
+/* Título de la sección, arriba a la izquierda como los créditos del hero. Es lo primero que
+   aparece al llegar (.arrived); las tarjetas suben después. */
 .title {
   position: absolute;
   top: var(--gutter);
@@ -48,9 +45,15 @@
   letter-spacing: -0.012em;
   text-transform: uppercase;
   pointer-events: none;
-  opacity: var(--reel-hud);
-  translate: 0 calc((1 - var(--reel-hud)) * 14px);
-  transition: opacity 0.2s ease;
+  opacity: 0;
+  translate: 0 14px;
+  transition:
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    translate 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.arrived .title {
+  opacity: 1;
+  translate: 0 0;
 }
 
 .marker {
@@ -63,8 +66,11 @@
   background: var(--color-ember);
   z-index: 15;
   pointer-events: none;
-  opacity: var(--reel-hud);
-  transition: opacity 0.2s ease;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.revealed .marker {
+  opacity: 1;
 }
 
 /* El lienzo ocupa todo el escenario: la lente curva las fotos hacia arriba y hacia abajo en los
@@ -109,11 +115,14 @@
   text-align: center;
   z-index: 12;
   pointer-events: none;
-  opacity: var(--reel-hud);
-  transition: opacity 0.2s ease;
+  opacity: 0;
+  transition: opacity 0.9s ease;
 }
-/* Clase de fase: el JS la pone con la entrada completa (el CSS module solo exporta nombres con
-   declaraciones). Hasta entonces las tarjetas no responden al puntero. */
+/* Fases que pone el JS: arrived al llegar a la sección, revealed al acabar el rise (el CSS module
+   solo exporta nombres con declaraciones). Hasta entonces las tarjetas no responden al puntero. */
+.revealed .caption {
+  opacity: 1;
+}
 .revealed .flex {
   pointer-events: auto;
 }
@@ -390,6 +399,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .caption,
+  .title,
   .digitReel,
   .media > * {
     transition: none;

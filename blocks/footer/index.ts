@@ -5,7 +5,9 @@ import { Footer } from "./Footer";
 export const footerSchema = z.object({
   brand: z.string(),
   legal: z.string(),
-  links: z.array(z.object({ label: z.string(), href: z.string().default("#") })),
+  slogan: z.string(),
+  /** Idioma del eslogan si no es el de la página. */
+  sloganLang: z.string().optional(),
 });
 
 export type FooterProps = z.output<typeof footerSchema>;

@@ -2,14 +2,32 @@
    como en un cartón de título, y la marca en el centro. */
 
 .hero {
-  position: relative;
-  /* svh y no dvh: con la página haciendo scroll, dvh cambiaría al plegarse la barra del móvil y
-     la película daría un salto. */
-  height: 100svh;
+  /* Ocupa el escenario sticky de su ScrollScene (una pantalla). */
+  position: absolute;
+  inset: 0;
   min-height: 520px;
   overflow: hidden;
   background: var(--color-ink);
   color: var(--color-paper);
+}
+
+/* El plano: lo que encoge y se ladea al salir. El scrim va dentro para que se vaya con él. */
+.frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.chrome {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chrome > * {
+  pointer-events: auto;
 }
 
 .film {

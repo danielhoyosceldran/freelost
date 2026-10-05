@@ -1,19 +1,23 @@
+import { LOGO_F, LOGO_L, LOGO_VIEWBOX } from "@/lib/brand/logo";
 import type { FooterProps } from "./index";
+import styles from "./footer.module.css";
 
-export function Footer({ brand, legal, links }: FooterProps) {
+// La firma: la misma pareja marca + nombre del estudio que abre el hero, el aviso legal y el
+// eslogan, que cierra la página como la abrió.
+export function Footer({ brand, legal, slogan, sloganLang }: FooterProps) {
   return (
-    <footer className="border-t border-white/[0.04] py-8 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs font-sans text-gray-500 pb-32">
-      <div className="flex items-center gap-3">
-        <span className="font-display tracking-widest text-gold-300">{brand}</span>
-        <span>{legal}</span>
+    <footer className={styles.footer}>
+      <div className={styles.lockup}>
+        <svg className={styles.mark} viewBox={LOGO_VIEWBOX} aria-hidden="true">
+          <path d={LOGO_F} />
+          <path d={LOGO_L} />
+        </svg>
+        <span className={styles.brand}>{brand}</span>
       </div>
-      <div className="flex items-center gap-6">
-        {links.map((link) => (
-          <a key={link.label} href={link.href} className="hover:text-gold-200 transition-colors">
-            {link.label}
-          </a>
-        ))}
-      </div>
+      <p className={styles.legal}>{legal}</p>
+      <p className={styles.slogan} lang={sloganLang}>
+        {slogan}
+      </p>
     </footer>
   );
 }

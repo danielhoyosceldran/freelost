@@ -6,6 +6,9 @@ Rediseño del portfolio. La verdad de producto (cliente, marca, público, idioma
 `PRODUCT.md`. Las decisiones visuales se registran en `DESIGN.md` cuando exista. El mockup v4 ya
 no es referencia: se conserva el motor y se sustituye su aspecto.
 
+**`BACKLOG.md` es el backlog de trabajo.** Léelo al empezar. Añade lo que quede pendiente al
+terminar una tarea y marca lo que se cierre.
+
 ## Nunca arrancar el sitio desde Claude
 
 El usuario lo ejecuta (`npm run dev`). Claude no arranca servidores ni abre la página en ningún

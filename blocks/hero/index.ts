@@ -3,7 +3,8 @@ import { defineBlock } from "../types";
 import { Hero } from "./Hero";
 
 // Primera pantalla: la película a sangre, la marca en el centro (en el mismo sitio que la del
-// loader, que se desvanece encima) y los créditos en las esquinas. Es `critical`: el loader
+// loader, que se desvanece encima) y los créditos en las esquinas. Al salir, el plano se
+// desencaja (escena de scroll corta). Es `critical`: el loader
 // espera a que el vídeo tenga búfer suficiente para arrancar sin cortes.
 export const heroSchema = z.object({
   studio: z.string(),
@@ -19,6 +20,17 @@ export const heroSchema = z.object({
     /** En orden: el navegador usa la primera cuyo `media` encaje. */
     sources: z.array(z.object({ src: z.string(), media: z.string().optional() })).min(1),
   }),
+  /**
+   * Salida: la escena dura `height` (una pantalla más el recorrido de salida). Al terminar, el
+   * plano ha encogido a `scale` y está ladeado `tilt` grados: se ha desencajado.
+   */
+  exit: z
+    .object({
+      height: z.string().default("165vh"),
+      scale: z.number().default(0.84),
+      tilt: z.number().default(-1.5),
+    })
+    .prefault({}),
   labels: z.object({
     /** Texto del interruptor de sonido (aria-pressed dice si está activo). */
     sound: z.string(),

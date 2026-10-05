@@ -7,14 +7,10 @@ export const cardVertex = `#version 300 es
 in vec2 position;
 uniform vec4 uRect;
 uniform vec2 uResolution;
-// Giro de la tarjeta sobre su centro (la entrada por la curva). vLocal sigue sin girar: la
-// máscara y el recorte de la foto se calculan en el marco de la propia tarjeta.
-uniform float uAngle;
 out vec2 vLocal;
 void main() {
   vLocal = vec2(position.x, -position.y) * uRect.zw;
-  float c = cos(uAngle), s = sin(uAngle);
-  vec2 px = uRect.xy + mat2(c, s, -s, c) * vLocal;
+  vec2 px = uRect.xy + vLocal;
   gl_Position = vec4(px.x / uResolution.x * 2.0 - 1.0, 1.0 - px.y / uResolution.y * 2.0, 0.0, 1.0);
 }`;
 
