@@ -20,6 +20,8 @@ const DIGITS = Array.from({ length: 10 }, (_, n) => n);
  */
 const ARRIVE_AT = 0.15;
 const RISE_DELAY = 550;
+/** Píxeles que avanza la cinta por cada píxel de scroll mientras el carrete está clavado. */
+const SCROLL_FOLLOW = 0.9;
 /** Lente de los bordes: solo con ratón o trackpad (ordenador), no en táctil. */
 const LENS_QUERY = "(hover: hover) and (pointer: fine)";
 
@@ -168,7 +170,24 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
       releaseHold();
     };
     checkArrival();
-    const offIntro = scrollController.subscribe(checkArrival);
+    // Mientras el carrete está clavado, el scroll de la página también mueve la cinta (el
+    // arrastre sigue funcionando). Se suman los deltas de scrollY solo con la sección clavada; sin
+    // movimiento reducido, que no ata el carrete al scroll.
+    let lastY = window.scrollY;
+    const followScroll = () => {
+      const y = window.scrollY;
+      const dy = y - lastY;
+      lastY = y;
+      const section = sectionRef.current;
+      if (reduced || !section) return;
+      const r = section.getBoundingClientRect();
+      // Clavado = el techo de la sección ya pasó y su pie aún no ha subido de la pantalla.
+      if (r.top <= 0 && r.bottom >= window.innerHeight) carousel.nudge(dy * SCROLL_FOLLOW);
+    };
+    const offIntro = scrollController.subscribe(() => {
+      checkArrival();
+      followScroll();
+    });
 
     // Cursor: "open" sobre la del centro, "seek" sobre una lateral. El arrastre lo marca el motor
     // con data-dragging (y el CSS pone la mano cerrada).
@@ -185,6 +204,7 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
       hover = "";
       host.removeAttribute("data-hover");
     };
+
     const onDocKey = (e: KeyboardEvent) => {
       if (view.isOpen && e.key === "Escape") view.exit();
     };

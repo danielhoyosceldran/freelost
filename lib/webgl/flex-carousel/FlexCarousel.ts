@@ -268,6 +268,19 @@ export class FlexCarousel {
     this.wake();
   }
 
+  /**
+   * Mueve la cinta `px` píxeles (el scroll de la página mientras el carrete está clavado). Entra
+   * por el mismo camino que la rueda lateral: se deja llevar y, al parar, encaja en una tarjeta.
+   */
+  nudge(px: number) {
+    if (this.locked || this.pointer.dragging || px === 0) return;
+    this.goal += px;
+    this.mode = "wheel";
+    this.wheelAt = performance.now();
+    this.pending = -1;
+    this.wake();
+  }
+
   /** Tarjeta tapada por el marco de un proyecto (-1 = ninguna). Congela el carrete. */
   setProject(index: number) {
     this.projectIndex = index;

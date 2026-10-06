@@ -182,37 +182,47 @@ body {
 .pl-blade { position: absolute; inset: 0; }
 .pl-blade svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
+/* Sin borde: el trazo se lee solo por su fondo translúcido, que luego rellena el acento. */
 .pl-outline {
-  fill: rgb(238 241 240 / 0.05);
-  stroke: rgb(238 241 240 / 0.6);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
+  fill: rgb(238 241 240 / 0.09);
+  stroke: none;
 }
 
-/* Entrada: cada trazo recorre su camino vertical por la costura, se pasa un pelo y encaja. */
+/* Entrada: cada trazo recorre su camino vertical por la costura, se pasa y encaja. */
 .pl-blade-f { animation: pl-drop 1.3s 0.2s both; }
 .pl-blade-l { animation: pl-rise 1.3s 0.2s both; }
-.pl-blade .pl-outline { animation: pl-lock 0.7s ease-out 1.42s both; }
+/* El clic llega cuando los trazos se asientan (0.2s + 1.3s): sin borde que encender, el golpe lo
+   dan el destello del fondo y un pulso de escala de la marca entera. */
+.pl-blade .pl-outline { animation: pl-lock 0.6s cubic-bezier(0.23, 1, 0.32, 1) 1.45s both; }
+.pl-mark { animation: pl-hit 0.5s cubic-bezier(0.23, 1, 0.32, 1) 1.45s both; }
 
+/* Sobrepaso del 3.5% (antes 1.6%): las dos mitades se cruzan de forma visible antes de encajar. */
 @keyframes pl-drop {
   0% { transform: translateY(-100vh); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-  80% { transform: translateY(1.6%); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  78% { transform: translateY(3.5%); animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1); }
   100% { transform: translateY(0); }
 }
 @keyframes pl-rise {
   0% { transform: translateY(100vh); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-  80% { transform: translateY(-1.6%); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  78% { transform: translateY(-3.5%); animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1); }
   100% { transform: translateY(0); }
 }
-/* El golpe del encaje: el contorno se enciende un instante. */
+/* El fondo se enciende de golpe y se disipa. */
 @keyframes pl-lock {
-  0% { stroke: rgb(238 241 240 / 0.6); }
-  18% { stroke: rgb(238 241 240 / 1); }
-  100% { stroke: rgb(238 241 240 / 0.6); }
+  0% { fill: rgb(238 241 240 / 0.09); }
+  10% { fill: rgb(238 241 240 / 0.55); }
+  100% { fill: rgb(238 241 240 / 0.09); }
+}
+/* Impacto: la marca se hincha un instante y vuelve. Solo transform, la propiedad translate que
+   centra .brand-mark no se toca. */
+@keyframes pl-hit {
+  0% { transform: scale(1); }
+  14% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pl-blade-f, .pl-blade-l, .pl-blade .pl-outline { animation: none; }
+  .pl-blade-f, .pl-blade-l, .pl-blade .pl-outline, .pl-mark { animation: none; }
   .pl-veil { transition: opacity 0.6s ease; }
   #page-loader.is-done .pl-veil-l,
   #page-loader.is-done .pl-veil-r { transform: none; opacity: 0; }

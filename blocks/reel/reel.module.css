@@ -1,17 +1,24 @@
 /* Carrete de proyectos (FlexCarousel de React Bits portado a WebGL2). La mecánica viene del
    CSS aoc- de mockup/v4; el aspecto es el de free lost: tinta, blanco y un solo acento.
 
-   La sección mide una pantalla y la página pasa por encima con su scroll normal: la cinta se
-   mueve arrastrando (la maneja el motor, no el scroll).
+   La sección es una pista de scroll más alta que la pantalla y el carrete va clavado (sticky) en
+   ella: la cinta se mueve arrastrando (la maneja el motor, no el scroll).
 
    --reel-card es la altura de la tarjeta como FRACCIÓN de la altura de la sección (sin
    unidades): el JS la lee para dimensionar las tarjetas y el CSS la usa para colocar la marca y
    el pie, así los dos no pueden desincronizarse. 0,5 es el "card height" del panel de React Bits. */
 .section {
   position: relative;
-  height: 100svh;
-  min-height: 560px;
-  overflow: hidden;
+  /* Pista de scroll: el carrete (.root) se queda clavado en el centro de la pantalla mientras se
+     recorre el exceso, así la llegada de las tarjetas se ve entera aunque se siga bajando.
+     overflow: clip y no hidden: hidden haría de la sección el contenedor de scroll y rompería el
+     sticky. */
+  --reel-gap-after: 45svh;
+  /* El padding inferior es el aire entre este bloque y el siguiente ("equipo"); se suma al alto
+     para que no recorte la pista de scroll (el sticky se limita a la caja de contenido). */
+  height: calc(max(320svh, 1200px) + var(--reel-gap-after));
+  padding-bottom: var(--reel-gap-after);
+  overflow: clip;
   background: var(--color-ink);
 }
 
@@ -27,8 +34,10 @@
   --reel-close-size: 52px;
   --reel-close-inset: 26px;
 
-  position: absolute;
-  inset: 0;
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 560px;
   color: var(--color-paper);
 }
 
