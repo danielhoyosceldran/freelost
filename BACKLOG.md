@@ -70,6 +70,14 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       y palas finas), el coste del raymarching a DPR 2 en portátiles flojos, el encuadre en la caja
       del escenario y en móvil, y si el brillo frío #e6ecf5 encaja con el papel #eef1f0.
 
+- [ ] Velo de trama sobre el equipo (adaptación del DitherVeil de React Bits, en `GearMorph`:
+      pasada `makeDither` + estela `makeMask`, ruido azul en `lib/three/blueNoise.ts`): feel check
+      con `npm run dev`. Configuración del panel de React Bits: celda 1 px, tintas #120f17 /
+      #f4f1ea, contraste 1,15, radio 200 px, suavidad 0,6, estela 1 s. Floyd no es posible (CPU,
+      imagen fija): va ruido azul. La tinta de la trama es la del fondo (#060a0c, no la #120f17
+      del panel, que se veía morada) y la onda al clic está apagada (`CLICK_BURST`). Mirar que el
+      lienzo ya no se distinga del escenario.
+
 - [ ] Página de todos los proyectos (bloque `projects`, `content/pages/projects.ts`): hoy solo
       es el fondo naranja y la cruz de volver. Falta el contenido.
 - [ ] Salida del carrete a todos los proyectos y vuelta: feel check con `npm run dev`. Ida:
