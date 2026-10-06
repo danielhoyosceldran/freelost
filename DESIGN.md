@@ -167,7 +167,7 @@ Esquinas rectas en todo (0px). Contornos de 1px (papel al 16% en la marca gigant
 - Tarjetas 16:9 con separación de 12px, arrastre con inercia, bucle infinito. La banda es el 50% de la altura de la sección. Marca de 1px ember sobre la tarjeta central; pie con título y contador de dígitos que ruedan; progreso de 1px ember. Desktop: lente curva en los bordes; táctil: tarjetas planas.
 
 ### Equipo («Lo que uso»)
-- Lista de nombres en 800 condensado a papel al 30% (62% hover, pleno el activo) que hace de índice y progreso (hilo de 1px ember). Un único lienzo 3D rellena el escenario: objetos negros con brillo de borde y contorno claro; al cambiar de objeto el sólido se deshace en una nube de puntos y se recompone en el siguiente (2 s, siempre completo).
+- Lista de nombres en 800 condensado a papel al 30% (62% hover, pleno el activo) que hace de índice y progreso (hilo de 1px ember). Un único lienzo 3D rellena el escenario: objetos negros con brillo de borde y contorno claro; al cambiar de objeto la forma se funde en la siguiente (morph de campos de distancia, 2,2 s, siempre completo, sin partículas).
 
 ## Do's and Don'ts
 

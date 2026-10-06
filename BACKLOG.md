@@ -63,12 +63,12 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       barrido del equipo, relleno del contacto, timecode) y decidir: plano del hero → tarjeta
       central, inclinación en perspectiva de la tarjeta (shaders) e imán del equipo.
 
-- [ ] "Lo que uso" con la metamorfosis (maqueta "Metamorfosis Técnica", `lib/three/GearMorph.ts`):
-      feel check con `npm run dev`. Encuadre en la caja del escenario (`.stack`, a la derecha de la
-      lista) y en móvil (fov 52 si es vertical), tiempo de arranque (se modelan y muestrean 3 × 26 000
-      puntos en el hilo principal al calentar: si da tirón, pasarlo a idle o a un worker), coste del
-      postprocesado (contornos + bloom) en portátiles flojos, y si el contorno/brillo frío #e6ecf5
-      encaja con el papel #eef1f0 del sitio o conviene pasarlo al token.
+- [ ] "Lo que uso" con morph volumétrico (`lib/three/GearMorph.ts` + `sdfWorker.ts`): feel check
+      con `npm run dev`. Ajustes a mano en GearMorph: `MORPH_SECONDS` (2,2 s), `SWAP` (relevo malla ↔
+      volumen, 12 %), `BULGE` (volumen extra a mitad, 0,06) y `SDF_RES` (128: más es más fiel y más
+      caro). Mirar si el relevo al principio y al final se nota (el volumen pierde teclas, rejillas
+      y palas finas), el coste del raymarching a DPR 2 en portátiles flojos, el encuadre en la caja
+      del escenario y en móvil, y si el brillo frío #e6ecf5 encaja con el papel #eef1f0.
 
 - [ ] Página de todos los proyectos (bloque `projects`, `content/pages/projects.ts`): hoy solo
       es el fondo naranja y la cruz de volver. Falta el contenido.

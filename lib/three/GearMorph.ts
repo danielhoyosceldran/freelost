@@ -4,11 +4,19 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { GEAR_MODELS, type GearModelKey, makeBuilder } from "./gearModels";
+import type { SdfRequest, SdfResponse } from "./sdfTypes";
+import { sdfWorkerMain } from "./sdfWorker";
 
 /**
  * "Metamorfosis técnica": un único lienzo con todo el equipo. Cada objeto es negro con brillo de
- * borde (Fresnel) y contorno (pase de normales + profundidad); al cambiar de objeto el sólido se
- * deshace en una nube de puntos que gira, se abre y se recompone en el siguiente.
+ * borde (Fresnel) y contorno (pase de normales + profundidad).
+ *
+ * El cambio de objeto es un morph volumétrico: cada objeto tiene además su campo de distancias
+ * con signo (SDF, calculado en un worker, ver sdfWorker.ts) y durante el cambio se dibuja por
+ * raymarching la interpolación de los dos campos. La forma se funde de verdad de uno a otro: lo
+ * que sobra se reabsorbe, lo que falta brota, sin partículas ni fundidos a negro. Los extremos
+ * son las mallas reales, con todo su detalle; el volumen solo vive durante el cambio y entra y
+ * sale con un fundido corto, porque a resolución de vóxel pierde lo más fino (teclas, rejillas).
  *
  * El bloque decide a qué objeto ir (setTarget) y el motor recorre el camino en el tiempo, siempre
  * completo y a velocidad fija, hacia delante o hacia atrás: un barrido de rueda no deja el morph
@@ -24,9 +32,13 @@ import { GEAR_MODELS, type GearModelKey, makeBuilder } from "./gearModels";
  */
 
 /** Segundos que dura una metamorfosis entre dos objetos vecinos. */
-const MORPH_SECONDS = 2;
-/** Puntos de la nube. Cada objeto se muestrea con los mismos, ordenados por altura. */
-const POINTS = 26000;
+const MORPH_SECONDS = 2.2;
+/** Fracción del cambio que dura el relevo malla ↔ volumen en cada extremo. */
+const SWAP = 0.12;
+/** Volumen extra (unidades) a mitad del morph: la forma intermedia se ve maciza, no adelgazada. */
+const BULGE = 0.06;
+/** Vóxeles en el lado mayor de la rejilla del SDF. */
+const SDF_RES = 128;
 /** Giro automático (rad/s); al pasar el puntero casi se para. */
 const AUTO_SPIN = 0.12;
 const HOVER_SPIN_FACTOR = 0.2;
@@ -45,7 +57,6 @@ const GLOW = 0xe6ecf5;
 interface Model {
   group: THREE.Group;
   mat: THREE.ShaderMaterial;
-  points: Float32Array;
 }
 
 const smooth = (x: number) => {
@@ -59,13 +70,17 @@ export class GearMorph {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(35, 1, 0.5, 60);
-  /** Todo lo que gira: modelos y nube. La cámara queda fija, en picado de tres cuartos. */
+  /** Todo lo que gira: modelos y volumen. La cámara queda fija, en picado de tres cuartos. */
   private readonly root = new THREE.Group();
   private readonly models: Model[];
-  private readonly cloud: THREE.Points;
-  private readonly cloudMat: THREE.ShaderMaterial;
-  private readonly posA: THREE.BufferAttribute;
-  private readonly posB: THREE.BufferAttribute;
+  private readonly solid: number[];
+  /** Volumen del morph: una caja del tamaño de la rejilla que se raymarchea por dentro. */
+  private readonly volume: THREE.Mesh;
+  private readonly volColor: THREE.ShaderMaterial;
+  private readonly volNormal: THREE.ShaderMaterial;
+  private volWeight = 0;
+  private sdf: THREE.Data3DTexture | null = null;
+  private worker: Worker | null = null;
   private readonly normalMat = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
   private readonly nTarget: THREE.WebGLRenderTarget;
   private readonly composer: EffectComposer;
@@ -79,7 +94,6 @@ export class GearMorph {
   /** Posición continua entre objetos (0 … n-1) y la que marca el scroll. */
   private pos = 0;
   private target = 0;
-  private pairLoaded = -1;
   private spin = 0;
   private dragVel = 0;
   private hover = false;
@@ -117,25 +131,47 @@ export class GearMorph {
       const group = new THREE.Group();
       group.add(inner);
       group.scale.setScalar(def.size / Math.max(size.x, size.y, size.z));
-      group.updateMatrixWorld(true);
       this.root.add(group);
-      return { group, mat, points: sampleSurface(group) };
+      return { group, mat };
     });
+    this.solid = this.models.map(() => 0);
+    this.root.updateMatrixWorld(true);
 
-    // ---------- Nube de puntos de la metamorfosis ----------
-    const geo = new THREE.BufferGeometry();
-    this.posA = new THREE.BufferAttribute(new Float32Array(POINTS * 3), 3);
-    this.posB = new THREE.BufferAttribute(new Float32Array(POINTS * 3), 3);
-    const rnd = new Float32Array(POINTS);
-    for (let i = 0; i < POINTS; i++) rnd[i] = Math.random();
-    geo.setAttribute("position", this.posA);
-    geo.setAttribute("posB", this.posB);
-    geo.setAttribute("rnd", new THREE.BufferAttribute(rnd, 1));
-    geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 10);
-    this.cloudMat = makeCloud(4.4 * this.dpr);
-    this.cloud = new THREE.Points(geo, this.cloudMat);
-    this.cloud.frustumCulled = false;
-    this.root.add(this.cloud);
+    // ---------- Volumen del morph: rejilla común a todos los objetos ----------
+    const bounds = new THREE.Box3();
+    for (const m of this.models) bounds.union(new THREE.Box3().setFromObject(m.group));
+    const extent = bounds.getSize(new THREE.Vector3());
+    const h = Math.max(extent.x, extent.y, extent.z) / SDF_RES;
+    const pad = 4; // vóxeles de aire alrededor: el relleno de "fuera" empieza en el borde
+    const min = bounds.min.clone().subScalar(pad * h);
+    const dims = extent
+      .clone()
+      .divideScalar(h)
+      .ceil()
+      .addScalar(pad * 2);
+    const gridSize = dims.clone().multiplyScalar(h);
+    const uniforms = {
+      uSdf: { value: null as THREE.Data3DTexture | null },
+      uW: { value: new THREE.Vector4() },
+      uMin: { value: min },
+      uSize: { value: gridSize },
+      uH: { value: h },
+      uBulge: { value: 0 },
+      rimColor: { value: raw(GLOW) },
+      rimPower: { value: 3.2 },
+      rimStrength: { value: 0 },
+    };
+    // Dos materiales con los mismos uniforms: el de color suma su brillo (para el relevo con la
+    // malla) y el de normales escribe como MeshNormalMaterial para el pase de contornos.
+    this.volColor = makeVolume(uniforms, false);
+    this.volNormal = makeVolume(uniforms, true);
+    const boxGeo = new THREE.BoxGeometry(gridSize.x, gridSize.y, gridSize.z);
+    boxGeo.translate(min.x + gridSize.x / 2, min.y + gridSize.y / 2, min.z + gridSize.z / 2);
+    this.volume = new THREE.Mesh(boxGeo, this.volColor);
+    this.volume.visible = false;
+    this.volume.frustumCulled = false;
+    this.root.add(this.volume);
+    if (this.models.length >= 2 && this.models.length <= 4) this.computeSdf(min, h, dims);
 
     // ---------- Contornos (normales + profundidad) y bloom ----------
     this.nTarget = new THREE.WebGLRenderTarget(1, 1, {
@@ -193,6 +229,7 @@ export class GearMorph {
     if (this.destroyed) return;
     this.destroyed = true;
     cancelAnimationFrame(this.raf);
+    this.worker?.terminate();
     this.io.disconnect();
     this.resizeObs.disconnect();
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
@@ -201,10 +238,12 @@ export class GearMorph {
     this.canvas.removeEventListener("pointerup", this.onPointerUp);
     this.canvas.removeEventListener("pointercancel", this.onPointerUp);
     this.root.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh || (o as THREE.Points).isPoints) (o as THREE.Mesh).geometry.dispose();
+      if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).geometry.dispose();
     });
     for (const m of this.models) m.mat.dispose();
-    this.cloudMat.dispose();
+    this.volColor.dispose();
+    this.volNormal.dispose();
+    this.sdf?.dispose();
     this.normalMat.dispose();
     this.nTarget.depthTexture?.dispose();
     this.nTarget.dispose();
@@ -214,6 +253,42 @@ export class GearMorph {
     this.renderer.dispose();
     this.renderer.forceContextLoss();
     this.canvas.remove();
+  }
+
+  /**
+   * Manda los triángulos de cada objeto (en el espacio de `root`) al worker. Hasta que vuelve el
+   * SDF, el cambio de objeto es un simple relevo de brillo entre las dos mallas.
+   */
+  private computeSdf(min: THREE.Vector3, h: number, dims: THREE.Vector3) {
+    const models = this.models.map((m) => trianglesOf(m.group));
+    try {
+      const url = URL.createObjectURL(new Blob([`(${sdfWorkerMain.toString()})()`], { type: "text/javascript" }));
+      this.worker = new Worker(url);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.warn("Sin worker para el morph; el cambio será un relevo simple", err);
+      return;
+    }
+    this.worker.onmessage = (e: MessageEvent<SdfResponse>) => {
+      this.worker?.terminate();
+      this.worker = null;
+      if (this.destroyed) return;
+      const tex = new THREE.Data3DTexture(e.data.data, dims.x, dims.y, dims.z);
+      tex.format = THREE.RGBAFormat;
+      tex.type = THREE.HalfFloatType;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.unpackAlignment = 1;
+      tex.needsUpdate = true;
+      this.sdf = tex;
+      this.volColor.uniforms.uSdf.value = tex;
+    };
+    this.worker.onerror = (err) => console.warn("No se pudo calcular el morph", err);
+    const req: SdfRequest = { models, min: [min.x, min.y, min.z], h, dims: [dims.x, dims.y, dims.z] };
+    this.worker.postMessage(
+      req,
+      models.map((m) => m.buffer),
+    );
   }
 
   private resize() {
@@ -233,47 +308,45 @@ export class GearMorph {
     this.play();
   }
 
-  private loadPair(i: number) {
-    if (this.pairLoaded === i) return;
-    this.posA.array.set(this.models[i].points);
-    this.posB.array.set(this.models[i + 1].points);
-    this.posA.needsUpdate = true;
-    this.posB.needsUpdate = true;
-    this.pairLoaded = i;
-  }
-
   /**
-   * Reparto de cada tramo entre dos objetos: el sólido de salida se apaga en el primer 18%, la
-   * nube aparece, viaja de una forma a otra y se apaga, y el de llegada se enciende en el último
-   * 18%. Nunca hay dos sólidos a la vez.
+   * Reparto de cada cambio entre dos objetos A → B:
+   * - primer SWAP: la malla de A cede el brillo al volumen, que en ese momento tiene la forma de A;
+   * - centro: el volumen pasa del campo de A al de B (con una pizca de volumen extra a mitad);
+   * - último SWAP: el volumen, ya con la forma de B, cede el brillo a la malla de B.
+   * Sin SDF (aún calculándose o sin worker), relevo directo de brillo entre las mallas.
    */
   private applyPhase(p: number) {
     const n = this.models.length;
-    const solid = new Array<number>(n).fill(0);
-    let pointAlpha = 0,
-      morph = 0;
+    this.solid.fill(0);
+    let vol = 0;
     const pair = Math.max(0, Math.min(n - 2, Math.floor(p)));
     const u = p - pair;
-    if (n < 2 || u <= 0.0001) solid[pair] = 1;
-    else if (u >= 0.9999) solid[pair + 1] = 1;
+    if (n < 2 || u <= 0.0001) this.solid[pair] = 1;
+    else if (u >= 0.9999) this.solid[pair + 1] = 1;
     else {
-      this.loadPair(pair);
       const e = smooth(u);
-      solid[pair] = 1 - lin(0, 0.18, e);
-      solid[pair + 1] = lin(0.82, 1, e);
-      pointAlpha = lin(0, 0.12, e) * (1 - lin(0.88, 1, e));
-      morph = lin(0.12, 0.88, e);
+      if (this.sdf) {
+        const fadeIn = lin(0, SWAP, e);
+        const fadeOut = lin(1 - SWAP, 1, e);
+        this.solid[pair] = 1 - fadeIn;
+        this.solid[pair + 1] = fadeOut;
+        vol = fadeIn * (1 - fadeOut);
+        const t = smooth(lin(SWAP * 0.5, 1 - SWAP * 0.5, e));
+        const w = this.volColor.uniforms.uW.value as THREE.Vector4;
+        w.set(0, 0, 0, 0).setComponent(pair, 1 - t).setComponent(pair + 1, t);
+        this.volColor.uniforms.uBulge.value = BULGE * Math.sin(Math.PI * t);
+      } else {
+        this.solid[pair] = 1 - lin(0, 0.5, e);
+        this.solid[pair + 1] = lin(0.5, 1, e);
+      }
     }
-    let line = 0;
     this.models.forEach((m, i) => {
-      m.group.visible = solid[i] > 0.002;
-      m.mat.uniforms.rimStrength.value = RIM * solid[i];
-      line = Math.max(line, solid[i]);
+      m.group.visible = this.solid[i] > 0.002;
+      m.mat.uniforms.rimStrength.value = RIM * this.solid[i];
     });
-    this.edgePass.uniforms.lineStrength.value = LINE * line;
-    this.cloudMat.uniforms.uAlpha.value = pointAlpha;
-    this.cloudMat.uniforms.uT.value = morph;
-    this.cloud.visible = pointAlpha > 0.002;
+    this.volWeight = vol;
+    this.volume.visible = vol > 0.002;
+    this.volColor.uniforms.rimStrength.value = RIM * vol;
   }
 
   private play() {
@@ -299,22 +372,47 @@ export class GearMorph {
     }
     this.root.rotation.y = this.spin;
 
-    // Pase de normales y profundidad para los contornos (sin la nube).
-    const cloudOn = this.cloud.visible;
-    this.cloud.visible = false;
-    this.scene.overrideMaterial = this.normalMat;
-    this.renderer.setRenderTarget(this.nTarget);
-    this.renderer.setClearColor(0x000000, 1);
-    this.renderer.clear();
-    this.renderer.render(this.scene, this.camera);
-    this.scene.overrideMaterial = null;
-    this.renderer.setRenderTarget(null);
-    this.renderer.setClearColor(raw(INK), 1);
-    this.cloud.visible = cloudOn;
+    this.renderNormals();
     this.composer.render(dt);
 
     this.raf = requestAnimationFrame(this.frame);
   };
+
+  /**
+   * Pase de normales y profundidad para los contornos. Solo entra lo que domina en ese instante
+   * (malla o volumen), para que durante el relevo no se dibujen dos contornos superpuestos.
+   */
+  private renderNormals() {
+    const r = this.renderer;
+    const meshVis = this.models.map((m, i) => {
+      const was = m.group.visible;
+      m.group.visible = this.solid[i] > 0.5;
+      return was;
+    });
+    const volVis = this.volume.visible;
+    this.volume.visible = false;
+
+    this.scene.overrideMaterial = this.normalMat;
+    r.setRenderTarget(this.nTarget);
+    r.setClearColor(0x000000, 1);
+    r.clear();
+    r.render(this.scene, this.camera);
+    this.scene.overrideMaterial = null;
+    if (this.volWeight >= 0.5) {
+      // El volumen escribe su propia profundidad (gl_FragDepth) en el mismo búfer.
+      this.volume.visible = true;
+      this.volume.material = this.volNormal;
+      r.autoClear = false;
+      r.render(this.volume, this.camera);
+      r.autoClear = true;
+      this.volume.material = this.volColor;
+    }
+    r.setRenderTarget(null);
+    r.setClearColor(raw(INK), 1);
+
+    this.models.forEach((m, i) => (m.group.visible = meshVis[i]));
+    this.volume.visible = volVis;
+  }
 
   private onPointerDown = (e: PointerEvent) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -345,6 +443,28 @@ export class GearMorph {
   private onPointerLeave = () => {
     this.hover = false;
   };
+}
+
+/** Triángulos de un grupo en el espacio de su raíz (las mallas del Builder ya no tienen índice). */
+function trianglesOf(group: THREE.Object3D) {
+  const meshes: THREE.Mesh[] = [];
+  group.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh);
+  });
+  const total = meshes.reduce((s, m) => s + m.geometry.attributes.position.count, 0);
+  const out = new Float32Array(total * 3);
+  const v = new THREE.Vector3();
+  let k = 0;
+  for (const m of meshes) {
+    const pos = m.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+      out[k++] = v.x;
+      out[k++] = v.y;
+      out[k++] = v.z;
+    }
+  }
+  return out;
 }
 
 // ---------- Material: cara negra con brillo de borde (Fresnel), uno por modelo para fundirlo ----------
@@ -380,50 +500,71 @@ function makeRim() {
   });
 }
 
-// ---------- Nube: cada punto va de su sitio en A a su sitio en B girando y abriéndose ----------
-function makeCloud(size: number) {
+// ---------- Volumen: raymarching de la mezcla de SDF, con el mismo brillo de borde ----------
+function makeVolume(uniforms: Record<string, THREE.IUniform>, normalPass: boolean) {
   return new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    uniforms: {
-      uT: { value: 0 },
-      uAlpha: { value: 0 },
-      uSize: { value: size },
-      uColor: { value: raw(GLOW) },
-    },
+    uniforms,
+    defines: normalPass ? { NORMAL_PASS: "" } : {},
+    // En color, el brillo se suma: durante el relevo malla y volumen se reparten la luz en vez de
+    // pelearse por la profundidad.
+    transparent: !normalPass,
+    blending: normalPass ? THREE.NoBlending : THREE.AdditiveBlending,
+    depthWrite: normalPass,
     vertexShader: /* glsl */ `
-      attribute vec3 posB;
-      attribute float rnd;
-      uniform float uT, uSize;
-      varying float vGlow;
+      varying vec3 vPos;
+      varying vec3 vCam;
       void main() {
-        // Cada punto sale con un pequeño retraso propio: la forma se deshace por capas.
-        float e = clamp((uT - rnd * 0.15) / 0.85, 0.0, 1.0);
-        vec3 p = mix(position, posB, e);
-        float b = sin(3.14159265 * e);
-        float ang = b * (0.9 + rnd * 1.4);
-        float c = cos(ang), s = sin(ang);
-        p.xz = mat2(c, -s, s, c) * p.xz;
-        vec3 dir = normalize(p + vec3(0.0001));
-        p += dir * b * (0.25 + 0.6 * rnd);
-        p.y += b * (rnd - 0.5) * 0.6;
-        vGlow = b;
-        vec4 mv = modelViewMatrix * vec4(p, 1.0);
-        gl_PointSize = uSize * (1.0 + b * 0.8) * (9.0 / -mv.z);
-        gl_Position = projectionMatrix * mv;
+        vPos = position;
+        vCam = (inverse(modelMatrix) * vec4(cameraPosition, 1.0)).xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }`,
     fragmentShader: /* glsl */ `
-      uniform float uAlpha;
-      uniform vec3 uColor;
-      varying float vGlow;
+      precision highp sampler3D;
+      uniform sampler3D uSdf;
+      uniform vec4 uW;
+      uniform vec3 uMin, uSize;
+      uniform float uH, uBulge;
+      uniform vec3 rimColor;
+      uniform float rimPower, rimStrength;
+      uniform mat4 modelViewMatrix, projectionMatrix;
+      uniform mat3 normalMatrix;
+      varying vec3 vPos;
+      varying vec3 vCam;
+
+      float map(vec3 p) { return dot(texture(uSdf, (p - uMin) / uSize), uW) - uBulge; }
+
       void main() {
-        vec2 q = gl_PointCoord - 0.5;
-        float d = dot(q, q);
-        if (d > 0.25) discard;
-        float r = sqrt(d);
-        float core = 1.0 - smoothstep(0.17, 0.21, r);   // punto negro puro
-        float halo = (1.0 - smoothstep(0.17, 0.45, r)) * (0.05 + 0.03 * vGlow);
-        gl_FragColor = vec4(uColor * (1.0 - core), max(core, halo) * uAlpha);
+        vec3 rd = normalize(vPos - vCam);
+        vec3 t0 = (uMin - vCam) / rd, t1 = (uMin + uSize - vCam) / rd;
+        vec3 tx = max(t0, t1);
+        float tFar = min(min(tx.x, tx.y), tx.z);
+        float t = length(vPos - vCam);
+        vec3 p;
+        bool hit = false;
+        for (int i = 0; i < 160; i++) {
+          p = vCam + rd * t;
+          float d = map(p);
+          if (d < uH * 0.08) { hit = true; break; }
+          t += max(d, uH * 0.3);
+          if (t > tFar) break;
+        }
+        if (!hit) discard;
+
+        vec2 e = vec2(uH, 0.0);
+        vec3 n = normalize(vec3(
+          map(p + e.xyy) - map(p - e.xyy),
+          map(p + e.yxy) - map(p - e.yxy),
+          map(p + e.yyx) - map(p - e.yyx)));
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        vec3 vn = normalize(normalMatrix * n);
+        vec4 clip = projectionMatrix * mv;
+        gl_FragDepth = clip.z / clip.w * 0.5 + 0.5;
+      #ifdef NORMAL_PASS
+        gl_FragColor = vec4(vn * 0.5 + 0.5, 1.0);
+      #else
+        float f = 1.0 - clamp(dot(vn, normalize(-mv.xyz)), 0.0, 1.0);
+        gl_FragColor = vec4(rimColor * pow(f, rimPower) * rimStrength, 1.0);
+      #endif
       }`,
   });
 }
@@ -477,55 +618,4 @@ function makeEdge(nTarget: THREE.WebGLRenderTarget, camera: THREE.PerspectiveCam
         gl_FragColor = vec4(mix(base.rgb, lineColor, e * lineStrength), 1.0);
       }`,
   };
-}
-
-// ---------- Muestreo de superficie: POINTS puntos repartidos por área ----------
-function sampleSurface(group: THREE.Object3D) {
-  const tris: number[][] = [];
-  let total = 0;
-  const va = new THREE.Vector3(),
-    vb = new THREE.Vector3(),
-    vc = new THREE.Vector3();
-  const e1 = new THREE.Vector3(),
-    e2 = new THREE.Vector3();
-  group.updateMatrixWorld(true);
-  group.traverse((o) => {
-    const mesh = o as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    const p = mesh.geometry.attributes.position;
-    for (let i = 0; i < p.count; i += 3) {
-      va.fromBufferAttribute(p, i).applyMatrix4(mesh.matrixWorld);
-      vb.fromBufferAttribute(p, i + 1).applyMatrix4(mesh.matrixWorld);
-      vc.fromBufferAttribute(p, i + 2).applyMatrix4(mesh.matrixWorld);
-      const area = e1.subVectors(vb, va).cross(e2.subVectors(vc, va)).length() * 0.5;
-      if (area <= 0) continue;
-      total += area;
-      tris.push([va.x, va.y, va.z, vb.x, vb.y, vb.z, vc.x, vc.y, vc.z, total]);
-    }
-  });
-  const pts: [number, number, number][] = [];
-  for (let n = 0; n < POINTS; n++) {
-    const r = Math.random() * total;
-    let lo = 0,
-      hi = tris.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (tris[mid][9] < r) lo = mid + 1;
-      else hi = mid;
-    }
-    const t = tris[lo];
-    let u = Math.random(),
-      v = Math.random();
-    if (u + v > 1) {
-      u = 1 - u;
-      v = 1 - v;
-    }
-    const w = 1 - u - v;
-    pts.push([t[0] * w + t[3] * u + t[6] * v, t[1] * w + t[4] * u + t[7] * v, t[2] * w + t[5] * u + t[8] * v]);
-  }
-  // Ordenar por altura: cada punto conserva su "capa" y la forma fluye de lado.
-  pts.sort((a, b) => a[1] - b[1]);
-  const out = new Float32Array(POINTS * 3);
-  pts.forEach((p, i) => out.set(p, i * 3));
-  return out;
 }
