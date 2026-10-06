@@ -6,8 +6,8 @@ import { PageLoader } from "./PageLoader";
 // <main>) para quedar por encima de todo. Sin este bloque, la página está 'ready' desde el
 // primer frame.
 export const loaderSchema = z.object({
-  /** Duración mínima del relleno: con caché llena tiene que verse subir, no parpadear. */
-  minMs: z.number().default(900),
+  /** Duración mínima del relleno, a velocidad constante: con caché llena tiene que verse subir, no parpadear. */
+  minMs: z.number().default(700),
   /** Techo: si el vídeo no responde, no dejar al usuario encerrado. */
   maxMs: z.number().default(15000),
   /** Esperar también a document.fonts.ready. */

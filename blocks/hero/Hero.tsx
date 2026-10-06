@@ -165,7 +165,7 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
     frame.style.transform =
       calm || ramp <= 0
         ? ""
-        : `translateY(${(-cut * 36).toFixed(2)}%) scale(${scale.toFixed(4)}) rotate(${(exit.tilt * ramp).toFixed(3)}deg)`;
+        : `translateY(${(-cut * 16).toFixed(2)}%) scale(${scale.toFixed(4)})`;
     frame.style.opacity = cut > 0 ? String(1 - Math.min(1, cut * 1.5)) : "";
 
     // Cámara lenta justo antes del corte; vuelve a 1 al rebobinar.

@@ -1,0 +1,70 @@
+/* El naranja continúa el recuadro que crece al salir del carrete: el cambio de página no se ve. */
+.root {
+  position: relative;
+  min-height: 100svh;
+  background: var(--color-ember);
+  color: var(--color-ink);
+}
+
+/* La cruz, la misma que cierra un proyecto en el carrete (52 px, trazos de 1,5 px) pero en
+   tinta sobre el naranja. Entra cuando el recuadro ya ha cubierto la pantalla. */
+.close {
+  --size: 52px;
+  --inset: 26px;
+  position: fixed;
+  top: var(--inset);
+  right: var(--inset);
+  z-index: 20;
+  width: var(--size);
+  height: var(--size);
+  animation: enter 0.4s var(--ease-out) 0.1s both;
+  transition: scale 0.14s var(--ease-out);
+}
+.close:active {
+  scale: 0.96;
+}
+.close::before,
+.close::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36%;
+  height: 1.5px;
+  background: currentColor;
+  transition: rotate 0.2s var(--ease-out);
+}
+.close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .close:hover::before,
+  .close:hover::after {
+    rotate: 90deg;
+  }
+}
+.close:focus-visible {
+  outline: 1px solid var(--color-ink);
+  outline-offset: -8px;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+@media (max-width: 700px) {
+  .close {
+    --inset: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .close {
+    animation: none;
+  }
+}

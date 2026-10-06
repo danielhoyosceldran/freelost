@@ -405,16 +405,97 @@
 .splitting .caption,
 .splitting .marker,
 .splitting .title,
+.splitting .more,
 .inProject .caption,
 .inProject .marker,
-.inProject .title {
+.inProject .title,
+.inProject .more,
+.leaving .caption,
+.leaving .marker,
+.leaving .title,
+.leaving .more {
   opacity: 0;
+  pointer-events: none;
   /* La salida responde más rápido que la entrada: el HUD no debe seguir ahí mientras el marco
      crece sobre él. */
   transition-duration: 0.18s;
   transition-timing-function: var(--ease-out);
   transition-delay: 0s;
 }
+/* Enlace a todos los proyectos, abajo a la derecha: el único bloque de color del carrete. Entra
+   con las tarjetas (.revealed), no antes: sin ellas no hay nada que barrer. */
+.more {
+  position: absolute;
+  right: var(--gutter);
+  bottom: var(--gutter);
+  z-index: 40;
+  padding: 1.05em 1.4em;
+  background: var(--color-ember);
+  color: var(--color-ink);
+  font-size: 11px;
+  font-weight: 600;
+  font-stretch: 112%;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  pointer-events: none;
+  opacity: 0;
+  translate: 0 10px;
+  transition:
+    opacity 0.9s var(--ease-out-expo),
+    translate 0.9s var(--ease-out-expo),
+    background-color 0.2s ease,
+    scale 0.14s var(--ease-out);
+}
+.revealed .more {
+  opacity: 1;
+  translate: 0 0;
+  pointer-events: auto;
+}
+@media (hover: hover) and (pointer: fine) {
+  .more:hover {
+    background: var(--color-paper);
+  }
+}
+.more:active {
+  scale: 0.97;
+}
+.more:focus-visible {
+  outline: 1px solid var(--color-paper);
+  outline-offset: 4px;
+}
+
+/* Salida a todos los proyectos (las fases las pone el JS en la sección): leaving mientras la
+   cinta barre, opening con el recuadro a pantalla completa y closing mientras encoge (la vuelta).
+   La sección sube por encima de "Lo que uso", que puede estar entrando por arriba. */
+.section.leaving {
+  z-index: 50;
+}
+/* Fijo a pantalla completa y a escala 0,5 (50vw × 50vh) sobre el centro del carrete
+   (--leave-x/y), desplazado con la cola de la cinta (--sweep-x, lo escribe el JS en cada
+   fotograma: aquí sin transición). Escalar y no cambiar el tamaño: sin layout por fotograma. */
+.box {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  background: var(--color-ember);
+  pointer-events: none;
+  visibility: hidden;
+  transform: translate(calc(var(--leave-x, 0px) + var(--sweep-x, 0px)), var(--leave-y, 0px)) scale(0.5);
+}
+.leaving .box {
+  visibility: visible;
+}
+.opening .box,
+.closing .box {
+  transition: transform 0.7s var(--ease-in-out);
+}
+.opening .box {
+  z-index: 60;
+  transform: none;
+}
+
 .close:focus-visible {
   outline: 1px solid var(--color-ember);
   outline-offset: -8px;

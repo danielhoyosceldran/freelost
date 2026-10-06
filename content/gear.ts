@@ -3,7 +3,8 @@ import type { gearSchema } from "@/blocks/gear";
 import type { Locale } from "@/content/locales";
 
 // "Lo que uso". Solo nombres de categoría: la lista real de equipo está pendiente del cliente,
-// y las especificaciones de v4 eran inventadas. Los modelos 3D son genéricos de cada categoría.
+// y las especificaciones de v4 eran inventadas. Los modelos 3D son arquetipos de cada categoría,
+// modelados por código (lib/three/gearModels): cámara → dron → portátil, en ese orden de metamorfosis.
 const text: Record<Locale, { title: string; camera: string; drone: string; editing: string }> = {
   en: { title: "What I use", camera: "Camera and lenses", drone: "Drone", editing: "Editing" },
   ca: { title: "El que faig servir", camera: "Càmera i òptiques", drone: "Dron", editing: "Edició" },
@@ -15,12 +16,9 @@ export const gearContent = (lang: Locale) => {
   return {
     title: t.title,
     items: [
-      { name: t.camera, model: { src: "/models/camera_lens-1k.glb", scale: 0.62, splitGlass: true } },
-      {
-        name: t.drone,
-        model: { src: "/models/dji_air_3-1k.glb", props: ["B_L_04_10", "B_R_04_31", "F_R_02_88", "F_L_02_101"] },
-      },
-      { name: t.editing, model: { src: "/models/macbook_pro_14-inch_m5-2k.glb", scale: 0.66 } },
+      { name: t.camera, model: "camera" },
+      { name: t.drone, model: "drone" },
+      { name: t.editing, model: "laptop" },
     ],
   } satisfies z.input<typeof gearSchema>;
 };

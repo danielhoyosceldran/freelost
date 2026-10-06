@@ -22,15 +22,14 @@ export const heroSchema = z.object({
   }),
   /**
    * Salida, en tres tiempos sobre el progreso de la escena (que dura `height`): sostiene hasta
-   * `hold`; acelera hasta `cutAt` (el plano encoge a `scale`, se ladea `tilt` grados y la
-   * película baja a `slowTo`× de velocidad: cámara lenta justo antes del corte); y corta, sin
-   * fundido largo, en lo que queda.
+   * `hold`; acelera hasta `cutAt` (el plano encoge a `scale` y la película baja a `slowTo`× de
+   * velocidad: cámara lenta justo antes del corte); y corta, sin fundido largo, en lo que queda.
+   * El desencaje es sutil y sin giro: el plano solo cede un poco, no se ladea.
    */
   exit: z
     .object({
       height: z.string().default("190vh"),
-      scale: z.number().default(0.62),
-      tilt: z.number().default(-2.5),
+      scale: z.number().default(0.9),
       hold: z.number().default(0.25),
       cutAt: z.number().default(0.85),
       slowTo: z.number().default(0.6),

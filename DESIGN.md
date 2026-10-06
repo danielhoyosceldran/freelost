@@ -161,13 +161,13 @@ Esquinas rectas en todo (0px). Contornos de 1px (papel al 16% en la marca gigant
 - Hilo superior de 1px (papel 10%), fondo tinta; marca de 32px + «free lost», aviso legal en etiqueta (papel 60%), eslogan en cursiva 300 a la derecha.
 
 ### Signature: la marca (loader → lockup)
-- Las dos hojas entran por la costura (F desde arriba, L desde abajo), pasan un 3,5% de largo y encajan; un destello de relleno y un pulso de escala de 1,05 marcan el clic. El velo se parte por la costura (mitad izquierda sube, derecha baja, 1,1s). La marca ember se funde sobre la blanca, que vuela a la esquina del hero en 1,3s y se asienta junto a «free lost». En el contacto, la marca gigante en contorno repite el gesto.
+- Las dos hojas entran por la costura (F desde arriba, L desde abajo) en 0,6s y frenan en seco, sin pasarse; el relleno ember arranca en el mismo frame y sube a velocidad constante (0,7s mínimo). El velo se parte por la costura (mitad izquierda sube, derecha baja, 1,1s). Sin pausa, la marca ember se funde en 0,3s sobre la blanca, que vuela a la esquina del hero en 1,3s y se asienta junto a «free lost». En el contacto, la marca gigante en contorno repite el gesto.
 
 ### Carrete de proyectos
 - Tarjetas 16:9 con separación de 12px, arrastre con inercia, bucle infinito. La banda es el 50% de la altura de la sección. Marca de 1px ember sobre la tarjeta central; pie con título y contador de dígitos que ruedan; progreso de 1px ember. Desktop: lente curva en los bordes; táctil: tarjetas planas.
 
 ### Equipo («Lo que uso»)
-- Lista de nombres en 800 condensado a papel al 30% (62% hover, pleno el activo) que hace de índice y progreso (hilo de 1px ember). El objeto 3D rellena el escenario.
+- Lista de nombres en 800 condensado a papel al 30% (62% hover, pleno el activo) que hace de índice y progreso (hilo de 1px ember). Un único lienzo 3D rellena el escenario: objetos negros con brillo de borde y contorno claro; al cambiar de objeto el sólido se deshace en una nube de puntos y se recompone en el siguiente (2 s, siempre completo).
 
 ## Do's and Don'ts
 

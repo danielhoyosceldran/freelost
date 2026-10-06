@@ -92,6 +92,11 @@ const INTRO_S = { rise: 2.4, fade: 0.35 };
 /** La tarjeta central se inclina hacia el cursor: desplazamiento máximo (px) y crecimiento. */
 const LEAN_PX = { x: 7, y: 5 };
 const LEAN_SCALE = 0.012;
+/**
+ * Barrido: con la cola en el centro, la última tarjeta queda a media pantalla más este margen
+ * (fracción del ancho) del centro, fuera del todo aunque la lente estire los laterales.
+ */
+const SWEEP_MARGIN = 0.08;
 /** Si alguna portada no llega, la intro no la espera más que esto (como el original). */
 const INTRO_WAIT_MS = 3500;
 
@@ -167,6 +172,22 @@ export class FlexCarousel {
     done: false,
   };
   private readonly focus = { t: 0, v: 0, target: 0 };
+  /**
+   * Barrido (sweep): la cinta corre sola de `from` a `to` en `dur` s y no se dibuja nada más
+   * allá del centro `limit` (la última tarjeta). `tail` es la cola, lo que va detrás de la
+   * última. El de ida no se suelta: el carrete se queda vacío hasta que se desmonta.
+   */
+  private sweeping: {
+    from: number;
+    to: number;
+    limit: number;
+    tail: number;
+    back: boolean;
+    t: number;
+    dur: number;
+    onFrame: (tail: number) => void;
+    done: () => void;
+  } | null = null;
   /** Inclinación de la tarjeta central hacia el cursor (x, y en -1..1; s = 0..1 de presencia). */
   private readonly lean = { x: 0, y: 0, tx: 0, ty: 0, s: 0, ts: 0 };
 
@@ -296,6 +317,63 @@ export class FlexCarousel {
     this.wake();
   }
 
+  /**
+   * Barrido de salida: la cinta avanza `cards` tarjetas hacia la izquierda y detrás de la última
+   * no viene ninguna; luego una "cola" (el recuadro del bloque, que no pinta el motor) llega al
+   * centro con la cinta ya fuera de pantalla. `onFrame` da en cada fotograma dónde está la cola
+   * respecto al centro (px), para que el bloque la mueva. Resuelve con la cola en el centro.
+   *
+   * Con `back` es la vuelta, el mismo recorrido al revés: se parte de la cola en el centro y la
+   * cinta entra desde la izquierda hasta dejar la tarjeta `back` en el centro. Se salta la intro
+   * (las tarjetas ya se vieron) y al acabar el carrete vuelve a responder.
+   */
+  sweep({ cards, seconds, onFrame, back }: { cards: number; seconds: number; onFrame: (tail: number) => void; back?: number }) {
+    return new Promise<void>((resolve) => {
+      const m = this.metrics();
+      this.pending = -1;
+      this.pointer.down = false;
+      this.pointer.dragging = false;
+      this.host.removeAttribute("data-dragging");
+      const returning = back !== undefined;
+      if (returning) this.reveal();
+      const start = returning ? m.centers[((back % this.n) + this.n) % this.n] : this.snapPoint(m, this.pos);
+      const { at, index } = this.advance(m, start, cards);
+      // Hueco entre la última y la cola: el justo para que, con la cola centrada, la última haya
+      // salido entera.
+      const tail = at + m.widths[index] / 2 + this.width * (0.5 + SWEEP_MARGIN);
+      const from = returning ? tail : this.pos;
+      if (returning) {
+        this.pos = this.goal = this.lastPos = from;
+        this.vel = 0;
+      }
+      this.sweeping = {
+        from,
+        to: returning ? start : tail,
+        limit: at,
+        tail,
+        back: returning,
+        t: 0,
+        dur: Math.max(0.01, seconds),
+        onFrame,
+        done: resolve,
+      };
+      onFrame(tail - this.pos);
+      this.wake();
+    });
+  }
+
+  /** Da la intro por vista: las tarjetas aparecen ya en su sitio, sin el rise. */
+  reveal() {
+    const intro = this.intro;
+    if (intro.done) return;
+    intro.requested = true;
+    intro.running = false;
+    intro.done = true;
+    intro.t = 1;
+    this.o.onRevealed();
+    this.wake();
+  }
+
   /** Tarjeta tapada por el marco de un proyecto (-1 = ninguna). Congela el carrete. */
   setProject(index: number) {
     this.projectIndex = index;
@@ -374,7 +452,7 @@ export class FlexCarousel {
 
   /** Mientras hay un proyecto abierto o la intro no ha acabado, la cinta no se toca. */
   private get locked() {
-    return this.projectIndex >= 0 || this.focus.target > 0 || !this.intro.done;
+    return this.projectIndex >= 0 || this.focus.target > 0 || !this.intro.done || !!this.sweeping;
   }
 
   private onPointerDown = (e: PointerEvent) => {
@@ -627,8 +705,8 @@ export class FlexCarousel {
     return cycles * to.loop + to.centers[i] + offset * (to.widths[i] / from.widths[i]);
   }
 
-  private step(m: Metrics, delta: number) {
-    let at = this.snapPoint(m, this.goal);
+  /** Centro (sin envolver) y tarjeta a `delta` pasos de un punto de encaje. */
+  private advance(m: Metrics, at: number, delta: number) {
     let index = this.nearest(m, at);
     for (let k = 0; k < Math.abs(delta); k++) {
       const next = (index + (delta > 0 ? 1 : this.n - 1)) % this.n;
@@ -638,7 +716,11 @@ export class FlexCarousel {
           : -(m.widths[next] / 2 + this.o.gap + m.widths[index] / 2);
       index = next;
     }
-    this.goal = at;
+    return { at, index };
+  }
+
+  private step(m: Metrics, delta: number) {
+    this.goal = this.advance(m, this.snapPoint(m, this.goal), delta).at;
     this.mode = "spring";
     this.pending = -1;
     this.wake();
@@ -702,6 +784,8 @@ export class FlexCarousel {
       for (let k = -3; k <= 3; k++) {
         const rel = baseRel + k * m.loop;
         if (Math.abs(rel) - w / 2 > width + 40) continue;
+        // En el barrido, detrás de la última no viene nada (pos + rel es el centro sin envolver).
+        if (this.sweeping && this.pos + rel > this.sweeping.limit + 1) continue;
         const fx = effects.card ? effects.card(rel) : null;
         // La tarjeta del centro, la que se puede abrir, se arrima al cursor.
         const lead = i === this.active && Math.abs(rel) < w / 2;
@@ -828,7 +912,29 @@ export class FlexCarousel {
       this.goal = this.snapPoint(m, this.goal);
       this.mode = "spring";
     }
-    if (!pointer.dragging && this.projectIndex < 0) {
+    const sweep = this.sweeping;
+    if (sweep) {
+      // Tiempo y no muelle: tiene que acabar cuando toca. Se embala y frena al final, que es
+      // cuando la cola llega al centro (o, de vuelta, cuando la tarjeta llega al suyo).
+      const before = this.pos;
+      sweep.t = Math.min(1, sweep.t + dt / sweep.dur);
+      this.pos = sweep.from + (sweep.to - sweep.from) * easeInOut(sweep.t);
+      this.goal = this.pos;
+      this.vel = (this.pos - before) / dt;
+      sweep.onFrame(sweep.tail - this.pos);
+      if (sweep.t >= 1) {
+        this.vel = 0;
+        // La vuelta devuelve el carrete (encajado: si una portada llegó a mitad con otra
+        // proporción, la geometría ha cambiado); la ida lo deja vacío.
+        if (sweep.back) {
+          this.sweeping = null;
+          this.goal = this.snapPoint(m, this.pos);
+          this.mode = "spring";
+          animating = true;
+        }
+        sweep.done();
+      } else animating = true;
+    } else if (!pointer.dragging && this.projectIndex < 0) {
       // Muelle críticamente amortiguado, integrado en pasos de 1/240 s: estable a cualquier fps.
       const stiffness = this.mode === "wheel" ? 80 : 55;
       const damping = 2 * Math.sqrt(stiffness);
@@ -846,7 +952,7 @@ export class FlexCarousel {
     } else if (pointer.dragging) animating = true;
 
     // Sin derivas numéricas: a varias vueltas del origen, se recoloca todo una vuelta exacta.
-    if (Math.abs(this.pos) > m.loop * 8) {
+    if (!sweep && Math.abs(this.pos) > m.loop * 8) {
       const shift = Math.round(this.pos / m.loop) * m.loop;
       this.pos -= shift;
       this.goal -= shift;

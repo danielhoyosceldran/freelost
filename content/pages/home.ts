@@ -3,7 +3,7 @@ import { contactContent, footerContent } from "@/content/contact";
 import { gearContent } from "@/content/gear";
 import { heroContent } from "@/content/hero";
 import type { Locale } from "@/content/locales";
-import { reelLabels, reelSlides } from "@/content/reel";
+import { reelLabels, reelMore, reelSlides } from "@/content/reel";
 
 const loading: Record<Locale, string> = { en: "Loading", ca: "Carregant", es: "Cargando" };
 
@@ -15,7 +15,7 @@ export const home = (lang: Locale) =>
     main: [
       { type: "hero", props: heroContent(lang) },
       // Una pantalla; la cinta se arrastra. Lente y física en los defaults del bloque.
-      { type: "reel", props: { slides: reelSlides(lang), labels: reelLabels[lang] } },
+      { type: "reel", props: { slides: reelSlides(lang), labels: reelLabels[lang], more: reelMore(lang) } },
       { type: "gear", props: gearContent(lang) },
       { type: "contact", props: contactContent(lang) },
     ],

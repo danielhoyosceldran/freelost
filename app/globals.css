@@ -173,16 +173,18 @@ body {
   top: 0;
   bottom: 0;
   background: var(--color-ink);
-  transition: transform var(--t-veil) cubic-bezier(0.7, 0, 0.2, 1);
+  /* Sale con velocidad: el relleno acaba lanzado y la apertura lo continúa sin hueco. */
+  transition: transform var(--t-veil) cubic-bezier(0.45, 0, 0.15, 1);
 }
 .pl-veil-l { left: 0; width: calc(var(--seam) + 1px); }
 .pl-veil-r { left: var(--seam); right: 0; }
 #page-loader.is-done .pl-veil-l { transform: translateY(-100%); }
 #page-loader.is-done .pl-veil-r { transform: translateY(100%); }
 
-/* Mientras el velo sale, la marca con el acento se funde sobre la blanca del hero, que está
-   debajo en el mismo sitio; esa después vuela a la esquina (blocks/hero). */
-.pl-mark { transition: opacity 0.45s ease 0.55s; }
+/* Con el velo ya en marcha, la marca ember se funde rápido sobre la blanca del hero, que está
+   debajo en el mismo sitio: el cambio de color se lee como parte del corte. Esa después vuela a
+   la esquina (blocks/hero). */
+.pl-mark { transition: opacity 0.3s var(--ease-out) 0.15s; }
 #page-loader.is-done .pl-mark { opacity: 0; }
 #page-loader.is-done { pointer-events: none; }
 
@@ -195,41 +197,23 @@ body {
   stroke: none;
 }
 
-/* Entrada: cada trazo recorre su camino vertical por la costura, se pasa y encaja. */
-.pl-blade-f { animation: pl-drop 1.3s 0.2s both; }
-.pl-blade-l { animation: pl-rise 1.3s 0.2s both; }
-/* El clic llega cuando los trazos se asientan (0.2s + 1.3s): sin borde que encender, el golpe lo
-   dan el destello del fondo y un pulso de escala de la marca entera. */
-.pl-blade .pl-outline { animation: pl-lock 0.6s var(--ease-out) 1.45s both; }
-.pl-mark { animation: pl-hit 0.5s var(--ease-out) 1.45s both; }
+/* Entrada: cada trazo recorre su camino vertical por la costura y frena en seco en su sitio, sin
+   pasarse. El golpe es esa frenada, y el relleno arranca en el mismo frame (PageLoader espera a
+   que acabe esta animación): no hay destello ni pulso que compitan con el ember. */
+.pl-blade-f { animation: pl-drop 0.6s cubic-bezier(0.5, 0, 0.1, 1) 0.1s both; }
+.pl-blade-l { animation: pl-rise 0.6s cubic-bezier(0.5, 0, 0.1, 1) 0.1s both; }
 
-/* Sobrepaso del 3.5% (antes 1.6%): las dos mitades se cruzan de forma visible antes de encajar. */
 @keyframes pl-drop {
-  0% { transform: translateY(-100vh); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-  78% { transform: translateY(3.5%); animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1); }
-  100% { transform: translateY(0); }
+  from { transform: translateY(-100vh); }
+  to { transform: translateY(0); }
 }
 @keyframes pl-rise {
-  0% { transform: translateY(100vh); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-  78% { transform: translateY(-3.5%); animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1); }
-  100% { transform: translateY(0); }
-}
-/* El fondo se enciende de golpe y se disipa. */
-@keyframes pl-lock {
-  0% { fill: rgb(238 241 240 / 0.09); }
-  10% { fill: rgb(238 241 240 / 0.55); }
-  100% { fill: rgb(238 241 240 / 0.09); }
-}
-/* Impacto: la marca se hincha un instante y vuelve. Solo transform, la propiedad translate que
-   centra .brand-mark no se toca. */
-@keyframes pl-hit {
-  0% { transform: scale(1); }
-  14% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  from { transform: translateY(100vh); }
+  to { transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pl-blade-f, .pl-blade-l, .pl-blade .pl-outline, .pl-mark { animation: none; }
+  .pl-blade-f, .pl-blade-l { animation: none; }
   .pl-veil { transition: opacity 0.6s ease; }
   #page-loader.is-done .pl-veil-l,
   #page-loader.is-done .pl-veil-r { transform: none; opacity: 0; }

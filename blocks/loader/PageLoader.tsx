@@ -1,13 +1,13 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { assetRegistry } from "@/core/assets/registry";
 import { useLifecycle } from "@/core/lifecycle/store";
 import { scrollController } from "@/core/scroll/controller";
+import { handoff } from "@/core/transition/handoff";
 import { LOGO_F, LOGO_L, LOGO_VIEWBOX } from "@/lib/brand/logo";
 import type { LoaderProps } from "./index";
-
-const EASE = 7; // 1/s: suavizado de lo mostrado hacia lo real
 
 // Los dos trazos miden lo mismo en vertical (la F de 80 a 1227, la L de 370 a 1517, en unidades
 // del viewBox): el relleno de la F baja desde su punta y el de la L sube desde la suya, y
@@ -27,13 +27,21 @@ const SPAN = 1147;
  *    el mismo sitio, queda debajo; esta se desvanece encima y el acento pasa a blanco.
  */
 export function PageLoader({ minMs, maxMs, fonts, color, label }: LoaderProps) {
-  const [gone, setGone] = useState(false);
+  // Al volver de una página con una transición que se deshace (todos los proyectos), la página
+  // entra tapada por esa transición y no hay nada que cargar a la vista: sin loader.
+  const pathname = usePathname();
+  const [covered] = useState(() => !!handoff.pending(pathname));
+  const [gone, setGone] = useState(covered);
   const rootRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<HTMLDivElement>(null);
   const fRef = useRef<SVGRectElement>(null);
   const lRef = useRef<SVGRectElement>(null);
 
   useEffect(() => {
+    if (covered) {
+      useLifecycle.getState().markReady();
+      return;
+    }
     const root = rootRef.current;
     const mark = markRef.current;
     const fClip = fRef.current;
@@ -86,13 +94,11 @@ export function PageLoader({ minMs, maxMs, fonts, color, label }: LoaderProps) {
       const total = Math.max(1, assets.total + (fonts ? 1 : 0));
       const done = assets.done + (fonts && fontsDone ? 1 : 0);
 
-      // Lo real, pero sin ir más rápido que minMs desde que encajan: así el relleno siempre se
-      // ve subir aunque todo venga de caché. Pasado maxMs se da por cargado.
-      const real = elapsed >= maxMs ? 1 : done / total;
-      const pace = fillFrom < 0 ? 0 : (ts - fillFrom) / minMs;
-      const target = Math.min(real, pace);
-      shown += (target - shown) * (1 - Math.exp(-EASE * dt));
-      if (target >= 1 && 1 - shown < 0.004) shown = 1;
+      // Lo real, pero sin pasar de una velocidad fija desde que encajan: con caché llena el
+      // relleno se ve subir en minMs. Va a velocidad constante y llega al 1 sin frenar, para que
+      // la apertura lo continúe en vez de esperar a una cola. Pasado maxMs se da por cargado.
+      const target = elapsed >= maxMs ? 1 : done / total;
+      if (fillFrom >= 0) shown = Math.min(target, shown + (1000 / minMs) * dt);
 
       const h = (shown * SPAN).toFixed(1);
       fClip.setAttribute("height", h);
@@ -111,7 +117,7 @@ export function PageLoader({ minMs, maxMs, fonts, color, label }: LoaderProps) {
       clearTimeout(fallback);
       mark.removeEventListener("transitionend", onMarkFaded);
     };
-  }, [minMs, maxMs, fonts]);
+  }, [minMs, maxMs, fonts, covered]);
 
   if (gone) return null;
 

@@ -40,6 +40,12 @@ export const reelSlides = (lang: Locale): ReelSlide[] => {
   ];
 };
 
+/** Enlace a la página de todos los proyectos (app/[lang]/projects). */
+export const reelMore = (lang: Locale) => ({
+  label: { en: "All projects", ca: "Tots els projectes", es: "Todos los proyectos" }[lang],
+  href: `/${lang}/projects`,
+});
+
 export const reelLabels: Record<Locale, { title: string; carousel: string; project: string; close: string; of: string }> = {
   en: { title: "Projects", carousel: "Project reel", project: "Project", close: "Leave project", of: "of" },
   ca: { title: "Projectes", carousel: "Carret de projectes", project: "Projecte", close: "Sortir del projecte", of: "de" },

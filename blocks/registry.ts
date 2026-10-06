@@ -5,6 +5,7 @@ import { footer } from "./footer";
 import { gear } from "./gear";
 import { hero } from "./hero";
 import { loader } from "./loader";
+import { projects } from "./projects";
 import { reel } from "./reel";
 
 /**
@@ -18,6 +19,7 @@ export const registry = {
   gear,
   hero,
   loader,
+  projects,
   reel,
 } as const;
 

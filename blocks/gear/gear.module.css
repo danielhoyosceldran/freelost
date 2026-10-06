@@ -1,4 +1,4 @@
-/* "Lo que uso": escenario clavado. Título arriba a la izquierda (como en el carrete), el objeto
+/* "Lo que uso": escenario clavado. Título arriba a la izquierda (como en el carrete), el lienzo 3D
    ocupa el escenario y la lista de nombres abajo a la izquierda hace de índice y de progreso. */
 
 .stage {
@@ -32,19 +32,12 @@
   right: var(--gutter);
 }
 
-/* Las cajas se apilan; el scroll decide cuál se ve (opacidad, subida y escala desde el JS). */
-.box {
-  position: absolute;
-  inset: 0;
-  will-change: opacity, transform;
-}
-
 .viewer {
   position: absolute;
   inset: 0;
 }
 
-/* El canvas lo crea GearViewer. Al pasar por encima el modelo se orienta hacia el puntero. */
+/* El canvas lo crea GearMorph y lleva el mismo fondo que el escenario. Arrastrar gira el objeto. */
 .viewer canvas {
   position: absolute;
   inset: 0;
@@ -56,6 +49,15 @@
 
 .viewer canvas:active {
   cursor: grabbing;
+}
+
+/* Viñeta de la maqueta: el fondo se cierra hacia los bordes y el objeto queda iluminado. */
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 66% 48%, transparent 45%, rgb(0 0 0 / 0.85) 120%);
 }
 
 .list {

@@ -11,6 +11,8 @@ cualquier agente. Ninguno arranca el sitio: el feel check lo hace el usuario con
 | 004 | [El título del carrete no se reinicia a cada tarjeta](004-titulo-del-carrete-interrumpible.md) | MEDIUM | DONE |
 | 005 | [El marco del proyecto crece con transform y clip-path](005-marco-del-proyecto-flip.md) | HIGH | DONE |
 | 006 | [Pulido: hover fino, pulsación, controles inertes](006-pulido-hover-pulsacion-controles.md) | LOW | DONE |
+| 007 | [El scroll como montaje](007-montaje-del-scroll.md) | HIGH | EN CURSO |
+| 008 | [Loader: golpe, relleno y apertura en un solo gesto](008-loader-golpe-relleno-apertura.md) | HIGH | HECHO (feel check pendiente) |
 
 ## Orden recomendado
 
@@ -23,6 +25,9 @@ cualquier agente. Ninguno arranca el sitio: el feel check lo hace el usuario con
 
 ## Dependencias
 
+- 008 es independiente: solo toca el loader (`app/globals.css:158-242`, `blocks/loader/`) y `DESIGN.md:164`.
+  Sustituye al sobrepaso, al destello y al pulso del loader, que antes estaban fuera de alcance.
+
 - 003 → 006 (mismo fichero, mismas reglas de `.mail`).
 - 002, 004, 005 → no se bloquean, pero conviene ejecutarlos en serie para no pelearse con
   `reel.module.css`.
@@ -30,6 +35,6 @@ cualquier agente. Ninguno arranca el sitio: el feel check lo hace el usuario con
 
 ## Fuera de alcance (deliberado)
 
-Entradas largas del hero y del carrete, el overshoot del loader, el muelle del carrete y el
+Entradas largas del hero y del carrete, el muelle del carrete y el
 movimiento reducido: están bien resueltos. El código muerto de v4 (`.scroll-reveal`,
 `.action-pill`…) se va con la limpieza del backlog, no con estos planes.

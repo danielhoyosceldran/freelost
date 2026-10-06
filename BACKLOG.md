@@ -8,7 +8,7 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [ ] **[cliente]** Títulos reales de las 12 películas del carrete. Los de `content/reel.ts` salen
       de los nombres de carpeta y fichero ("Raz Surfcamp · Camp 12", "Ironman · FL3"…).
 - [ ] **[cliente]** Lista real de equipo para "Lo que uso". Hoy son tres categorías ("Cámara y
-      ópticas", "Dron", "Edición") con modelos 3D genéricos.
+      ópticas", "Dron", "Edición") con modelos 3D procedurales genéricos (`lib/three/gearModels.ts`).
 - [ ] **[cliente]** Correo de contacto. `hola@freelost.com` en `content/contact.ts` es provisional.
 - [ ] **[cliente]** URLs de Instagram y Vimeo (y si hay más redes). Los enlaces no tienen `href`.
 - [ ] Contacto funcional: `mailto:` real y `href` de las redes en `content/contact.ts`.
@@ -63,6 +63,23 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       barrido del equipo, relleno del contacto, timecode) y decidir: plano del hero → tarjeta
       central, inclinación en perspectiva de la tarjeta (shaders) e imán del equipo.
 
+- [ ] "Lo que uso" con la metamorfosis (maqueta "Metamorfosis Técnica", `lib/three/GearMorph.ts`):
+      feel check con `npm run dev`. Encuadre en la caja del escenario (`.stack`, a la derecha de la
+      lista) y en móvil (fov 52 si es vertical), tiempo de arranque (se modelan y muestrean 3 × 26 000
+      puntos en el hilo principal al calentar: si da tirón, pasarlo a idle o a un worker), coste del
+      postprocesado (contornos + bloom) en portátiles flojos, y si el contorno/brillo frío #e6ecf5
+      encaja con el papel #eef1f0 del sitio o conviene pasarlo al token.
+
+- [ ] Página de todos los proyectos (bloque `projects`, `content/pages/projects.ts`): hoy solo
+      es el fondo naranja y la cruz de volver. Falta el contenido.
+- [ ] Salida del carrete a todos los proyectos y vuelta: feel check con `npm run dev`. Ida:
+      barrido de `max(n, 15)` tarjetas en 1,15 s (`SWEEP_S` en `blocks/reel/Reel.tsx`) con el
+      recuadro 50vw × 50vh como cola, que crece en 0,7 s (`.box` en `reel.module.css`). Vuelta
+      (cruz, Esc o atrás del navegador): lo mismo al revés, con el relevo de
+      `core/transition/handoff.ts` (sin loader). Revisar en móvil (tarjetas a 0,26 del alto),
+      el hueco entre la última y el recuadro (`SWEEP_MARGIN` en FlexCarousel) y que la home
+      vuelva bien colocada (scroll, gear, hero) tras la vuelta.
+
 ## Limpieza de v4
 
 - [ ] Quitar el chrome heredado que ya no usa nadie: `ShowreelModal`, `Modal`, `Toast`, `Cursor`,
@@ -83,7 +100,7 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [x] Loader con la marca (entrada de los trazos, relleno con la carga real, apertura por la
       costura).
 - [x] Hero con la película FL1 a sangre, nombre, marca y eslogan; sonido y pausa.
-- [x] Salida del hero: el plano se desencaja (encoge y se ladea) con el scroll.
+- [x] Salida del hero: el plano se desencaja con el scroll (sutil: encoge a 0.9, sin giro).
 - [x] Carrete de proyectos con las 12 películas reales y reproducción completa en local.
 - [x] Entrada del carrete: pausa al llegar y después el rise de React Bits.
 - [x] Carrete con la física de React Bits: arrastre con inercia, bucle infinito, ajuste natural,

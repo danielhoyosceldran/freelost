@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useCriticalAssets, useReleaseHold } from "@/core/lifecycle/BlockSlot";
 import { useLifecycle } from "@/core/lifecycle/store";
 import { scrollController } from "@/core/scroll/controller";
+import { handoff } from "@/core/transition/handoff";
 import { pad2 } from "@/lib/easing";
 import { FlexCarousel } from "@/lib/webgl/flex-carousel/FlexCarousel";
 import type { ReelProps } from "./index";
@@ -12,6 +14,16 @@ import styles from "./reel.module.css";
 import { coverOf } from "./slides";
 
 const PIN_OWNER = "reel:project";
+const LEAVE_OWNER = "reel:leave";
+/**
+ * Salida a "todos los proyectos": la cinta avanza al menos SWEEP_MIN tarjetas (o todas, si hay
+ * más) en SWEEP_S segundos y detrás llega el recuadro naranja al centro; luego crece (su
+ * transición está en el CSS) y se navega. La vuelta es lo mismo al revés. BOX_FALLBACK_MS cubre
+ * un transitionend que no llegue.
+ */
+const SWEEP_MIN = 15;
+const SWEEP_S = 1.15;
+const BOX_FALLBACK_MS = 1200;
 const DIGITS = Array.from({ length: 10 }, (_, n) => n);
 /**
  * Llegada a la sección: cuando su borde superior está a esta fracción de pantalla del techo,
@@ -32,7 +44,9 @@ const LENS_QUERY = "(hover: hover) and (pointer: fine)";
  * núcleo: llegada → título y rise, pin de la página con un proyecto abierto, y el hold de los
  * bloques de debajo. No re-renderiza nunca: todo lo que cambia va por refs.
  */
-export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeeze }: ReelProps) {
+export function Reel({ anchor, slides, labels, more, gap, aspect, lens, liquid, squeeze }: ReelProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const provide = useCriticalAssets();
   const releaseHold = useReleaseHold();
   const n = slides.length;
@@ -51,6 +65,8 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
   const scrubRef = useRef<HTMLDivElement>(null);
   const scrubFillRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const moreRef = useRef<HTMLAnchorElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<ProjectView | null>(null);
   const swapTimer = useRef(0);
 
@@ -74,6 +90,16 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
     },
     [slides, labels.of, n],
   );
+
+  // Vuelta de todos los proyectos: antes del primer pintado la página ya está donde se dejó y el
+  // recuadro tapa la pantalla entera, igual que la página de la que se viene. El efecto de abajo
+  // lo encoge y trae la cinta; también quita lo puesto aquí al desmontar.
+  useLayoutEffect(() => {
+    const back = handoff.pending(pathname);
+    if (!back) return;
+    scrollController.pin(LEAVE_OWNER, back.scrollY);
+    sectionRef.current!.classList.add(styles.leaving, styles.opening);
+  }, [pathname]);
 
   useEffect(() => {
     const root = rootRef.current!;
@@ -106,6 +132,12 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
       root.classList.add(styles.arrived, styles.revealed);
       setCaption(0);
       releaseHold();
+      // Una vuelta de todos los proyectos sin carrete: solo se destapa.
+      if (handoff.pending(pathname)) {
+        handoff.done();
+        sectionRef.current!.classList.remove(styles.leaving, styles.opening);
+        scrollController.unpin(LEAVE_OWNER);
+      }
       return;
     }
 
@@ -161,7 +193,13 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
     // Llegada: una sola vez. El título entra ya; las tarjetas, tras la pausa. La intro corre con
     // su propio reloj (no la pilota el scroll), así que se ve entera aunque se siga bajando.
     let riseTimer = 0;
-    let arrived = false;
+    const back = handoff.pending(pathname);
+    // De vuelta ya se llegó una vez: ni título que esperar ni rise (la cinta entra barriendo).
+    let arrived = !!back;
+    if (back) {
+      root.classList.add(styles.arrived);
+      releaseHold();
+    }
     const checkArrival = () => {
       const section = sectionRef.current;
       if (arrived || !section || !useLifecycle.getState().ready) return;
@@ -216,6 +254,93 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
       host.removeAttribute("data-hover");
     };
 
+    // Salida a "todos los proyectos". Es un <a> de verdad: sin JS, o con modificadores (pestaña
+    // nueva…), navega como cualquier enlace.
+    const section = sectionRef.current!;
+    const link = moreRef.current;
+    const box = boxRef.current!;
+    const cards = Math.max(n, SWEEP_MIN);
+    let leaving = false;
+    let boxTimer = 0;
+    let onBoxDone: (() => void) | null = null;
+    /** Espera a que acabe la transición del recuadro (crecer o encoger). */
+    const afterBox = (then: () => void) => {
+      const done = () => {
+        if (onBoxDone !== done) return;
+        onBoxDone = null;
+        clearTimeout(boxTimer);
+        box.removeEventListener("transitionend", done);
+        then();
+      };
+      onBoxDone = done;
+      box.addEventListener("transitionend", done);
+      boxTimer = window.setTimeout(done, BOX_FALLBACK_MS);
+    };
+    // El recuadro es la pantalla entera a escala 0,5 (50vw × 50vh), centrado sobre el carrete
+    // (que puede no estar justo en el centro de la pantalla si la sección no está clavada) y
+    // desplazado `x` px con la cola de la cinta.
+    const placeBox = () => {
+      const r = root.getBoundingClientRect();
+      const vp = document.documentElement;
+      box.style.setProperty("--leave-x", `${r.left + r.width / 2 - vp.clientWidth / 2}px`);
+      box.style.setProperty("--leave-y", `${r.top + r.height / 2 - vp.clientHeight / 2}px`);
+    };
+    const moveBox = (x: number) => box.style.setProperty("--sweep-x", `${x}px`);
+
+    const onMore = (e: MouseEvent) => {
+      if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      if (leaving || view.isOpen) return;
+      leaving = true;
+      const href = link.getAttribute("href")!;
+      router.prefetch(href);
+      // Lo que la vuelta necesita para deshacer la salida. Se guarda ya: durante el barrido la
+      // tarjeta del centro cambia.
+      const leave = { path: pathname, scrollY: window.scrollY, index: Math.max(0, carousel.activeIndex) };
+      const go = () => {
+        handoff.leave(leave);
+        router.push(href);
+      };
+      if (reduced) return go();
+      // La página se queda quieta durante toda la salida.
+      scrollController.pin(LEAVE_OWNER);
+      placeBox();
+      // sweep() coloca la cola (fuera, a la derecha) antes de que el recuadro se vea.
+      const swept = carousel.sweep({ cards, seconds: SWEEP_S, onFrame: moveBox });
+      section.classList.add(styles.leaving);
+      void swept.then(() => {
+        if (!leaving) return;
+        section.classList.add(styles.opening);
+        afterBox(go);
+      });
+    };
+
+    // Vuelta: el recuadro encoge hasta el centro y la cinta entra por la izquierda empujándolo
+    // fuera por la derecha, hasta dejar en el centro la tarjeta que se dejó.
+    const finishReturn = () => {
+      handoff.done();
+      section.classList.remove(styles.leaving, styles.closing);
+      box.style.removeProperty("--sweep-x");
+      scrollController.unpin(LEAVE_OWNER);
+    };
+    if (back) {
+      if (reduced) {
+        section.classList.remove(styles.opening);
+        void carousel.sweep({ cards, seconds: 0, back: back.index, onFrame: moveBox }).then(finishReturn);
+      } else {
+        placeBox();
+        moveBox(0);
+        // Fija el estilo de partida (pantalla entera) para que el cambio de clase sí anime.
+        box.getBoundingClientRect();
+        section.classList.add(styles.closing);
+        section.classList.remove(styles.opening);
+        afterBox(() => {
+          section.classList.remove(styles.closing);
+          void carousel.sweep({ cards, seconds: SWEEP_S, back: back.index, onFrame: moveBox }).then(finishReturn);
+        });
+      }
+    }
+
     const onDocKey = (e: KeyboardEvent) => {
       if (view.isOpen && e.key === "Escape") view.exit();
     };
@@ -227,8 +352,21 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
     document.addEventListener("keydown", onDocKey);
     window.addEventListener("resize", onResize);
     close.addEventListener("click", onClose);
+    link?.addEventListener("click", onMore);
 
     return () => {
+      link?.removeEventListener("click", onMore);
+      if (onBoxDone) box.removeEventListener("transitionend", onBoxDone);
+      onBoxDone = null;
+      clearTimeout(boxTimer);
+      leaving = false;
+      scrollController.unpin(LEAVE_OWNER);
+      // Sin restos de la salida ni de la vuelta. (En StrictMode el efecto se monta dos veces: el
+      // relevo sigue ahí hasta que la vuelta acaba, y el layout effect vuelve a tapar.)
+      section.classList.remove(styles.leaving, styles.opening, styles.closing);
+      box.style.removeProperty("--leave-x");
+      box.style.removeProperty("--leave-y");
+      box.style.removeProperty("--sweep-x");
       host.removeEventListener("pointermove", onPointerMove);
       host.removeEventListener("pointerleave", onPointerLeave);
       lensMq.removeEventListener("change", syncLens);
@@ -245,7 +383,7 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
       carousel.destroy();
       root.classList.remove(styles.revealed, styles.arrived);
     };
-  }, [provide, releaseHold, slides, gap, aspect, lens, liquid, squeeze, setCaption]);
+  }, [provide, releaseHold, router, pathname, n, slides, gap, aspect, lens, liquid, squeeze, setCaption]);
 
   return (
     <section ref={sectionRef} id={anchor} className={styles.section}>
@@ -284,6 +422,14 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
         <figcaption ref={placeRef} className={styles.place} />
       </figure>
       <div ref={liveRef} className={styles.live} aria-live="polite" aria-atomic="true" />
+
+      {more && (
+        <a ref={moreRef} href={more.href} className={styles.more}>
+          {more.label}
+        </a>
+      )}
+      {/* Recuadro naranja de la salida a "todos los proyectos": llega detrás de la última tarjeta. */}
+      <div ref={boxRef} className={styles.box} aria-hidden="true" />
 
       {/* Vista de proyecto: oculta con [hidden] fuera de un proyecto. La maneja ProjectView. */}
       <section ref={projectRef} className={styles.project} hidden aria-hidden="true" aria-label={labels.project}>

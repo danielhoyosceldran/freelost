@@ -23,6 +23,11 @@ export const reelSchema = z.object({
       of: z.string().default("de"),
     })
     .prefault({}),
+  /**
+   * Enlace a la página de todos los proyectos, abajo a la derecha. Al pulsarlo la cinta sale
+   * barriendo y un recuadro naranja crece hasta cubrir la pantalla antes de navegar.
+   */
+  more: z.object({ label: z.string(), href: z.string() }).optional(),
   /** Separación entre tarjetas (px). */
   gap: z.number().default(12),
   /** Proporción fija de las tarjetas; sin ella, "natural" (la de cada portada). */
