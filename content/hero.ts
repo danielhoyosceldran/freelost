@@ -1,9 +1,8 @@
 import { locales, localeNames, type Locale } from "@/content/locales";
 import { imageUrl, videoUrl } from "@/lib/media";
 
-// Primera pantalla de la home. Película: FL1 (public/media/videos/bici/FL1 insta.mp4),
-// transcodificada sin las pausas en negro del arranque (0–13 s) ni el cartón del logo del final
-// (desde 106,8 s).
+// Primera pantalla de la home. Película: Down Urban (public/media/videos/bici/downUrban.mp4),
+// entera (28 s, sin negros), transcodificada a 1080p y 720p; el póster es su primer fotograma.
 //
 // El hero es un <video> nativo a propósito, también cuando el resto pase a Vimeo: el loader mide
 // su búfer, la salida le cambia la velocidad y es el LCP. Un iframe de Vimeo añadiría su player
@@ -11,15 +10,15 @@ import { imageUrl, videoUrl } from "@/lib/media";
 // fichero de Vimeo, si el plan los da), vía NEXT_PUBLIC_VIDEO_BASE.
 const text = {
   en: {
-    filmLabel: "free lost film: road cycling and running.",
+    filmLabel: "free lost film: urban downhill mountain biking.",
     labels: { sound: "Sound", play: "Play", pause: "Pause", language: "Language" },
   },
   ca: {
-    filmLabel: "Pel·lícula de free lost: ciclisme i cursa a peu per carretera.",
+    filmLabel: "Pel·lícula de free lost: descens urbà en bicicleta de muntanya.",
     labels: { sound: "So", play: "Reproduir", pause: "Pausar", language: "Idioma" },
   },
   es: {
-    filmLabel: "Película de free lost: ciclismo y carrera a pie en carretera.",
+    filmLabel: "Película de free lost: descenso urbano en bicicleta de montaña.",
     labels: { sound: "Sonido", play: "Reproducir", pause: "Pausar", language: "Idioma" },
   },
 } satisfies Record<Locale, { filmLabel: string; labels: Record<string, string> }>;
@@ -33,10 +32,10 @@ export const heroContent = (lang: Locale) => ({
   sloganLang: lang === "en" ? undefined : "en",
   film: {
     label: text[lang].filmLabel,
-    poster: imageUrl("fl1-poster.jpg", 1920),
+    poster: imageUrl("downurban-poster.jpg", 1920),
     sources: [
-      { src: videoUrl("fl1-720.mp4"), media: "(max-width: 960px)" },
-      { src: videoUrl("fl1-1080.mp4") },
+      { src: videoUrl("downurban-720.mp4"), media: "(max-width: 960px)" },
+      { src: videoUrl("downurban-1080.mp4") },
     ],
   },
   labels: text[lang].labels,

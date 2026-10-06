@@ -242,7 +242,7 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
           {words.map((w, i) => (
             <Fragment key={i}>
               {i > 0 && " "}
-              <span ref={(el) => void (wordRefs.current[i] = el)} className={styles.line}>
+              <span ref={(el) => void (wordRefs.current[i] = el)} className={`${styles.line} ${styles.negative}`}>
                 <span className={styles.word} style={{ "--i": i, "--dir": i % 2 === 0 ? -1 : 1 } as CSSProperties}>
                   {w}
                 </span>
@@ -250,7 +250,7 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
             </Fragment>
           ))}
         </h1>
-        <div ref={sloganRef}>
+        <div ref={sloganRef} className={styles.negative}>
           <p className={styles.slogan} lang={sloganLang}>
             {slogan}
           </p>

@@ -26,7 +26,7 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [ ] **[cliente]** Subir las películas a Vimeo y pasar sus ids en `content/reel.ts`
       (`film(slug, caption, { vimeo: "…" })`). Quitar después `public/media/web/films/` (~670 MB;
       Lofoten sola 185 MB). El carrete ya abre la conexión y precarga el SDK si hay alguna.
-- [ ] Host de los MP4 del hero (`fl1-720/1080.mp4`, 22 y 50 MB): CDN de vídeo (Bunny, R2) o
+- [ ] Host de los MP4 del hero (`downurban-720/1080.mp4`, 6 y 13 MB): CDN de vídeo (Bunny, R2) o
       enlaces de fichero de Vimeo si el plan los da. Se configura con `NEXT_PUBLIC_VIDEO_BASE`.
       Sigue siendo `<video>` nativo, no iframe (ver `content/hero.ts`).
 - [ ] Al montar el CDN de imágenes, comprobar en el navegador que manda

@@ -203,6 +203,14 @@
   display: inline-block;
 }
 
+/* Rótulo y eslogan en negativo: blanco en «difference» invierte el plano bajo cada letra, y se
+   leen oscuros sobre lo claro y claros sobre lo oscuro. Va en los nodos que mueve la salida (cada
+   línea y el envoltorio del eslogan) y en ningún ancestro: un transform o una opacidad por encima
+   aislaría la mezcla y dejaría de ver la película. */
+.negative {
+  mix-blend-mode: difference;
+}
+
 .slogan {
   font-family: var(--font-instrument), Georgia, serif;
   font-size: clamp(1.6rem, 3.4vw, 3.5rem);
