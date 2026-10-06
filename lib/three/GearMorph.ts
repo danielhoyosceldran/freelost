@@ -32,7 +32,7 @@ import { sdfWorkerMain } from "./sdfWorker";
  */
 
 /** Segundos que dura una metamorfosis entre dos objetos vecinos. */
-const MORPH_SECONDS = 2.2;
+const MORPH_SECONDS = 0.5;
 /** Fracción del cambio que dura el relevo malla ↔ volumen en cada extremo. */
 const SWAP = 0.12;
 /** Volumen extra (unidades) a mitad del morph: la forma intermedia se ve maciza, no adelgazada. */

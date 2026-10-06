@@ -487,13 +487,19 @@
 .leaving .box {
   visibility: visible;
 }
-.opening .box,
-.closing .box {
-  transition: transform 0.7s var(--ease-in-out);
-}
 .opening .box {
   z-index: 60;
   transform: none;
+  transition: transform 0.7s var(--ease-in-out);
+}
+/* Vuelta: de pantalla entera (--box-k 0) a escala 0,5 sobre el carrete (--box-k 1). El JS escribe
+   --box-k y --sweep-x en cada fotograma del barrido; sin transición, para no ir con retraso. */
+.closing .box {
+  transform: translate(
+      calc(var(--leave-x, 0px) * var(--box-k, 1) + var(--sweep-x, 0px)),
+      calc(var(--leave-y, 0px) * var(--box-k, 1))
+    )
+    scale(calc(1 - 0.5 * var(--box-k, 1)));
 }
 
 .close:focus-visible {

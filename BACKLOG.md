@@ -64,7 +64,7 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       central, inclinación en perspectiva de la tarjeta (shaders) e imán del equipo.
 
 - [ ] "Lo que uso" con morph volumétrico (`lib/three/GearMorph.ts` + `sdfWorker.ts`): feel check
-      con `npm run dev`. Ajustes a mano en GearMorph: `MORPH_SECONDS` (2,2 s), `SWAP` (relevo malla ↔
+      con `npm run dev`. Ajustes a mano en GearMorph: `MORPH_SECONDS` (0,5 s), `SWAP` (relevo malla ↔
       volumen, 12 %), `BULGE` (volumen extra a mitad, 0,06) y `SDF_RES` (128: más es más fiel y más
       caro). Mirar si el relevo al principio y al final se nota (el volumen pierde teclas, rejillas
       y palas finas), el coste del raymarching a DPR 2 en portátiles flojos, el encuadre en la caja

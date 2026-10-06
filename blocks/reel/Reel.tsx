@@ -6,7 +6,7 @@ import { useCriticalAssets, useReleaseHold } from "@/core/lifecycle/BlockSlot";
 import { useLifecycle } from "@/core/lifecycle/store";
 import { scrollController } from "@/core/scroll/controller";
 import { handoff } from "@/core/transition/handoff";
-import { pad2 } from "@/lib/easing";
+import { easeOut, pad2 } from "@/lib/easing";
 import { FlexCarousel } from "@/lib/webgl/flex-carousel/FlexCarousel";
 import type { ReelProps } from "./index";
 import { ProjectView } from "./project";
@@ -18,12 +18,18 @@ const LEAVE_OWNER = "reel:leave";
 /**
  * Salida a "todos los proyectos": la cinta avanza al menos SWEEP_MIN tarjetas (o todas, si hay
  * más) en SWEEP_S segundos y detrás llega el recuadro naranja al centro; luego crece (su
- * transición está en el CSS) y se navega. La vuelta es lo mismo al revés. BOX_FALLBACK_MS cubre
+ * transición está en el CSS) y se navega. BOX_FALLBACK_MS cubre
  * un transitionend que no llegue.
  */
 const SWEEP_MIN = 15;
 const SWEEP_S = 1.15;
 const BOX_FALLBACK_MS = 1200;
+/**
+ * Vuelta: la cinta entra en BACK_S y, a la vez (no después), el recuadro encoge de pantalla
+ * entera a 0,5 en SHRINK_S. Los dos con ease-out: arrancan en el mismo fotograma del clic.
+ */
+const BACK_S = 0.9;
+const SHRINK_S = 0.5;
 const DIGITS = Array.from({ length: 10 }, (_, n) => n);
 /**
  * Llegada a la sección: cuando su borde superior está a esta fracción de pantalla del techo,
@@ -315,29 +321,41 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, lens, liquid, 
       });
     };
 
-    // Vuelta: el recuadro encoge hasta el centro y la cinta entra por la izquierda empujándolo
-    // fuera por la derecha, hasta dejar en el centro la tarjeta que se dejó.
+    // Vuelta: la cinta entra por la izquierda y empuja el recuadro fuera por la derecha mientras
+    // este encoge de pantalla entera a 0,5, hasta dejar en el centro la tarjeta que se dejó. El
+    // encogido lo pinta el JS en cada fotograma del barrido (--box-k: 0 = pantalla entera,
+    // 1 = escala 0,5) y no una transición CSS: así va atado a la cinta y no espera a nadie.
     const finishReturn = () => {
       handoff.done();
       section.classList.remove(styles.leaving, styles.closing);
       box.style.removeProperty("--sweep-x");
+      box.style.removeProperty("--box-k");
       scrollController.unpin(LEAVE_OWNER);
     };
     if (back) {
+      // Lo pone ya el layout effect, pero si este efecto se vuelve a montar (StrictMode, o un
+      // render nuevo de la página al volver) su limpieza lo ha quitado: sin `leaving` el recuadro
+      // no se ve y solo entraría la cinta.
+      scrollController.pin(LEAVE_OWNER, back.scrollY);
+      section.classList.add(styles.leaving);
       if (reduced) {
         section.classList.remove(styles.opening);
         void carousel.sweep({ cards, seconds: 0, back: back.index, onFrame: moveBox }).then(finishReturn);
       } else {
         placeBox();
         moveBox(0);
-        // Fija el estilo de partida (pantalla entera) para que el cambio de clase sí anime.
-        box.getBoundingClientRect();
+        box.style.setProperty("--box-k", "0");
+        // closing no tiene transición: el cambio de clase no mueve nada, parte de pantalla entera.
         section.classList.add(styles.closing);
         section.classList.remove(styles.opening);
-        afterBox(() => {
-          section.classList.remove(styles.closing);
-          void carousel.sweep({ cards, seconds: SWEEP_S, back: back.index, onFrame: moveBox }).then(finishReturn);
-        });
+        // Con el reloj del barrido (t), no con el de pared: al volver, el montaje de la home
+        // atasca el hilo principal cientos de ms y un reloj de pared (o una transición CSS) ya
+        // habría acabado de encoger antes del primer fotograma pintado.
+        const onBackFrame = (x: number, t: number) => {
+          box.style.setProperty("--box-k", String(easeOut((t * BACK_S) / SHRINK_S)));
+          moveBox(x);
+        };
+        void carousel.sweep({ cards, seconds: BACK_S, back: back.index, onFrame: onBackFrame }).then(finishReturn);
       }
     }
 
@@ -367,6 +385,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, lens, liquid, 
       box.style.removeProperty("--leave-x");
       box.style.removeProperty("--leave-y");
       box.style.removeProperty("--sweep-x");
+      box.style.removeProperty("--box-k");
       host.removeEventListener("pointermove", onPointerMove);
       host.removeEventListener("pointerleave", onPointerLeave);
       lensMq.removeEventListener("change", syncLens);

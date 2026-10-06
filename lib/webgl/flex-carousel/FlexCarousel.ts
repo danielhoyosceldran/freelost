@@ -185,7 +185,7 @@ export class FlexCarousel {
     back: boolean;
     t: number;
     dur: number;
-    onFrame: (tail: number) => void;
+    onFrame: (tail: number, t: number) => void;
     done: () => void;
   } | null = null;
   /** Inclinación de la tarjeta central hacia el cursor (x, y en -1..1; s = 0..1 de presencia). */
@@ -321,13 +321,15 @@ export class FlexCarousel {
    * Barrido de salida: la cinta avanza `cards` tarjetas hacia la izquierda y detrás de la última
    * no viene ninguna; luego una "cola" (el recuadro del bloque, que no pinta el motor) llega al
    * centro con la cinta ya fuera de pantalla. `onFrame` da en cada fotograma dónde está la cola
-   * respecto al centro (px), para que el bloque la mueva. Resuelve con la cola en el centro.
+   * respecto al centro (px) y el progreso del barrido (0..1), con el reloj del motor: el bloque
+   * anima con él lo suyo y no se descuelga si el hilo principal se atasca (dt va limitado).
+   * Resuelve con la cola en el centro.
    *
    * Con `back` es la vuelta, el mismo recorrido al revés: se parte de la cola en el centro y la
    * cinta entra desde la izquierda hasta dejar la tarjeta `back` en el centro. Se salta la intro
    * (las tarjetas ya se vieron) y al acabar el carrete vuelve a responder.
    */
-  sweep({ cards, seconds, onFrame, back }: { cards: number; seconds: number; onFrame: (tail: number) => void; back?: number }) {
+  sweep({ cards, seconds, onFrame, back }: { cards: number; seconds: number; onFrame: (tail: number, t: number) => void; back?: number }) {
     return new Promise<void>((resolve) => {
       const m = this.metrics();
       this.pending = -1;
@@ -357,7 +359,7 @@ export class FlexCarousel {
         onFrame,
         done: resolve,
       };
-      onFrame(tail - this.pos);
+      onFrame(tail - this.pos, 0);
       this.wake();
     });
   }
@@ -914,14 +916,15 @@ export class FlexCarousel {
     }
     const sweep = this.sweeping;
     if (sweep) {
-      // Tiempo y no muelle: tiene que acabar cuando toca. Se embala y frena al final, que es
-      // cuando la cola llega al centro (o, de vuelta, cuando la tarjeta llega al suyo).
+      // Tiempo y no muelle: tiene que acabar cuando toca. La ida se embala y frena al final,
+      // cuando la cola llega al centro. La vuelta sale ya lanzada (ease-out): es la respuesta a
+      // un clic y no debe tener arranque lento; frena cuando la tarjeta llega a su sitio.
       const before = this.pos;
       sweep.t = Math.min(1, sweep.t + dt / sweep.dur);
-      this.pos = sweep.from + (sweep.to - sweep.from) * easeInOut(sweep.t);
+      this.pos = sweep.from + (sweep.to - sweep.from) * (sweep.back ? easeOut : easeInOut)(sweep.t);
       this.goal = this.pos;
       this.vel = (this.pos - before) / dt;
-      sweep.onFrame(sweep.tail - this.pos);
+      sweep.onFrame(sweep.tail - this.pos, sweep.t);
       if (sweep.t >= 1) {
         this.vel = 0;
         // La vuelta devuelve el carrete (encajado: si una portada llegó a mitad con otra

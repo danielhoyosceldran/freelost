@@ -42,11 +42,12 @@ export function makeBuilder(group: THREE.Object3D, mat: THREE.Material): Builder
   return b;
 }
 
-/** Tamaño (dimensión mayor) al que se normaliza cada modelo: el dron, plano, pide algo más. */
+/** Tamaño (dimensión mayor) al que se normaliza cada modelo. El dron es plano y la cámara y el
+ * portátil son macizos: a igual dimensión mayor parecen más grandes, así que van por debajo. */
 export const GEAR_MODELS: Record<GearModelKey, { size: number; build: (g: THREE.Group, b: Builder) => void }> = {
-  camera: { size: 4.3, build: buildCamera },
+  camera: { size: 3.7, build: buildCamera },
   drone: { size: 4.5, build: buildDrone },
-  laptop: { size: 4.4, build: buildLaptop },
+  laptop: { size: 3.8, build: buildLaptop },
 };
 
 // ---------- Geometría auxiliar ----------

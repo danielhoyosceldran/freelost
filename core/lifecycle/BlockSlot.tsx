@@ -42,7 +42,9 @@ export function useWarm() {
 export function useReleaseHold() {
   const { index } = useBlockSlot();
   const release = useLifecycle((s) => s.release);
-  return () => release(index);
+  // Estable entre renders: los bloques la ponen en las dependencias de sus efectos, y una
+  // función nueva en cada render los desmontaría y volvería a montar (el carrete entero).
+  return useCallback(() => release(index), [release, index]);
 }
 
 /**
