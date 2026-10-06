@@ -86,6 +86,10 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [ ] Feel check de la salida del hero → carrete: el plano encoge a 80vh hacia su pie (escena de
       160vh, `hold` 0.2), el carrete llega con su borde a 0,45 de pantalla, pausa de 200 ms y rise de
       1,5 s con recorrido 0,35 del alto. Si las tarjetas suben antes de verse, bajar ARRIVE_AT.
+- [ ] Feel check del scroll durante el rise: la cinta ya sigue el scroll mientras suben las
+      tarjetas (`nudge` solo se bloquea con proyecto abierto o barrido) y el abanico se calcula
+      desde la posición inicial (`intro.origin`). Comprobar que no hay saltos al bajar rápido a
+      mitad de la subida; si los hay, volver a la opción de acumular el delta y aplicarlo al acabar.
 
 - [ ] "Lo que uso" con morph volumétrico (`lib/three/GearMorph.ts` + `sdfWorker.ts`): feel check
       con `npm run dev`. Ajustes a mano en GearMorph: `MORPH_SECONDS` (0,5 s), `SWAP` (relevo malla ↔

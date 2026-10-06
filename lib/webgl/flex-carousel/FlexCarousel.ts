@@ -170,6 +170,8 @@ export class FlexCarousel {
     requestedAt: 0,
     running: false,
     done: false,
+    /** Dónde estaba la cinta al arrancar el rise: el abanico se calcula desde ahí (ver introEffects). */
+    origin: 0,
   };
   private readonly focus = { t: 0, v: 0, target: 0 };
   /**
@@ -309,7 +311,8 @@ export class FlexCarousel {
    * por el mismo camino que la rueda lateral: se deja llevar y, al parar, encaja en una tarjeta.
    */
   nudge(px: number) {
-    if (this.locked || this.pointer.dragging || px === 0) return;
+    // Durante la intro sí: si se sigue bajando mientras suben las tarjetas, la cinta acompaña.
+    if (this.busy || this.pointer.dragging || px === 0) return;
     this.goal += px;
     this.mode = "wheel";
     this.wheelAt = performance.now();
@@ -450,9 +453,14 @@ export class FlexCarousel {
     return [e.clientX - r.left, e.clientY - r.top];
   }
 
-  /** Mientras hay un proyecto abierto o la intro no ha acabado, la cinta no se toca. */
+  /** Con un proyecto abierto o un barrido en marcha, la cinta no se toca. */
+  private get busy() {
+    return this.projectIndex >= 0 || this.focus.target > 0 || !!this.sweeping;
+  }
+
+  /** Además, ni arrastre, ni rueda ni teclado hasta que acabe la intro (solo nudge, el scroll). */
   private get locked() {
-    return this.projectIndex >= 0 || this.focus.target > 0 || !this.intro.done || !!this.sweeping;
+    return this.busy || !this.intro.done;
   }
 
   private onPointerDown = (e: PointerEvent) => {
@@ -751,12 +759,15 @@ export class FlexCarousel {
     }
     const t = intro.done ? 1 : intro.t;
     if (t >= 1) return e;
+    // El scroll puede mover la cinta a mitad del rise: el retraso de cada tarjeta sale de su
+    // distancia al centro al arrancar, no de la actual, o al cambiar a media subida saltaría.
+    const shift = this.pos - intro.origin;
     if (intro.kind === "rise") {
       // Las tarjetas suben desde abajo, en abanico desde el centro, y la lente se forma cuando
       // ya están casi en su sitio.
       e.strength = easeInOut((t - 0.3) / 0.65);
       e.card = (rel) => {
-        const delay = Math.min(Math.abs(rel) / (this.width * 0.6), 1) * 0.34;
+        const delay = Math.min(Math.abs(rel + shift) / (this.width * 0.6), 1) * 0.34;
         const local = clamp01((t - delay) / 0.6);
         return {
           alpha: clamp01(local * 4),
@@ -891,6 +902,7 @@ export class FlexCarousel {
     if (this.layout && this.layout.loop !== m.loop) {
       this.pos = this.remap(this.layout, m, this.pos);
       this.goal = this.remap(this.layout, m, this.goal);
+      if (intro.running) intro.origin = this.remap(this.layout, m, intro.origin);
       pointer.startPos = this.pos;
       animating = true;
     }
@@ -901,6 +913,7 @@ export class FlexCarousel {
       if (settled || now - intro.requestedAt > INTRO_WAIT_MS) {
         this.goal = this.snapPoint(m, this.goal);
         this.pos = this.goal;
+        intro.origin = this.pos;
         intro.kind = o.reduced ? "fade" : "rise";
         intro.running = true;
       } else animating = true; // seguir mirando hasta que lleguen
