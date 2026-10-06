@@ -17,7 +17,8 @@
   z-index: 20;
   width: var(--size);
   height: var(--size);
-  animation: enter 0.4s var(--ease-out) 0.1s both;
+  /* backwards y no both: acabada la entrada, el scale vuelve a ser del hover y del :active. */
+  animation: enter 0.4s var(--ease-out) 0.1s backwards;
   transition: scale 0.14s var(--ease-out);
 }
 .close:active {
@@ -32,7 +33,6 @@
   width: 36%;
   height: 1.5px;
   background: currentColor;
-  transition: rotate 0.2s var(--ease-out);
 }
 .close::before {
   transform: translate(-50%, -50%) rotate(45deg);
@@ -40,10 +40,10 @@
 .close::after {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
+/* En el hover solo crece un poco: la cruz no gira. */
 @media (hover: hover) and (pointer: fine) {
-  .close:hover::before,
-  .close:hover::after {
-    rotate: 90deg;
+  .close:hover {
+    scale: 1.12;
   }
 }
 .close:focus-visible {
