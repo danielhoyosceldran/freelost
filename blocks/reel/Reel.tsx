@@ -36,10 +36,12 @@ const DIGITS = Array.from({ length: 10 }, (_, n) => n);
 /**
  * Llegada a la sección: cuando su borde superior está a esta fracción de pantalla del techo,
  * entra el título; RISE_DELAY ms después, las tarjetas suben (el "rise" de React Bits). La pausa
- * es a propósito: primero se llega a la sección y luego aparece el material.
+ * es a propósito: primero se llega a la sección y luego aparece el material. Se llega pronto (la
+ * sección aún va por debajo de media pantalla) y con poca pausa: sin hueco de tinta entre el plano
+ * del hero y las tarjetas.
  */
-const ARRIVE_AT = 0.15;
-const RISE_DELAY = 550;
+const ARRIVE_AT = 0.45;
+const RISE_DELAY = 200;
 /** Ms sin cambios de tarjeta antes de que el título del pie vuelva a entrar. */
 const SWAP_SETTLE_MS = 80;
 /** Píxeles que avanza la cinta por cada píxel de scroll mientras el carrete está clavado. */

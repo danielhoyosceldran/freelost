@@ -67,6 +67,10 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       barrido del equipo, relleno del contacto, timecode) y decidir: plano del hero → tarjeta
       central, inclinación en perspectiva de la tarjeta (shaders) e imán del equipo.
 
+- [ ] Feel check de la salida del hero → carrete: el plano encoge a 80vh hacia su pie (escena de
+      160vh, `hold` 0.2), el carrete llega con su borde a 0,45 de pantalla, pausa de 200 ms y rise de
+      1,5 s con recorrido 0,35 del alto. Si las tarjetas suben antes de verse, bajar ARRIVE_AT.
+
 - [ ] "Lo que uso" con morph volumétrico (`lib/three/GearMorph.ts` + `sdfWorker.ts`): feel check
       con `npm run dev`. Ajustes a mano en GearMorph: `MORPH_SECONDS` (0,5 s), `SWAP` (relevo malla ↔
       volumen, 12 %), `BULGE` (volumen extra a mitad, 0,06) y `SDF_RES` (128: más es más fiel y más
@@ -112,7 +116,7 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [x] Loader con la marca (entrada de los trazos, relleno con la carga real, apertura por la
       costura).
 - [x] Hero con la película FL1 a sangre, nombre, marca y eslogan; sonido y pausa.
-- [x] Salida del hero: el plano se desencaja con el scroll (sutil: encoge a 0.9, sin giro).
+- [x] Salida del hero: el plano encoge a 80vh sin borde ni fundido y se queda pegado al carrete.
 - [x] Carrete de proyectos con las 12 películas reales y reproducción completa en local.
 - [x] Entrada del carrete: pausa al llegar y después el rise de React Bits.
 - [x] Carrete con la física de React Bits: arrastre con inercia, bucle infinito, ajuste natural,

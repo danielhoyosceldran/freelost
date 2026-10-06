@@ -87,8 +87,8 @@ interface IntroFx {
 
 const RADIUS = 0; // estética plana de la web
 const PIXEL_BUDGET = 4.5e6; // techo de píxeles del lienzo (baja el dpr en pantallas grandes)
-// El rise dura algo más que en el original (2,1 s): las tarjetas llegan con calma.
-const INTRO_S = { rise: 2.4, fade: 0.35 };
+// El rise, más corto que el original (2,1 s): las tarjetas llegan pegadas al plano del hero.
+const INTRO_S = { rise: 1.5, fade: 0.35 };
 /** La tarjeta central se inclina hacia el cursor: desplazamiento máximo (px) y crecimiento. */
 const LEAN_PX = { x: 7, y: 5 };
 const LEAN_SCALE = 0.012;
@@ -754,7 +754,8 @@ export class FlexCarousel {
         return {
           alpha: clamp01(local * 4),
           x: 0,
-          y: (1 - easeOutQuint(local)) * this.height * 0.62,
+          // Recorrido corto (el original sube 0,62 del alto): una llegada, no una entrada desde fuera.
+          y: (1 - easeOutQuint(local)) * this.height * 0.35,
           scale: 0.5 + 0.5 * easeInOut((local - 0.18) / 0.82),
         };
       };

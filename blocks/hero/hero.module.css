@@ -11,12 +11,13 @@
   color: var(--color-paper);
 }
 
-/* El plano: lo que encoge y se ladea al salir. El scrim va dentro para que se vaya con él. */
+/* El plano: lo que encoge al salir, hacia su pie para que no quede tinta entre él y el carrete.
+   Sin borde ni radio. El scrim va dentro para que encoja con él. */
 .frame {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  transform-origin: 50% 50%;
+  transform-origin: 50% 100%;
   will-change: transform;
 }
 

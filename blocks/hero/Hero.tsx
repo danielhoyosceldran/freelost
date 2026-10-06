@@ -120,17 +120,13 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
     if (!frame || !top || !credits || !slogan) return;
     const calm = reduceRef.current;
 
-    // Tres tiempos: sostiene → acelera (easeIn) → corta.
-    const ramp = easeIn(segment(p, exit.hold, exit.cutAt));
-    const cut = easeIn(segment(p, exit.cutAt, 1));
+    // El plano no desaparece: encoge hasta `scale` y se queda. Luego la escena se suelta y sube
+    // con la página, pegado al carrete.
+    const ramp = easeInOut(segment(p, exit.hold, 1));
     const scale = 1 - (1 - exit.scale) * ramp;
-    frame.style.transform =
-      calm || ramp <= 0
-        ? ""
-        : `translateY(${(-cut * 16).toFixed(2)}%) scale(${scale.toFixed(4)})`;
-    frame.style.opacity = cut > 0 ? String(1 - Math.min(1, cut * 1.5)) : "";
+    frame.style.transform = calm || ramp <= 0 ? "" : `scale(${scale.toFixed(4)})`;
 
-    // Cámara lenta justo antes del corte; vuelve a 1 al rebobinar.
+    // Cámara lenta mientras encoge; vuelve a 1 al rebobinar.
     if (v && !calm) {
       const rate = 1 + (exit.slowTo - 1) * ramp;
       if (Math.abs(v.playbackRate - rate) > 0.02) v.playbackRate = rate;

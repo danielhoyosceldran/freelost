@@ -3,8 +3,8 @@ import { defineBlock } from "../types";
 import { Hero } from "./Hero";
 
 // Primera pantalla: cartón de título con el rótulo y el eslogan sobre la película (la marca del
-// loader vuela a la esquina) y los créditos abajo. Al salir, el plano se
-// desencaja (escena de scroll corta). Es `critical`: el loader
+// loader vuela a la esquina) y los créditos abajo. Al salir, el plano encoge a 80vh
+// (escena de scroll corta). Es `critical`: el loader
 // espera a que el vídeo tenga búfer suficiente para arrancar sin cortes.
 export const heroSchema = z.object({
   studio: z.string(),
@@ -21,17 +21,16 @@ export const heroSchema = z.object({
     sources: z.array(z.object({ src: z.string(), media: z.string().optional() })).min(1),
   }),
   /**
-   * Salida, en tres tiempos sobre el progreso de la escena (que dura `height`): sostiene hasta
-   * `hold`; acelera hasta `cutAt` (el plano encoge a `scale` y la película baja a `slowTo`× de
-   * velocidad: cámara lenta justo antes del corte); y corta, sin fundido largo, en lo que queda.
-   * El desencaje es sutil y sin giro: el plano solo cede un poco, no se ladea.
+   * Salida, sobre el progreso de la escena (que dura `height`): sostiene hasta `hold` y después el
+   * plano encoge, sin borde ni fundido, hasta `scale` del alto de pantalla (0,8 = 80vh). Encoge
+   * hacia su pie, así queda pegado al carrete que viene debajo. La película baja a `slowTo`× de
+   * velocidad mientras encoge.
    */
   exit: z
     .object({
-      height: z.string().default("190vh"),
-      scale: z.number().default(0.9),
-      hold: z.number().default(0.25),
-      cutAt: z.number().default(0.85),
+      height: z.string().default("160vh"),
+      scale: z.number().default(0.8),
+      hold: z.number().default(0.2),
       slowTo: z.number().default(0.6),
     })
     .prefault({}),
