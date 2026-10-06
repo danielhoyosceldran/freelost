@@ -4,6 +4,10 @@
 .stage {
   position: absolute;
   inset: 0;
+  /* El escenario lleva su propio fondo y el puntero: la escena que lo contiene es transparente
+     para que, mientras baja, se vea el carrete debajo. */
+  background: var(--color-ink);
+  pointer-events: auto;
   color: var(--color-paper);
 }
 

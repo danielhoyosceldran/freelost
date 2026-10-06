@@ -55,12 +55,14 @@ interface Props {
   height: string;
   /** Progreso a partir del cual se suelta el hold (v4: WARM_AT = 0.75). Sin él, solo lo suelta warm(). */
   warmAt?: number;
+  /** Margen superior (negativo) para que la escena empiece sobre el final de la anterior. */
+  overlap?: string;
   className?: string;
   stageClassName?: string;
   children: ReactNode;
 }
 
-export function ScrollScene({ anchor, height, warmAt, className = "", stageClassName = "", children }: Props) {
+export function ScrollScene({ anchor, height, warmAt, overlap, className = "", stageClassName = "", children }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
   const releaseHold = useReleaseHold();
   const releaseRef = useRef(releaseHold);
@@ -114,7 +116,7 @@ export function ScrollScene({ anchor, height, warmAt, className = "", stageClass
 
   return (
     <SceneContext.Provider value={scene}>
-      <section ref={sectionRef} id={anchor} className={`relative ${className}`} style={{ height }}>
+      <section ref={sectionRef} id={anchor} className={`relative ${className}`} style={{ height, marginTop: overlap }}>
         <div className={`sticky top-0 h-screen w-full overflow-hidden ${stageClassName}`}>{children}</div>
       </section>
     </SceneContext.Provider>

@@ -70,6 +70,8 @@ export function GearStage({ title, items, entry }: { title: string; items: GearI
       const stage = stageRef.current;
       if (stage) {
         const arrive = easeOutQuint(segment(sceneP, 0, entry));
+        // Antes de clavarse (progreso 0) el escenario no existe: no tapa ni intercepta el carrete.
+        stage.style.visibility = sceneP <= 0 ? "hidden" : "";
         stage.style.opacity = reduced.current ? String(arrive) : "";
         stage.style.transform = reduced.current || arrive >= 1 ? "" : `translateY(${(-(1 - arrive) * 100).toFixed(2)}%)`;
       }

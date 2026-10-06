@@ -13,10 +13,13 @@
      recorre el exceso, así la llegada de las tarjetas se ve entera aunque se siga bajando.
      overflow: clip y no hidden: hidden haría de la sección el contenedor de scroll y rompería el
      sticky. */
-  --reel-gap-after: 45svh;
+  --reel-gap-after: 0px;
+  /* Tramo extra de clavado: durante él "Lo que uso" baja desde arriba y tapa el carrete (igual a
+     ENTRY_VH en blocks/gear/Gear.tsx). */
+  --reel-hold-extra: 130svh;
   /* El padding inferior es el aire entre este bloque y el siguiente ("equipo"); se suma al alto
      para que no recorte la pista de scroll (el sticky se limita a la caja de contenido). */
-  height: calc(max(320svh, 1200px) + var(--reel-gap-after));
+  height: calc(max(320svh, 1200px) + var(--reel-hold-extra) + var(--reel-gap-after));
   padding-bottom: var(--reel-gap-after);
   overflow: clip;
   background: var(--color-ink);
