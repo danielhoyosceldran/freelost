@@ -43,6 +43,13 @@
      otra al pasar de uno a otro. */
   --mark-h: clamp(168px, 36svh, 380px);
   --gutter: clamp(1.25rem, 2.6vw, 2.5rem);
+  /* Curvas de la casa. Van en :root y no en @theme: Tailwind solo emite las variables de @theme
+     que ve usadas en sus utilidades, y los CSS modules se procesan aparte. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* UI que entra o sale */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1); /* entradas largas del hero, el contacto y el carrete */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); /* movimiento en pantalla (usos nuevos) */
+  /* Duración del velo del loader: de ella cuelga toda la entrada del hero. */
+  --t-veil: 1.1s;
 }
 
 /* El preflight de Tailwind v3 ponía cursor:pointer en los botones; el de v4 ya no. */
@@ -166,7 +173,7 @@ body {
   top: 0;
   bottom: 0;
   background: var(--color-ink);
-  transition: transform 1.1s cubic-bezier(0.7, 0, 0.2, 1);
+  transition: transform var(--t-veil) cubic-bezier(0.7, 0, 0.2, 1);
 }
 .pl-veil-l { left: 0; width: calc(var(--seam) + 1px); }
 .pl-veil-r { left: var(--seam); right: 0; }
@@ -193,8 +200,8 @@ body {
 .pl-blade-l { animation: pl-rise 1.3s 0.2s both; }
 /* El clic llega cuando los trazos se asientan (0.2s + 1.3s): sin borde que encender, el golpe lo
    dan el destello del fondo y un pulso de escala de la marca entera. */
-.pl-blade .pl-outline { animation: pl-lock 0.6s cubic-bezier(0.23, 1, 0.32, 1) 1.45s both; }
-.pl-mark { animation: pl-hit 0.5s cubic-bezier(0.23, 1, 0.32, 1) 1.45s both; }
+.pl-blade .pl-outline { animation: pl-lock 0.6s var(--ease-out) 1.45s both; }
+.pl-mark { animation: pl-hit 0.5s var(--ease-out) 1.45s both; }
 
 /* Sobrepaso del 3.5% (antes 1.6%): las dos mitades se cruzan de forma visible antes de encajar. */
 @keyframes pl-drop {

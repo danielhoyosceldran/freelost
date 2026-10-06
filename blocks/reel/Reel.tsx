@@ -20,6 +20,8 @@ const DIGITS = Array.from({ length: 10 }, (_, n) => n);
  */
 const ARRIVE_AT = 0.15;
 const RISE_DELAY = 550;
+/** Ms sin cambios de tarjeta antes de que el título del pie vuelva a entrar. */
+const SWAP_SETTLE_MS = 80;
 /** Píxeles que avanza la cinta por cada píxel de scroll mientras el carrete está clavado. */
 const SCROLL_FOLLOW = 0.9;
 /** Lente de los bordes: solo con ratón o trackpad (ordenador), no en táctil. */
@@ -50,6 +52,7 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
   const scrubFillRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const viewRef = useRef<ProjectView | null>(null);
+  const swapTimer = useRef(0);
 
   const setCaption = useCallback(
     (i: number) => {
@@ -62,9 +65,10 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
       const place = placeRef.current;
       if (place) {
         place.textContent = slides[i].caption;
-        place.classList.remove(styles.enter);
-        void place.offsetWidth; // reinicia la animación de entrada del título
-        place.classList.add(styles.enter);
+        place.classList.add(styles.swapping);
+        clearTimeout(swapTimer.current);
+        // Se suelta tras el último cambio: con la cinta rápida el título espera y entra al asentarse.
+        swapTimer.current = window.setTimeout(() => place.classList.remove(styles.swapping), SWAP_SETTLE_MS);
       }
       if (liveRef.current) liveRef.current.textContent = `${slides[i].caption}, ${i + 1} ${labels.of} ${n}`;
     },
@@ -129,7 +133,6 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
         splitting: styles.splitting,
         loading: styles.loading,
         inProject: styles.inProject,
-        growing: styles.growing,
         fromCard: styles.fromCard,
         current: styles.current,
         scrubVisible: styles.scrubVisible,
@@ -226,6 +229,7 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
       close.removeEventListener("click", onClose);
       offIntro();
       clearTimeout(riseTimer);
+      clearTimeout(swapTimer.current);
       view.destroy();
       releaseInput?.();
       scrollController.unpin(PIN_OWNER);

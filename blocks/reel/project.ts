@@ -31,7 +31,6 @@ export interface ProjectClasses {
   splitting: string;
   loading: string;
   inProject: string;
-  growing: string;
   fromCard: string;
   current: string;
   scrubVisible: string;
@@ -46,6 +45,7 @@ interface Options {
 }
 
 const GROW_MS = 600;
+const GROW_EASE = "cubic-bezier(0.65, 0, 0.35, 1)";
 const SEEK_PER_PX = 0.01;
 const SCRUB_HIDE_MS = 700;
 const SCRUB_FILL_MS = 320;
@@ -63,6 +63,7 @@ export class ProjectView {
   private scrubHide = 0;
   private scrubRaf = 0;
   private scrubT0 = 0;
+  private growAnims: Animation[] | null = null;
 
   constructor(
     private readonly el: ProjectElements,
@@ -150,7 +151,8 @@ export class ProjectView {
       this.hiObjectUrl = null;
     }
     this.setProgress(0);
-    el.frame.classList.remove(cls.growing);
+    this.growAnims?.forEach((a) => a.cancel());
+    this.growAnims = null;
     el.frame.style.left = el.frame.style.top = "";
     el.frame.style.width = el.frame.style.height = "";
     // Las demás fotos vuelven a su sitio (focus → 0) y la lente se vuelve a curvar.
@@ -174,7 +176,7 @@ export class ProjectView {
   }
 
   onResize() {
-    if (!this.open) return;
+    if (!this.open || this.growAnims) return;
     if (this.el.root.classList.contains(this.cls.inProject)) this.measureRing();
     else {
       // El ResizeObserver puede llegar después que este evento: se relee el tamaño ya, para
@@ -230,6 +232,10 @@ export class ProjectView {
       el.frame.style.height = "100vh";
     };
     const settled = () => {
+      this.growAnims = null;
+      // El marco ya es de pantalla completa: el anillo se mide una vez (durante el crecimiento
+      // la barra está a opacidad 0, no hace falta seguirlo frame a frame).
+      this.measureRing();
       el.root.classList.remove(cls.splitting);
       el.root.classList.add(cls.inProject);
       this.startPlayback();
@@ -237,31 +243,36 @@ export class ProjectView {
 
     if (this.o.reduced) {
       full();
-      this.measureRing();
       settled();
       return;
     }
 
-    el.frame.classList.add(cls.growing);
-    void el.frame.offsetWidth;
+    // FLIP: la tarjeta es el estado de partida. El marco salta ya a pantalla completa y lo que se
+    // anima es el recorte (clip-path) y la escala del contenido, que no provocan layout. Con
+    // left/top/width/height cada frame recalculaba el layout de un elemento del tamaño de la
+    // pantalla con un vídeo dentro.
+    const first = el.frame.getBoundingClientRect();
     full();
+    const last = el.frame.getBoundingClientRect();
+    // Escala uniforme (nunca deforma) que cubre la tarjeta, centrada en ella.
+    const s = Math.max(first.width / last.width, first.height / last.height);
+    const cx = first.left + first.width / 2 - (last.left + last.width / 2);
+    const cy = first.top + first.height / 2 - (last.top + last.height / 2);
+    const clip = `inset(${first.top - last.top}px ${last.right - first.right}px ${last.bottom - first.bottom}px ${first.left - last.left}px)`;
+    const timing = { duration: GROW_MS, easing: GROW_EASE };
 
     const token = this.loadToken;
-    const onGrown = (e: TransitionEvent) => {
-      if (e.target !== el.frame || e.propertyName !== "width") return;
-      el.frame.removeEventListener("transitionend", onGrown);
-      if (token !== this.loadToken) return;
-      el.frame.classList.remove(cls.growing);
-      settled();
-    };
-    el.frame.addEventListener("transitionend", onGrown);
-
-    const t0 = performance.now();
-    const trackGrow = () => {
-      this.measureRing();
-      if (performance.now() - t0 < GROW_MS + 50) requestAnimationFrame(trackGrow);
-    };
-    trackGrow();
+    this.growAnims = [
+      el.frame.animate({ clipPath: [clip, "inset(0px 0px 0px 0px)"] }, timing),
+      el.media.animate({ transform: [`translate(${cx}px, ${cy}px) scale(${s})`, "none"] }, timing),
+    ];
+    // cancel() (al salir a mitad) rechaza finished: no hay nada que asentar.
+    Promise.all(this.growAnims.map((a) => a.finished)).then(
+      () => {
+        if (token === this.loadToken) settled();
+      },
+      () => {},
+    );
   }
 
   // ---------- medios ----------

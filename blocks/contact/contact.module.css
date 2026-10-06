@@ -32,7 +32,7 @@
   overflow: visible;
   opacity: 0;
   transition:
-    transform 1.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1.6s var(--ease-out-expo),
     opacity 1.2s ease;
 }
 
@@ -87,7 +87,7 @@
 .word {
   display: inline-block;
   transform: translateY(105%);
-  transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 1.1s var(--ease-out-expo);
   transition-delay: calc(0.1s + var(--i, 0) * 0.07s);
 }
 
@@ -112,7 +112,8 @@
     linear-gradient(rgb(238 241 240 / 0.25), rgb(238 241 240 / 0.25)) 0 100% / 100% 1px no-repeat;
 }
 
-.mail:hover,
+/* El hover va solo con puntero fino: en táctil se queda pegado tras el toque. El foco de teclado
+   no depende de eso. */
 .mail:focus-visible {
   background-size:
     100% 1px,
@@ -124,14 +125,30 @@
   height: 0.8em;
   stroke-width: 1.25;
   transition:
-    translate 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    translate 0.4s var(--ease-out-expo),
     color 0.3s ease;
 }
 
-.mail:hover .arrow,
 .mail:focus-visible .arrow {
   translate: 0.08em -0.08em;
   color: var(--color-ember);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mail:hover {
+    background-size:
+      100% 1px,
+      100% 1px;
+  }
+
+  .mail:hover .arrow {
+    translate: 0.08em -0.08em;
+    color: var(--color-ember);
+  }
+
+  .channel:hover {
+    color: var(--color-paper);
+  }
 }
 
 .channels {
@@ -161,10 +178,6 @@
   stroke-width: 1.5;
 }
 
-.channel:hover {
-  color: var(--color-paper);
-}
-
 .mail:focus-visible,
 .channel:focus-visible {
   outline: 1px solid var(--color-ember);
@@ -176,17 +189,21 @@
 .channels {
   opacity: 0;
   transform: translateY(12px);
-  transition-property: opacity, transform, background-size;
-  transition-duration: 0.9s, 0.9s, 0.7s;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-property: opacity, transform;
+  transition-duration: 0.9s;
+  transition-timing-function: var(--ease-out-expo);
 }
 
 .mail {
+  /* El subrayado es hover, no entrada: va a su aire y rápido. */
+  transition-property: opacity, transform, background-size;
+  transition-duration: 0.9s, 0.9s, 0.28s;
+  transition-timing-function: var(--ease-out-expo), var(--ease-out-expo), var(--ease-out);
   transition-delay: 0.45s, 0.45s, 0s;
 }
 
 .channels {
-  transition-delay: 0.6s, 0.6s, 0s;
+  transition-delay: 0.6s;
 }
 
 .contact[data-in] .mail,

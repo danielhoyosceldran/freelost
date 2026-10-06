@@ -45,8 +45,11 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       encuadre de los modelos 3D en el nuevo escenario, el desencaje del hero en móvil.
 - [ ] Carrete: probar en ordenador la lente del panel de React Bits (0,74 × 1,18, 65°…) con las
       portadas 16:9; si curva demasiado, retocar `lens` en `blocks/reel/index.ts`.
-- [ ] Detector: el marco de la vista de proyecto anima `left/top/width/height`
-      (`blocks/reel/reel.module.css`, `.growing`). Pasarlo a FLIP con `transform`.
+- [ ] Feel check de las animaciones (`plans/`, 001–006, ya aplicadas): sobre todo el crecimiento del
+      marco de proyecto (`blocks/reel/project.ts`, clip-path + escala). En móvil la proporción de la
+      tarjeta y la del viewport difieren y el recorte del primer frame puede no coincidir con la
+      tarjeta WebGL; si se nota, decidir entre crossfade o recalcular la escala con la proporción
+      de la imagen.
 
 ## Limpieza de v4
 
@@ -58,6 +61,10 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       ya no los usa ningún bloque (el carrete se arrastra). Decidir si se quedan en el núcleo.
 
 ## Hecho
+
+- [x] Marco de la vista de proyecto: crece con `clip-path` y `transform` (FLIP), sin layout.
+- [x] Tokens `--ease-*` y `--t-veil`; HUD del carrete sale en 180 ms; título del pie interrumpible;
+      hover del correo a 280 ms; hover solo con puntero fino y `:active` en botones.
 
 - [x] Loader con la marca (entrada de los trazos, relleno con la carga real, apertura por la
       costura).

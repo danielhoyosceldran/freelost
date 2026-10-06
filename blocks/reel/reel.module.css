@@ -27,7 +27,6 @@
   --reel-band-h: calc(var(--reel-card) * 100%);
   --reel-marker-h: 12px;
   --reel-split-ease: 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
-  --reel-grow-ease: 0.6s cubic-bezier(0.65, 0, 0.35, 1);
   --reel-bar-w: 1px;
   --reel-bar-track: rgb(238 241 240 / 0.14);
   --reel-bar-fill: var(--color-ember);
@@ -65,8 +64,8 @@
   opacity: 0;
   translate: 0 14px;
   transition:
-    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-    translate 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.9s var(--ease-out-expo),
+    translate 0.9s var(--ease-out-expo);
 }
 .arrived .title {
   opacity: 1;
@@ -178,7 +177,7 @@
 .digitReel {
   display: flex;
   flex-direction: column;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.6s var(--ease-out);
 }
 .digitReel span {
   height: 1em;
@@ -191,19 +190,19 @@
   letter-spacing: 0.01em;
   text-transform: uppercase;
   color: var(--color-paper);
+  opacity: 1;
+  translate: 0 0;
+  /* Transición y no keyframes: se reorienta desde donde esté si la tarjeta cambia a mitad. */
+  transition:
+    opacity 0.24s var(--ease-out),
+    translate 0.24s var(--ease-out);
 }
-.enter {
-  animation: reel-title 0.52s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes reel-title {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Estado de cambio: se aplica sin transición (el texto ya es el nuevo) y se suelta un instante
+   después del último cambio, así con la cinta rápida el título espera y entra al asentarse. */
+.swapping {
+  opacity: 0;
+  translate: 0 8px;
+  transition: none;
 }
 .live {
   position: absolute;
@@ -227,17 +226,14 @@
   display: none;
 }
 
+/* El marco nace con el tamaño de la tarjeta y al abrirse salta a pantalla completa; el crecimiento
+   visible es un clip-path y una escala del contenido (project.ts), sin layout. */
 .frame {
   position: fixed; /* el marco crece a 100vw/100vh: fixed lo saca del root */
   overflow: visible;
   background: var(--color-ink);
   pointer-events: auto;
 }
-.growing {
-  transition: left var(--reel-grow-ease), top var(--reel-grow-ease), width var(--reel-grow-ease),
-    height var(--reel-grow-ease);
-}
-
 .media {
   position: absolute;
   inset: 0;
@@ -373,8 +369,13 @@
   cursor: pointer;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.24s ease;
+  transition:
+    opacity 0.24s ease,
+    scale 0.14s var(--ease-out);
   mix-blend-mode: difference;
+}
+.close:active {
+  scale: 0.96;
 }
 .close::before,
 .close::after {
@@ -405,6 +406,11 @@
 .inProject .marker,
 .inProject .title {
   opacity: 0;
+  /* La salida responde más rápido que la entrada: el HUD no debe seguir ahí mientras el marco
+     crece sobre él. */
+  transition-duration: 0.18s;
+  transition-timing-function: var(--ease-out);
+  transition-delay: 0s;
 }
 .close:focus-visible {
   outline: 1px solid var(--color-ember);
@@ -425,11 +431,10 @@
 @media (prefers-reduced-motion: reduce) {
   .caption,
   .title,
+  .marker,
+  .place,
   .digitReel,
   .media > * {
     transition: none;
-  }
-  .enter {
-    animation: none;
   }
 }

@@ -68,7 +68,7 @@
 
 /* Del centro a la esquina, cuando el velo ya ha salido y la marca del loader se ha fundido. */
 .markFlying {
-  transition: transform 1.3s cubic-bezier(0.65, 0, 0.15, 1) 1.05s;
+  transition: transform 1.3s cubic-bezier(0.65, 0, 0.15, 1) calc(var(--t-veil) - 0.05s);
 }
 
 /* ---------- márgenes ---------- */
@@ -110,7 +110,13 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgb(238 241 240 / 0.78);
-  transition: color 0.25s ease;
+  transition:
+    color 0.25s ease,
+    scale 0.14s var(--ease-out);
+}
+
+.control:active {
+  scale: 0.96;
 }
 
 .control svg {
@@ -190,8 +196,8 @@
 
 .word {
   transform: translateY(105%);
-  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-  transition-delay: calc(1.35s + var(--i, 0) * 0.09s);
+  transition: transform 1.2s var(--ease-out-expo);
+  transition-delay: calc(var(--t-veil) + 0.25s + var(--i, 0) * 0.09s);
 }
 
 .role,
@@ -201,22 +207,36 @@
   opacity: 0;
   transform: translateY(10px);
   transition:
-    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 0.9s var(--ease-out-expo),
+    transform 0.9s var(--ease-out-expo);
 }
 
 .role {
-  transition-delay: 1.7s;
+  transition-delay: calc(var(--t-veil) + 0.6s);
 }
 
 .slogan {
-  transition-delay: 1.82s;
+  transition-delay: calc(var(--t-veil) + 0.72s);
 }
 
 /* El nombre del estudio aparece cuando la marca aterriza a su lado. */
 .studio,
 .controls {
-  transition-delay: 2.05s;
+  transition-delay: calc(var(--t-veil) + 0.95s);
+}
+
+/* Los controles no se clican mientras son invisibles. pointer-events es discreta: con 0.01s salta
+   justo al llegar el retardo de la entrada. */
+.controls {
+  pointer-events: none;
+  transition:
+    opacity 0.9s var(--ease-out-expo),
+    transform 0.9s var(--ease-out-expo),
+    pointer-events 0.01s linear;
+}
+
+.hero[data-ready] .controls {
+  pointer-events: auto;
 }
 
 .hero[data-ready] .word,
