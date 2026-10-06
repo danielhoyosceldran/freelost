@@ -1,5 +1,5 @@
-/* Primera pantalla. La película manda: todo lo demás son créditos en los márgenes del plano,
-   como en un cartón de título, y la marca en el centro. */
+/* Primera pantalla: un cartón de título. El rótulo «free lost» y su eslogan mandan en el centro;
+   la película queda detrás, oscurecida, y los créditos van a los márgenes. */
 
 .hero {
   /* Ocupa el escenario sticky de su ScrollScene (una pantalla). */
@@ -38,23 +38,20 @@
   object-fit: cover;
 }
 
-/* Solo para que los créditos se lean sobre cielo claro; el centro del plano queda limpio. */
+/* La película es el fondo, no el protagonista: un velo de tinta uniforme la baja de tono para que
+   el rótulo se lea sobre cualquier plano, más cerrado hacia el centro y los bordes por igual. */
 .scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(to bottom, rgb(6 10 12 / 0.5) 0%, rgb(6 10 12 / 0) 20%),
-    linear-gradient(to top, rgb(6 10 12 / 0.78) 0%, rgb(6 10 12 / 0.32) 26%, rgb(6 10 12 / 0) 48%);
+    radial-gradient(ellipse 70% 60% at 50% 50%, rgb(6 10 12 / 0.34) 0%, rgb(6 10 12 / 0) 100%),
+    linear-gradient(to bottom, rgb(6 10 12 / 0.45) 0%, rgb(6 10 12 / 0) 22%),
+    linear-gradient(to top, rgb(6 10 12 / 0.6) 0%, rgb(6 10 12 / 0) 34%),
+    rgb(6 10 12 / 0.5);
 }
 
-/* La marca en reposo: en la esquina, al lado del nombre del estudio. */
-.lockup {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
+/* La marca en reposo: el sello de la esquina. */
 .mark {
   display: block;
   flex: none;
@@ -80,14 +77,6 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--gutter);
-}
-
-.studio {
-  font-size: 0.95rem;
-  font-weight: 600;
-  font-stretch: 125%;
-  letter-spacing: 0.01em;
-  line-height: 1;
 }
 
 .controls {
@@ -139,41 +128,114 @@
   outline-offset: -6px;
 }
 
-.credits {
-  position: absolute;
-  inset: auto 0 0;
+/* Selector de idioma: EN · CA · ES, el actual en ember. Mismo cuerpo que los controles. */
+.langs {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 2rem;
-  padding: var(--gutter);
+  margin-right: 0.35rem;
 }
 
-.name {
-  font-size: clamp(2.75rem, 6.4vw, 6rem);
-  font-weight: 800;
-  font-stretch: 72%;
-  line-height: 0.86;
-  letter-spacing: -0.012em;
+.lang {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  font-stretch: 112%;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  color: rgb(238 241 240 / 0.78);
+  transition:
+    color 0.25s ease,
+    scale 0.14s var(--ease-out);
 }
 
-/* Cada palabra entra desde debajo de su propia línea de corte. */
+.lang:active {
+  scale: 0.96;
+}
+
+.lang:hover,
+.lang[aria-current="page"] {
+  color: var(--color-paper);
+}
+
+.lang[aria-current="page"] {
+  color: var(--color-ember);
+}
+
+.lang:focus-visible {
+  outline: 1px solid var(--color-ember);
+  outline-offset: -6px;
+}
+
+/* El rótulo: centrado, con el eslogan debajo. Six Caps es muy estrecha y alta, como las hojas de
+   la marca; el tamaño lo limita el ancho (cabe en una línea) y la altura (deja sitio al eslogan). */
+.title {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: clamp(0.5rem, 2.4svh, 1.75rem);
+  padding: 5rem var(--gutter) 5.5rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.brand {
+  font-family: var(--font-six-caps), var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-size: min(46vw, 54svh);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Cada palabra entra desde fuera de su propia línea de corte. */
 .line {
   display: inline-block;
   overflow: hidden;
   vertical-align: top;
-  /* El recorte no puede comerse las astas: un poco de aire abajo, devuelto con el margen. */
-  padding-bottom: 0.06em;
-  margin-bottom: -0.06em;
+  /* El recorte no puede comerse la base de las mayúsculas: aire arriba y abajo, devuelto con el
+     margen. */
+  padding-block: 0.08em;
+  margin-block: -0.08em;
 }
 
 .word {
   display: inline-block;
 }
 
+.slogan {
+  font-family: var(--font-instrument), Georgia, serif;
+  font-size: clamp(1.6rem, 3.4vw, 3.5rem);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+/* Créditos del film, abajo a la izquierda: quién firma. */
+.credits {
+  position: absolute;
+  inset: auto 0 0;
+  padding: var(--gutter);
+}
+
+.name {
+  font-size: 1rem;
+  font-weight: 600;
+  font-stretch: 88%;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
 .role {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   font-size: 0.72rem;
   font-weight: 500;
   font-stretch: 112%;
@@ -182,27 +244,18 @@
   color: rgb(238 241 240 / 0.74);
 }
 
-.slogan {
-  max-width: 16ch;
-  font-size: clamp(1.125rem, 1.7vw, 1.6rem);
-  font-style: italic;
-  font-weight: 300;
-  line-height: 1.15;
-  text-align: right;
-  text-wrap: balance;
-}
-
 /* ---------- entrada, cuando el velo del loader se abre ---------- */
 
+/* Como la marca del loader: «free» baja desde arriba, «lost» sube desde abajo. */
 .word {
-  transform: translateY(105%);
-  transition: transform 1.2s var(--ease-out-expo);
-  transition-delay: calc(var(--t-veil) + 0.25s + var(--i, 0) * 0.09s);
+  transform: translateY(calc(var(--dir, 1) * 105%));
+  transition: transform 1.5s var(--ease-out-expo);
+  transition-delay: calc(var(--t-veil) + 0.3s + var(--i, 0) * 0.14s);
 }
 
+.name,
 .role,
 .slogan,
-.studio,
 .controls {
   opacity: 0;
   transform: translateY(10px);
@@ -211,16 +264,20 @@
     transform 0.9s var(--ease-out-expo);
 }
 
-.role {
-  transition-delay: calc(var(--t-veil) + 0.6s);
-}
-
+/* El eslogan cae cuando el rótulo ya está montado; los créditos, al final. */
 .slogan {
-  transition-delay: calc(var(--t-veil) + 0.72s);
+  transition-delay: calc(var(--t-veil) + 0.95s);
 }
 
-/* El nombre del estudio aparece cuando la marca aterriza a su lado. */
-.studio,
+.name {
+  transition-delay: calc(var(--t-veil) + 1.15s);
+}
+
+.role {
+  transition-delay: calc(var(--t-veil) + 1.25s);
+}
+
+/* La marca aterriza en la esquina y con ella aparecen los controles. */
 .controls {
   transition-delay: calc(var(--t-veil) + 0.95s);
 }
@@ -240,9 +297,9 @@
 }
 
 .hero[data-ready] .word,
+.hero[data-ready] .name,
 .hero[data-ready] .role,
 .hero[data-ready] .slogan,
-.hero[data-ready] .studio,
 .hero[data-ready] .controls {
   opacity: 1;
   transform: none;
@@ -256,35 +313,26 @@
     width: calc(44px * 0.29285);
   }
 
-  .credits {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1.25rem;
-  }
-
-  /* Nombre y apellido en dos líneas: a este ancho una sola quedaría pequeña. */
+  /* «free» y «lost» apiladas: tan estrechas, a lo ancho quedarían diminutas. */
   .line {
     display: block;
   }
 
-  .name {
-    font-size: clamp(2.75rem, 15vw, 4.5rem);
-  }
-
-  .role {
-    margin-top: 0.85rem;
+  .brand {
+    font-size: min(60vw, 33svh);
+    line-height: 0.88;
   }
 
   .slogan {
-    text-align: left;
+    font-size: clamp(1.5rem, 7vw, 2.25rem);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .word,
+  .name,
   .role,
   .slogan,
-  .studio,
   .controls {
     transform: none;
     transition: opacity 0.4s ease;

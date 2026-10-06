@@ -21,7 +21,8 @@ function bufferedFromStart(v: HTMLVideoElement) {
 }
 
 /**
- * La primera pantalla es una escena corta con ritmo de montaje: el plano sostiene, acelera
+ * La primera pantalla es un cartón de título: el rótulo «free lost» y su eslogan mandan, y la
+ * película queda detrás, oscurecida. Es una escena corta con ritmo de montaje: el plano sostiene, acelera
  * (encoge, se ladea y la película entra en cámara lenta) y corta. Los créditos no se apagan a la
  * vez: cada pieza se va por su lado y a su hora. Después la escena se suelta y llega el carrete.
  */
@@ -33,11 +34,13 @@ export function Hero({ exit, ...stage }: HeroProps) {
   );
 }
 
-function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit }: HeroProps) {
+function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, languages, exit }: HeroProps) {
+  // Cada palabra de la marca es una línea con su máscara: son las que se abren al salir.
+  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLElement>(null);
-  const nameRef = useRef<HTMLDivElement>(null);
+  const creditsRef = useRef<HTMLDivElement>(null);
   const sloganRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<SVGSVGElement>(null);
   const slotRef = useRef<HTMLSpanElement>(null);
@@ -82,7 +85,7 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
     v.play().catch(() => resolve());
   }, [provide, film.poster]);
 
-  // La marca vive en la esquina, junto al nombre del estudio, pero arranca en el centro, justo
+  // La marca vive en la esquina, arriba a la izquierda, pero arranca en el centro, justo
   // debajo de la del loader (el hueco .brand-mark da esa geometría). Mientras carga se mantiene
   // ahí con un transform inverso (FLIP), recalculado si cambia el viewport; al abrirse el velo
   // vuela a su sitio. En el centro taparía a quien sale en el plano durante toda la película.
@@ -150,9 +153,9 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
     const frame = frameRef.current;
     const v = videoRef.current;
     const top = topRef.current;
-    const name = nameRef.current;
+    const credits = creditsRef.current;
     const slogan = sloganRef.current;
-    if (!frame || !top || !name || !slogan) return;
+    if (!frame || !top || !credits || !slogan) return;
     const calm = reduceRef.current;
 
     // Tres tiempos: sostiene → acelera (easeIn) → corta.
@@ -171,16 +174,17 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
       if (Math.abs(v.playbackRate - rate) > 0.02) v.playbackRate = rate;
     }
 
-    // Los créditos se van por turnos y en sentidos contrarios: arriba, el nombre a la izquierda y,
-    // el último, el eslogan a la derecha.
+    // La marca se abre por la costura, como el velo del loader: «free» sube y «lost» baja. Luego
+    // se van los créditos y, el último, el eslogan.
     const away = (el: HTMLElement, t: number, x: number, y: number) => {
       el.style.opacity = t > 0 ? String(1 - t) : "";
       el.style.transform = t > 0 && !calm ? `translate(${(x * t).toFixed(2)}vw, ${(y * t).toFixed(2)}vh)` : "";
       el.style.visibility = t >= 1 ? "hidden" : "";
     };
     away(top, easeInOut(segment(p, 0, 0.3)), 0, -5);
-    away(name, easeIn(segment(p, 0.05, 0.5)), -14, 0);
-    away(slogan, easeIn(segment(p, 0.15, 0.7)), 10, 0);
+    away(credits, easeIn(segment(p, 0.05, 0.45)), -8, 0);
+    wordRefs.current.forEach((w, i) => w && away(w, easeIn(segment(p, 0.08, 0.6)), 0, i % 2 === 0 ? -26 : 26));
+    away(slogan, easeIn(segment(p, 0.2, 0.75)), 0, 6);
   });
 
   // El estado de los botones sale del propio vídeo, no de lo que se pidió.
@@ -211,7 +215,7 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
     else v.pause();
   };
 
-  const words = name.split(/\s+/);
+  const words = studio.split(/\s+/);
 
   return (
     <div className={styles.hero} data-ready={ready || undefined}>
@@ -239,14 +243,26 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
       {/* Créditos y controles: cada pieza sale por su lado (ver useSceneProgress). */}
       <div className={styles.chrome}>
       <header ref={topRef} className={styles.top}>
-        <div className={styles.lockup}>
-          <svg ref={markRef} className={styles.mark} viewBox={LOGO_VIEWBOX} aria-hidden="true">
-            <path d={LOGO_F} />
-            <path d={LOGO_L} />
-          </svg>
-          <p className={styles.studio}>{studio}</p>
-        </div>
+        <svg ref={markRef} className={styles.mark} viewBox={LOGO_VIEWBOX} aria-hidden="true">
+          <path d={LOGO_F} />
+          <path d={LOGO_L} />
+        </svg>
         <div className={styles.controls}>
+          {/* Navegación normal (recarga): cada idioma es su propia página prerenderizada. */}
+          <nav className={styles.langs} aria-label={labels.language}>
+            {languages.map((l) => (
+              <a
+                key={l.code}
+                href={l.href}
+                hrefLang={l.code}
+                lang={l.code}
+                className={styles.lang}
+                aria-current={l.current ? "page" : undefined}
+              >
+                {l.label}
+              </a>
+            ))}
+          </nav>
           <button type="button" className={styles.control} onClick={toggleSound} aria-pressed={!muted}>
             {muted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
             <span>{labels.sound}</span>
@@ -262,28 +278,31 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
         </div>
       </header>
 
-      <div className={styles.credits}>
-        <div ref={nameRef}>
-          <h1 className={styles.name}>
-            {/* El espacio va fuera de cada palabra: dentro de un inline-block se recortaría. */}
-            {words.map((w, i) => (
-              <Fragment key={i}>
-                {i > 0 && " "}
-                <span className={styles.line}>
-                  <span className={styles.word} style={{ "--i": i } as CSSProperties}>
-                    {w}
-                  </span>
+      {/* La marca es la protagonista: el rótulo del film, centrado, con su eslogan debajo. */}
+      <div className={styles.title}>
+        <h1 className={styles.brand}>
+          {/* El espacio va fuera de cada palabra: dentro de un inline-block se recortaría. */}
+          {words.map((w, i) => (
+            <Fragment key={i}>
+              {i > 0 && " "}
+              <span ref={(el) => void (wordRefs.current[i] = el)} className={styles.line}>
+                <span className={styles.word} style={{ "--i": i, "--dir": i % 2 === 0 ? -1 : 1 } as CSSProperties}>
+                  {w}
                 </span>
-              </Fragment>
-            ))}
-          </h1>
-          <p className={styles.role}>{role}</p>
-        </div>
+              </span>
+            </Fragment>
+          ))}
+        </h1>
         <div ref={sloganRef}>
           <p className={styles.slogan} lang={sloganLang}>
             {slogan}
           </p>
         </div>
+      </div>
+
+      <div ref={creditsRef} className={styles.credits}>
+        <p className={styles.name}>{name}</p>
+        <p className={styles.role}>{role}</p>
       </div>
       </div>
     </div>

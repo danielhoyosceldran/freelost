@@ -2,8 +2,8 @@ import { z } from "zod";
 import { defineBlock } from "../types";
 import { Hero } from "./Hero";
 
-// Primera pantalla: la película a sangre, la marca en el centro (en el mismo sitio que la del
-// loader, que se desvanece encima) y los créditos en las esquinas. Al salir, el plano se
+// Primera pantalla: cartón de título con el rótulo y el eslogan sobre la película (la marca del
+// loader vuela a la esquina) y los créditos abajo. Al salir, el plano se
 // desencaja (escena de scroll corta). Es `critical`: el loader
 // espera a que el vídeo tenga búfer suficiente para arrancar sin cortes.
 export const heroSchema = z.object({
@@ -41,7 +41,13 @@ export const heroSchema = z.object({
     sound: z.string(),
     play: z.string(),
     pause: z.string(),
+    /** Nombre accesible del grupo de idiomas. */
+    language: z.string(),
   }),
+  /** Selector de idioma: una ruta estática por idioma, en el orden en que se pintan. */
+  languages: z
+    .array(z.object({ code: z.string(), label: z.string(), href: z.string(), current: z.boolean() }))
+    .min(1),
 });
 
 export type HeroProps = z.output<typeof heroSchema>;

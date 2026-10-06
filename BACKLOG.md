@@ -32,13 +32,20 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 
 ## Idiomas
 
-- [ ] ES / EN / CA: rutas por idioma prerenderizadas (`app/[lang]/` + `generateStaticParams`,
-      sin middleware), copy por idioma en `content/`, selector de idioma en el hero.
-- [ ] Etiquetas sueltas aún en castellano dentro de schemas por defecto (`blocks/reel/index.ts`:
-      "Proyectos", "Carrete de fotografías", "de"…): moverlas a `content/`.
+- [ ] **[cliente]** Revisar las traducciones EN/CA/ES de `content/` (las he escrito yo; el título
+      de contacto, "Lo que uso" y las etiquetas del carrete sobre todo).
+- [ ] Selector de idioma: feel check en móvil (cabe junto a sonido/pausa en `.controls` del hero) y
+      decidir si recordar la elección (hoy `/` va siempre a `/en`, sin detectar el navegador).
+- [ ] Quitar los defaults en castellano de `labels` en `blocks/reel/index.ts` (ya se pasan desde
+      `content/reel.ts`, pero el schema aún los tiene).
 
 ## Diseño (impeccable)
 
+- [ ] Hero rediseñado (la marca manda, no el vídeo): rótulo «free lost» en Six Caps y eslogan en
+      Instrument Serif cursiva, vídeo oscurecido (`.scrim`). Ver con `npm run dev`: tamaño del rótulo
+      (`min(46vw, 54svh)` calculado sin verlo), contraste sobre planos claros, apilado en móvil y la
+      salida (free sube / lost baja). `DESIGN.md` queda desfasado (una sola familia, «el metraje lidere»,
+      eslogan a la derecha): actualizar al cerrar.
 - [ ] Revisión final (finish review) con capturas de escritorio y móvil, y su veredicto.
 - [ ] `DESIGN.md` + `.impeccable/design.json` a partir de lo construido.
 - [ ] Ajustar en dispositivo: el carrete en móvil (`--reel-card: 0.26`, tarjetas 16:9), el
@@ -67,6 +74,8 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 
 ## Hecho
 
+- [x] Idiomas EN / CA / ES: rutas `app/[lang]/` prerenderizadas, `/` redirige a `/en`, copy por
+      idioma en `content/`, selector EN · CA · ES en el hero.
 - [x] Marco de la vista de proyecto: crece con `clip-path` y `transform` (FLIP), sin layout.
 - [x] Tokens `--ease-*` y `--t-veil`; HUD del carrete sale en 180 ms; título del pie interrumpible;
       hover del correo a 280 ms; hover solo con puntero fino y `:active` en botones.
