@@ -56,6 +56,11 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 
 ## Diseño (impeccable)
 
+- [ ] Feel check de la entrada del rótulo tras el loader (`npm run dev`): ahora arranca a ~0,89 s de
+      abrirse el velo (`--t-title` en `hero.module.css`) en vez de a 1,4 s, y «free» ya no asoma por
+      su máscara. Si se hace largo o se pisa con el velo, ajustar el 0.5s o el 0.35; si «lost» asoma en alguna fuente de
+      reserva, subir el 0.3em.
+
 - [ ] Hero rediseñado (la marca manda, no el vídeo): rótulo «free lost» en Six Caps y eslogan en
       Instrument Serif cursiva, vídeo oscurecido (`.scrim`). Ver con `npm run dev`: tamaño del rótulo
       (`min(46vw, 54svh)` calculado sin verlo), contraste sobre planos claros, apilado en móvil y la

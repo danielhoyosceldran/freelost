@@ -240,11 +240,20 @@
 
 /* ---------- entrada, cuando el velo del loader se abre ---------- */
 
-/* Como la marca del loader: «free» baja desde arriba, «lost» sube desde abajo. */
+/* El rótulo no espera a que el velo acabe: parte de cuando las dos mitades destapan el centro
+   (el velo va a ~50% hacia el 35% de su duración) y, medio segundo después, cuando el plano ya se
+   ve, entra. De este instante cuelga el resto de la entrada. */
+.hero {
+  --t-title: calc(var(--t-veil) * 0.35 + 0.5s);
+}
+
+/* Como la marca del loader: «free» baja desde arriba, «lost» sube desde abajo. El recorrido tiene
+   que salir de la máscara entera: 100% es la caja de la palabra (line-height 0.9), pero la máscara
+   tiene 0.08em de aire y la tinta de Six Caps desborda la caja; con 105% asomaba el pie de «free». */
 .word {
-  transform: translateY(calc(var(--dir, 1) * 105%));
-  transition: transform 1.5s var(--ease-out-expo);
-  transition-delay: calc(var(--t-veil) + 0.3s + var(--i, 0) * 0.14s);
+  transform: translateY(calc(var(--dir, 1) * (100% + 0.3em)));
+  transition: transform 1.2s var(--ease-out-expo);
+  transition-delay: calc(var(--t-title) + var(--i, 0) * 0.12s);
 }
 
 .name,
@@ -260,20 +269,20 @@
 
 /* El eslogan cae cuando el rótulo ya está montado; los créditos, al final. */
 .slogan {
-  transition-delay: calc(var(--t-veil) + 0.95s);
+  transition-delay: calc(var(--t-title) + 0.55s);
 }
 
 .name {
-  transition-delay: calc(var(--t-veil) + 1.15s);
+  transition-delay: calc(var(--t-title) + 0.75s);
 }
 
 .role {
-  transition-delay: calc(var(--t-veil) + 1.25s);
+  transition-delay: calc(var(--t-title) + 0.85s);
 }
 
 /* La marca aterriza en la esquina y con ella aparecen los controles. */
 .controls {
-  transition-delay: calc(var(--t-veil) + 0.95s);
+  transition-delay: calc(var(--t-title) + 0.55s);
 }
 
 /* Los controles no se clican mientras son invisibles. pointer-events es discreta: con 0.01s salta
