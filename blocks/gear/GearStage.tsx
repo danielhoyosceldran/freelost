@@ -106,6 +106,19 @@ export function GearStage({ title, items, entry }: { title: string; items: GearI
                 <span ref={(el) => void (fills.current[i] = el)} className={styles.fill} />
               </span>
             </button>
+            {/* Fuera del botón: una lista no puede ir dentro de él. Siempre en el DOM (el lector
+                de pantalla las lee todas); el CSS solo despliega las del actual. */}
+            {item.tags.length > 0 && (
+              <div className={styles.tagsWrap}>
+                <ul className={styles.tags}>
+                  {item.tags.map((tag) => (
+                    <li key={tag} className={styles.tag}>
+                      {tag}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </li>
         ))}
       </ol>

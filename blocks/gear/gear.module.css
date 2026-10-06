@@ -119,6 +119,45 @@
   transform: scaleX(0);
 }
 
+/* Etiquetas del actual: se despliegan bajo su nombre (filas 0fr → 1fr, sin medir alturas). La
+   lista está anclada abajo, así que al desplegarse empuja los nombres de arriba hacia arriba. */
+.tagsWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.5s var(--ease-out-expo),
+    opacity 0.3s ease;
+}
+
+.item[aria-current] ~ .tagsWrap {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 0.5s var(--ease-out-expo),
+    opacity 0.4s ease 0.12s;
+}
+
+.tags {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.15rem 0 0.5rem;
+}
+
+/* Chapa mínima: filete fino y texto pequeño, para que no compita con el nombre. */
+.tag {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(238 241 240 / 0.22);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: rgb(238 241 240 / 0.8);
+}
+
 .item:focus-visible {
   outline: 1px solid var(--color-ember);
   outline-offset: 4px;
@@ -127,6 +166,11 @@
 @media (prefers-reduced-motion: reduce) {
   .name {
     transition: color 0.35s ease;
+  }
+
+  .tagsWrap,
+  .item[aria-current] ~ .tagsWrap {
+    transition: opacity 0.3s ease;
   }
 }
 
@@ -145,5 +189,10 @@
 
   .name {
     font-size: 1.6rem;
+  }
+
+  .tag {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
   }
 }

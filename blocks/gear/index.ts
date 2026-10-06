@@ -17,6 +17,8 @@ export const gearSchema = z.object({
         name: z.string(),
         /** Modelo procedural de lib/three/gearModels. */
         model: z.enum(["camera", "drone", "laptop"]),
+        /** Qué permite, en lenguaje de cliente. Se despliegan bajo el nombre cuando es el actual. */
+        tags: z.array(z.string()).default([]),
       }),
     )
     .min(1),
