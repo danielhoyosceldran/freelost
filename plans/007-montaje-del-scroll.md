@@ -102,6 +102,8 @@ El carrete es una pantalla que la página rebasa; entra por tiempo (`ARRIVE_AT`,
   proporción y posición de la tarjeta central del carrete, de modo que el corte de la fase 1
   *es* la llegada a la primera tarjeta, no una desaparición.
 
+**Revisado tras el feel check:** la entrada del carrete ya NO depende del scroll (iba demasiado rápida): vuelve a su reloj y el rise dura 3,6 s (antes 2,1 s). Lo siguiente describe la versión inicial; del scrub solo se conserva la inclinación al cursor.
+
 **Hecho (fase 2)** en `lib/webgl/flex-carousel/FlexCarousel.ts` y `blocks/reel/Reel.tsx`: el «rise» sigue al scroll (`setIntroScrub`; empieza con el borde de la sección a 0,05 de pantalla y acaba 0,45 después, rebobinable; al rebobinar, la cinta deja de estar a punto y se quita `.revealed`); tras la pausa las tarjetas asoman solas hasta 0,16 para no dejar una pantalla vacía; la tarjeta central se arrima 7×5 px al cursor y crece 1,2 % (`setLean`). Ya existía «velocidad → cinta»: con la sección clavada el scroll empuja la cinta (`SCROLL_FOLLOW`) y la energía encoge las tarjetas, ahora con deltas continuos gracias a la fase 0. NO hecho: inclinar la tarjeta en perspectiva (exige tocar los shaders), estirar la marca ember hacia el cursor, y el plano del hero convertido en la tarjeta central (decisión 3: no se puede ajustar a ciegas, la tarjeta aparece mucho después de que el hero se va; mejor tras verlo en pantalla).
 
 ## Fase 3 — Equipo: valle, pero con *whip* y mano

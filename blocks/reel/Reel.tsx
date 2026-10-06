@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useCriticalAssets, useReleaseHold } from "@/core/lifecycle/BlockSlot";
 import { useLifecycle } from "@/core/lifecycle/store";
 import { scrollController } from "@/core/scroll/controller";
-import { clamp01, easeOut, pad2 } from "@/lib/easing";
+import { pad2 } from "@/lib/easing";
 import { FlexCarousel } from "@/lib/webgl/flex-carousel/FlexCarousel";
 import type { ReelProps } from "./index";
 import { ProjectView } from "./project";
@@ -20,16 +20,6 @@ const DIGITS = Array.from({ length: 10 }, (_, n) => n);
  */
 const ARRIVE_AT = 0.15;
 const RISE_DELAY = 550;
-/**
- * Con movimiento normal el "rise" lo marca el scroll (rebobinable): empieza cuando el borde
- * superior de la sección llega a RISE_FROM de pantalla y termina RISE_SPAN de pantalla después
- * (ya con la sección clavada). Para que nadie se quede ante una sección vacía, tras RISE_DELAY
- * las tarjetas asoman solas hasta TEASER y el scroll hace el resto.
- */
-const RISE_FROM = 0.05;
-const RISE_SPAN = 0.45;
-const TEASER = 0.16;
-const TEASER_MS = 1100;
 /** Ms sin cambios de tarjeta antes de que el título del pie vuelva a entrar. */
 const SWAP_SETTLE_MS = 80;
 /** Píxeles que avanza la cinta por cada píxel de scroll mientras el carrete está clavado. */
@@ -107,7 +97,6 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
       onActive: setCaption,
       onSelect: (i) => select(i),
       onRevealed: () => root.classList.add(styles.revealed),
-      onHidden: () => root.classList.remove(styles.revealed),
     });
 
     if (!carousel) {
@@ -169,44 +158,17 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
     viewRef.current = view;
     select = (i) => view.enter(i);
 
-    // Llegada: una sola vez. El título entra ya. Las tarjetas, con movimiento normal, suben al
-    // ritmo del scroll (ver RISE_FROM); con movimiento reducido, un fundido con su propio reloj
-    // tras la pausa.
+    // Llegada: una sola vez. El título entra ya; las tarjetas, tras la pausa. La intro corre con
+    // su propio reloj (no la pilota el scroll), así que se ve entera aunque se siga bajando.
     let riseTimer = 0;
-    let teaserRaf = 0;
-    let teaser = 0;
     let arrived = false;
-    const applyRise = () => {
-      const section = sectionRef.current;
-      if (!arrived || reduced || !section) return;
-      const vh = window.innerHeight;
-      const top = section.getBoundingClientRect().top;
-      const t = clamp01((vh * RISE_FROM - top) / (vh * RISE_SPAN));
-      // El asomo solo cuenta con la sección ya casi en su sitio; al salir hacia arriba se apaga.
-      const near = clamp01((vh * 0.3 - top) / (vh * 0.25));
-      carousel.setIntroScrub(Math.max(t, teaser * near));
-    };
     const checkArrival = () => {
       const section = sectionRef.current;
       if (arrived || !section || !useLifecycle.getState().ready) return;
       if (section.getBoundingClientRect().top > window.innerHeight * ARRIVE_AT) return;
       arrived = true;
       root.classList.add(styles.arrived);
-      if (reduced) riseTimer = window.setTimeout(() => carousel.start(), RISE_DELAY);
-      else {
-        carousel.start();
-        applyRise();
-        riseTimer = window.setTimeout(() => {
-          const t0 = performance.now();
-          const step = (now: number) => {
-            const k = clamp01((now - t0) / TEASER_MS);
-            teaser = TEASER * easeOut(k);
-            applyRise();
-            if (k < 1) teaserRaf = requestAnimationFrame(step);
-          };
-          teaserRaf = requestAnimationFrame(step);
-        }, RISE_DELAY);
-      }
+      riseTimer = window.setTimeout(() => carousel.start(), RISE_DELAY);
       // Ya estamos aquí: lo de debajo (three.js de "Lo que uso") puede empezar a cargar.
       releaseHold();
     };
@@ -227,7 +189,6 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
     };
     const offIntro = scrollController.subscribe(() => {
       checkArrival();
-      applyRise();
       followScroll();
     });
 
@@ -276,7 +237,6 @@ export function Reel({ anchor, slides, labels, gap, aspect, lens, liquid, squeez
       close.removeEventListener("click", onClose);
       offIntro();
       clearTimeout(riseTimer);
-      cancelAnimationFrame(teaserRaf);
       clearTimeout(swapTimer.current);
       view.destroy();
       releaseInput?.();

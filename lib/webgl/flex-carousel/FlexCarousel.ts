@@ -52,8 +52,6 @@ export interface FlexCarouselOptions {
   onSelect: (index: number) => void;
   /** Fin de la intro. */
   onRevealed: () => void;
-  /** La intro, atada al scroll (setIntroScrub), vuelve atrás y la cinta deja de estar a punto. */
-  onHidden?: () => void;
 }
 
 export interface CardHit {
@@ -89,7 +87,8 @@ interface IntroFx {
 
 const RADIUS = 0; // estética plana de la web
 const PIXEL_BUDGET = 4.5e6; // techo de píxeles del lienzo (baja el dpr en pantallas grandes)
-const INTRO_S = { rise: 2.1, fade: 0.35 };
+// El rise dura algo más que en el original (2,1 s): las tarjetas llegan con calma.
+const INTRO_S = { rise: 2.4, fade: 0.35 };
 /** La tarjeta central se inclina hacia el cursor: desplazamiento máximo (px) y crecimiento. */
 const LEAN_PX = { x: 7, y: 5 };
 const LEAN_SCALE = 0.012;
@@ -168,8 +167,6 @@ export class FlexCarousel {
     done: false,
   };
   private readonly focus = { t: 0, v: 0, target: 0 };
-  /** Progreso de la intro que marca el scroll; null = la intro corre con su propio reloj. */
-  private scrub: number | null = null;
   /** Inclinación de la tarjeta central hacia el cursor (x, y en -1..1; s = 0..1 de presencia). */
   private readonly lean = { x: 0, y: 0, tx: 0, ty: 0, s: 0, ts: 0 };
 
@@ -255,16 +252,6 @@ export class FlexCarousel {
     if (this.intro.requested) return;
     this.intro.requested = true;
     this.intro.requestedAt = performance.now();
-    this.wake();
-  }
-
-  /**
-   * Ata la intro al scroll: 0 = tarjetas fuera, 1 = en su sitio (y la cinta, a punto). Rebobinable.
-   * null la devuelve a su reloj. Con movimiento reducido se ignora (la intro es un fundido corto).
-   */
-  setIntroScrub(t: number | null) {
-    if (this.o.reduced) return;
-    this.scrub = t === null ? null : clamp01(t);
     this.wake();
   }
 
@@ -826,19 +813,7 @@ export class FlexCarousel {
         intro.running = true;
       } else animating = true; // seguir mirando hasta que lleguen
     }
-    if (this.scrub !== null && (intro.running || intro.done)) {
-      // Intro atada al scroll: el progreso lo dicta la página y puede ir hacia atrás.
-      intro.t = this.scrub;
-      if (intro.t >= 1 && !intro.done) {
-        intro.running = false;
-        intro.done = true;
-        o.onRevealed();
-      } else if (intro.t < 1 && intro.done) {
-        intro.running = true;
-        intro.done = false;
-        o.onHidden?.();
-      }
-    } else if (intro.running) {
+    if (intro.running) {
       intro.t = Math.min(1, intro.t + dt / INTRO_S[intro.kind]);
       if (intro.t >= 1) {
         intro.running = false;

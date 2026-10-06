@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { scrollController } from "@/core/scroll/controller";
 import { useScene, useSceneProgress } from "@/core/scroll/ScrollScene";
-import { clamp01, easeIn, easeOut, segment } from "@/lib/easing";
+import { clamp01, easeIn, easeOut, easeOutQuint, segment } from "@/lib/easing";
 import type { GearViewer } from "@/lib/three/GearViewer";
 import styles from "./gear.module.css";
 import { GearCanvas } from "./GearCanvas";
@@ -28,18 +28,23 @@ const GONE = 0.65;
 const LIST_LAG = 16;
 
 /**
+ * El primer tramo de la escena (`entry`, fracción del progreso total) es la llegada: el escenario
+ * entero baja desde arriba y se asienta, como una diapositiva nueva. El resto se reparte entre
+ * los objetos.
+ *
  * Escenario clavado de "Lo que uso". El progreso de la escena se reparte en un tramo por objeto,
  * con tempo desigual: una espera larga con giro lento y un cambio corto con barrido (el que sale
  * acelera hacia arriba y el que llega entra rápido y se asienta). Todo por estilo directo (60 fps,
  * sin re-render); el estado React solo guarda cuál es el actual, para aria-current.
  */
-export function GearStage({ title, items }: { title: string; items: GearItem[] }) {
+export function GearStage({ title, items, entry }: { title: string; items: GearItem[]; entry: number }) {
   const scene = useScene();
   const n = items.length;
   const viewers = useRef<(GearViewer | null)[]>([]);
   const boxes = useRef<(HTMLDivElement | null)[]>([]);
   const fills = useRef<(HTMLSpanElement | null)[]>([]);
   const listRef = useRef<HTMLOListElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const lastP = useRef(0);
   const reduced = useRef(false);
   const [current, setCurrent] = useState(0);
@@ -59,8 +64,16 @@ export function GearStage({ title, items }: { title: string; items: GearItem[] }
   );
 
   const apply = useCallback(
-    (p: number) => {
-      lastP.current = p;
+    (sceneP: number) => {
+      lastP.current = sceneP;
+      // Llegada: baja desde arriba con curva de frenado largo. Con movimiento reducido, fundido.
+      const stage = stageRef.current;
+      if (stage) {
+        const arrive = easeOutQuint(segment(sceneP, 0, entry));
+        stage.style.opacity = reduced.current ? String(arrive) : "";
+        stage.style.transform = reduced.current || arrive >= 1 ? "" : `translateY(${(-(1 - arrive) * 100).toFixed(2)}%)`;
+      }
+      const p = segment(sceneP, entry, 1);
       const k = clamp01(p) * n;
       for (let i = 0; i < n; i++) {
         // Distancia al centro de su tramo. El primero ya está entero al llegar y el último se
@@ -92,7 +105,7 @@ export function GearStage({ title, items }: { title: string; items: GearItem[] }
       const idx = Math.min(n - 1, Math.max(0, Math.floor(k)));
       setCurrent((c) => (c === idx ? c : idx));
     },
-    [n],
+    [n, entry],
   );
 
   useSceneProgress(apply);
@@ -104,7 +117,7 @@ export function GearStage({ title, items }: { title: string; items: GearItem[] }
   };
 
   return (
-    <div className={styles.stage}>
+    <div ref={stageRef} className={styles.stage}>
       <h2 className={styles.title}>{title}</h2>
 
       <div className={styles.stack}>
@@ -122,7 +135,7 @@ export function GearStage({ title, items }: { title: string; items: GearItem[] }
               type="button"
               className={styles.item}
               aria-current={current === i ? "step" : undefined}
-              onClick={() => scene.seek((i + 0.5) / n)}
+              onClick={() => scene.seek(entry + (1 - entry) * ((i + 0.5) / n))}
             >
               <span className={styles.name}>{item.name}</span>
               <span className={styles.track} aria-hidden="true">

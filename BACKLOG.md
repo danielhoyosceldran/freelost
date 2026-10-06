@@ -28,7 +28,7 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [ ] Plataforma de fotos (recomendación: Cloudinary; alternativa: Bunny.net). Necesita CORS para
       las texturas WebGL y redimensionado al vuelo.
 - [ ] Despliegue en Vercel (export estático).
-- [ ] Favicon / iconos (se borró `app/favicon.ico` en la migración) e imagen Open Graph.
+- [ ] Imagen Open Graph. (Favicon hecho: `app/icon.svg`; falta `.ico`/apple-touch-icon si hace falta.)
 
 ## Idiomas
 
