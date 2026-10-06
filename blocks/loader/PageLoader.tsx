@@ -23,8 +23,8 @@ const SPAN = 1147;
  * 2. Relleno (JS): los trazos se llenan del color de acento con el progreso REAL, lo que aportan
  *    los bloques críticos (el vídeo del hero) y las fuentes. No empieza hasta que han encajado.
  * 3. Apertura (CSS): el velo se parte por la costura y cada mitad sale en la dirección de su
- *    trazo, la izquierda hacia arriba y la derecha hacia abajo. La marca del hero, idéntica y en
- *    el mismo sitio, queda debajo; esta se desvanece encima y el acento pasa a blanco.
+ *    trazo, la izquierda hacia arriba y la derecha hacia abajo, y esta marca se desvanece. La
+ *    del hero ya espera en su esquina.
  */
 export function PageLoader({ minMs, maxMs, fonts, color, label }: LoaderProps) {
   // Al volver de una página con una transición que se deshace (todos los proyectos), la página

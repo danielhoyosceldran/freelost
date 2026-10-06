@@ -59,13 +59,6 @@
   width: calc(56px * 0.29285);
   overflow: visible;
   fill: var(--color-paper);
-  transform-origin: center;
-  will-change: transform;
-}
-
-/* Del centro a la esquina, cuando el velo ya ha salido y la marca del loader se ha fundido. */
-.markFlying {
-  transition: transform 1.3s cubic-bezier(0.65, 0, 0.15, 1) calc(var(--t-veil) - 0.05s);
 }
 
 /* ---------- márgenes ---------- */

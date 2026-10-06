@@ -85,14 +85,15 @@
   font-stretch: 72%;
   line-height: 0.9;
   text-transform: uppercase;
-  color: rgb(238 241 240 / 0.3);
+  /* Los inactivos se leen enteros, sin velo: el activo se distingue por el ancho y el blanco. */
+  color: rgb(238 241 240 / 0.62);
   transition:
     color 0.35s ease,
     font-stretch 0.5s var(--ease-out-expo);
 }
 
 .item:hover .name {
-  color: rgb(238 241 240 / 0.62);
+  color: rgb(238 241 240 / 0.85);
 }
 
 .item[aria-current] .name {

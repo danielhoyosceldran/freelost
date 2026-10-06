@@ -42,10 +42,7 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
   const topRef = useRef<HTMLElement>(null);
   const creditsRef = useRef<HTMLDivElement>(null);
   const sloganRef = useRef<HTMLDivElement>(null);
-  const markRef = useRef<SVGSVGElement>(null);
-  const slotRef = useRef<HTMLSpanElement>(null);
   const reduceRef = useRef(false);
-  const flownRef = useRef(false);
   const provide = useCriticalAssets();
   const ready = useReady();
   const [muted, setMuted] = useState(true);
@@ -84,41 +81,6 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
     // el navegador lo impide (ahorro de energía), no se espera: queda el póster y el play.
     v.play().catch(() => resolve());
   }, [provide, film.poster]);
-
-  // La marca vive en la esquina, arriba a la izquierda, pero arranca en el centro, justo
-  // debajo de la del loader (el hueco .brand-mark da esa geometría). Mientras carga se mantiene
-  // ahí con un transform inverso (FLIP), recalculado si cambia el viewport; al abrirse el velo
-  // vuela a su sitio. En el centro taparía a quien sale en el plano durante toda la película.
-  useEffect(() => {
-    const mark = markRef.current;
-    const slot = slotRef.current;
-    if (!mark || !slot || reduceRef.current) return;
-    const place = () => {
-      // Ya en la esquina, el layout manda: un resize no puede devolverla al centro.
-      if (flownRef.current) return;
-      mark.style.transform = "none";
-      const home = mark.getBoundingClientRect();
-      const center = slot.getBoundingClientRect();
-      const s = center.height / home.height;
-      const dx = center.left + center.width / 2 - (home.left + home.width / 2);
-      const dy = center.top + center.height / 2 - (home.top + home.height / 2);
-      mark.style.transform = `translate(${dx}px, ${dy}px) scale(${s})`;
-    };
-    place();
-    window.addEventListener("resize", place);
-    return () => window.removeEventListener("resize", place);
-  }, []);
-
-  useEffect(() => {
-    const mark = markRef.current;
-    if (!ready || !mark || reduceRef.current) return;
-    // La clase pone la transición (con su retardo: primero sale el velo y se funde la marca
-    // del loader); quitar el transform en el frame siguiente la dispara.
-    flownRef.current = true;
-    mark.classList.add(styles.markFlying);
-    const raf = requestAnimationFrame(() => (mark.style.transform = ""));
-    return () => cancelAnimationFrame(raf);
-  }, [ready]);
 
   // El velo se abre: la película empieza desde su primer plano, no a mitad.
   useEffect(() => {
@@ -237,13 +199,12 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
         <div className={styles.scrim} aria-hidden="true" />
       </div>
 
-      {/* Hueco invisible con la geometría de la marca del loader: el punto de partida del vuelo. */}
-      <span ref={slotRef} className="brand-mark" aria-hidden="true" />
-
       {/* Créditos y controles: cada pieza sale por su lado (ver useSceneProgress). */}
       <div className={styles.chrome}>
       <header ref={topRef} className={styles.top}>
-        <svg ref={markRef} className={styles.mark} viewBox={LOGO_VIEWBOX} aria-hidden="true">
+        {/* La marca nace ya en la esquina: el velo la descubre ahí, sin vuelo desde el centro
+            (en el centro taparía a quien sale en el plano). */}
+        <svg className={styles.mark} viewBox={LOGO_VIEWBOX} aria-hidden="true">
           <path d={LOGO_F} />
           <path d={LOGO_L} />
         </svg>
