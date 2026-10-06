@@ -39,11 +39,14 @@
   color: rgb(238 241 240 / 0.6);
 }
 
+/* La misma voz que el eslogan del hero. Además ahorra la cursiva de Archivo (dos ficheros
+   precargados) solo para esta línea. La serif tiene menos ojo medio: un punto más de cuerpo. */
 .slogan {
   justify-self: end;
-  font-size: 1rem;
+  font-family: var(--font-instrument), Georgia, serif;
+  font-size: 1.125rem;
   font-style: italic;
-  font-weight: 300;
+  font-weight: 400;
 }
 
 @media (max-width: 720px) {

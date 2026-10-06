@@ -8,13 +8,14 @@ import { z } from "zod";
 
 export const slideSchema = z.discriminatedUnion("kind", [
   /**
-   * Película servida desde el propio sitio (public/). La portada se pinta en la cinta (textura
-   * WebGL: mismo origen) y la película se reproduce entera al abrir el proyecto.
+   * Película en MP4 directo (public/ o un CDN, ver lib/media.ts). La portada se pinta en la cinta
+   * (textura WebGL: mismo origen o CORS) y la película se reproduce entera al abrir el proyecto.
    */
   z.object({ kind: z.literal("film"), cover: z.string(), src: z.string(), caption: z.string() }),
   /**
-   * Vídeo de Vimeo: la portada (local, la textura WebGL necesita mismo origen o CORS) se pinta en
-   * la cinta y el vídeo se reproduce al abrir. `vimeo` es el id numérico; `hash`, el parámetro h
+   * Vídeo de Vimeo: la portada se pinta en la cinta y el vídeo se reproduce al abrir. La portada
+   * sale del proveedor de imágenes, no de Vimeo: la textura WebGL necesita mismo origen o CORS, y
+   * las miniaturas de Vimeo no lo garantizan. `vimeo` es el id numérico; `hash`, el parámetro h
    * de los vídeos ocultos ("unlisted"), si lo tiene.
    */
   z.object({
@@ -24,6 +25,9 @@ export const slideSchema = z.discriminatedUnion("kind", [
     hash: z.string().optional(),
     caption: z.string(),
   }),
-  /** Foto de Pexels: el id es la ruta tras /photos/ sin extensión. Pexels sirve CORS. */
-  z.object({ kind: z.literal("photo"), pexels: z.string(), caption: z.string() }),
+  /**
+   * Foto: `src` es la ruta en el proveedor de imágenes (lib/media.ts), que la sirve al ancho de la
+   * cinta y al de pantalla completa. Tiene que mandar CORS (textura WebGL).
+   */
+  z.object({ kind: z.literal("photo"), src: z.string(), caption: z.string() }),
 ]);

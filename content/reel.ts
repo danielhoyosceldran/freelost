@@ -1,19 +1,28 @@
 // Proyectos del carrete: las películas reales de Guillem (public/media/videos/<carpeta>/),
-// transcodificadas a public/media/web/films/<slug>.mp4. La portada es el fotograma a 2 s del
-// corte de 4 s (-reel-4s) que acompaña a cada una. En local por ahora; más adelante, Vimeo.
+// transcodificadas a films/<slug>.mp4. La portada es el fotograma a 2 s del corte de 4 s
+// (-reel-4s) que acompaña a cada una. Las URLs salen de lib/media.ts: hoy public/media/web, luego
+// el CDN que digan las variables de entorno.
+//
+// Para pasar una película a Vimeo basta con darle su id: `film("fl1", "…", { vimeo: "123" })`
+// (y `hash` si es oculta). Deja de bajarse el MP4 y la reproduce el player de Vimeo.
 //
 // Los títulos salen de los nombres de carpeta y fichero: son provisionales hasta que el cliente
 // dé los títulos reales.
 
 import type { ReelSlide } from "@/blocks/reel/slides";
 import type { Locale } from "@/content/locales";
+import { imageUrl, videoUrl } from "@/lib/media";
 
-const film = (slug: string, caption: string): ReelSlide => ({
-  kind: "film",
-  cover: `/media/web/films/${slug}.jpg`,
-  src: `/media/web/films/${slug}.mp4`,
-  caption,
-});
+// Ancho de la portada: la tarjeta central en un portátil retina. El proveedor lo respeta; en local
+// se sirve el JPG como está (1600 px).
+const COVER_W = 1600;
+
+const film = (slug: string, caption: string, vimeo?: { vimeo: string; hash?: string }): ReelSlide => {
+  const cover = imageUrl(`films/${slug}.jpg`, COVER_W);
+  return vimeo
+    ? { kind: "video", cover, caption, ...vimeo }
+    : { kind: "film", cover, src: videoUrl(`films/${slug}.mp4`), caption };
+};
 
 // Solo se traduce lo que es palabra común; los nombres de cliente se quedan tal cual.
 const words: Record<Locale, { cycling: string; summer: string }> = {

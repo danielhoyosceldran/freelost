@@ -600,9 +600,16 @@ export class FlexCarousel {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.decoding = "async";
+      // decode() descodifica fuera del hilo principal; sin él, texImage2D lo haría de golpe al
+      // subir (decenas de ms por portada) y las doce juntas entrecortarían el loader.
       img.onload = () => {
-        if (!this.destroyed) this.upload(slot, img);
-        resolve();
+        img
+          .decode()
+          .catch(() => {})
+          .then(() => {
+            if (!this.destroyed) this.upload(slot, img);
+            resolve();
+          });
       };
       // Un error cuenta como cargado; la tarjeta se queda en su gris.
       img.onerror = () => {

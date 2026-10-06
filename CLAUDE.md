@@ -26,8 +26,7 @@ navegador embebido o automatizado, ni para "verificar". Sí se permiten `npx tsc
   - Todo el copy entra por props, nunca hardcodeado en el componente. El copy vive en `content/`.
 - **`core/BlockRenderer.tsx`:** `PageRenderer`. Es Server Component y `schema.parse` corre en el
   build.
-- **`components/ui/`:** chrome global montado en `app/layout.tsx` y `Reveal`. Modales y toast se
-  disparan con `useUI` (`core/ui/store.ts`).
+- **`components/ui/`:** chrome global montado en `app/[lang]/layout.tsx` (`PageProgress`).
 - **`core/scroll/controller.ts`:** `scrollController` es el **único** que toca `window.scrollTo`,
   los pins, la captura de rueda/táctil/teclado y el `overflow` del body. Ningún bloque mueve el
   scroll por su cuenta, y cualquier librería de smooth-scroll o de animación ligada al scroll
@@ -64,5 +63,13 @@ navegador embebido o automatizado, ni para "verificar". Sí se permiten `npx tsc
 
 `public/media/` contiene los originales del cliente (algunos de ~1 GB). El sitio sirve versiones
 transcodificadas para web, nunca los originales. Más adelante los vídeos pasan a Vimeo.
+
+- **Toda URL de medio sale de `lib/media.ts`** (`videoUrl`, `imageUrl(path, width)`). Nunca rutas
+  `/media/...` escritas a mano en `content/` ni en bloques.
+  - Sin variables de entorno sirve `public/media/web`. Con `NEXT_PUBLIC_*` (ver `.env.example`)
+    apunta al CDN de vídeo y al proveedor de imágenes (Cloudinary o Bunny).
+- **Películas del carrete a Vimeo:** `film(slug, caption, { vimeo, hash })` en `content/reel.ts`.
+  - La portada sigue en el proveedor de imágenes, porque es una textura WebGL y necesita CORS.
+- **El hero es un `<video>` nativo, nunca un iframe:** el loader mide su búfer y es el LCP.
 
 Comentarios en español, explicando el porqué.

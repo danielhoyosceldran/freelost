@@ -23,14 +23,25 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 
 ## Medios y despliegue
 
-- [ ] Pasar las películas a Vimeo (`VimeoClip` ya existe en `blocks/reel/vimeo.ts`; el tipo de
-      diapositiva `video` lo usa) y el vídeo del hero a un reproductor de Vimeo o a un host de
-      vídeo. Quitar `public/media/web/films/` (~670 MB; Lofoten sola 185 MB).
+- [ ] **[cliente]** Subir las películas a Vimeo y pasar sus ids en `content/reel.ts`
+      (`film(slug, caption, { vimeo: "…" })`). Quitar después `public/media/web/films/` (~670 MB;
+      Lofoten sola 185 MB). El carrete ya abre la conexión y precarga el SDK si hay alguna.
+- [ ] Host de los MP4 del hero (`fl1-720/1080.mp4`, 22 y 50 MB): CDN de vídeo (Bunny, R2) o
+      enlaces de fichero de Vimeo si el plan los da. Se configura con `NEXT_PUBLIC_VIDEO_BASE`.
+      Sigue siendo `<video>` nativo, no iframe (ver `content/hero.ts`).
+- [ ] Al montar el CDN de imágenes, comprobar en el navegador que manda
+      `Access-Control-Allow-Origin` (si no, las portadas del carrete no suben como textura) y que
+      `Content-Length` llega con la imagen (el anillo de la vista de proyecto lo usa para el
+      progreso; sin él cae a onload).
+- [ ] Medir con Lighthouse/WebPageTest sobre el despliegue: el loader espera 6 s de búfer del
+      hero (~3 MB a 1080p). Si el LCP en 4G se va de 2,5 s, bajar `BUFFER_S` o el bitrate del
+      corte del hero, que va oscurecido bajo `.scrim` y lo admite.
 - [ ] Sacar los originales de `public/media/` antes de desplegar: el export copia todo `public/`
       a `out/` (3,3 GB). Vercel no lo admite.
 - [ ] `.gitignore` ignora `*.mp4`: las versiones web tampoco se suben. Decidir dónde viven.
-- [ ] Plataforma de fotos (recomendación: Cloudinary; alternativa: Bunny.net). Necesita CORS para
-      las texturas WebGL y redimensionado al vuelo.
+- [ ] **[cliente]** Plataforma de fotos (recomendación: Cloudinary; alternativa: Bunny.net).
+      `lib/media.ts` ya genera las URLs de las dos (ancho y formato automático). Falta la cuenta
+      y subir `web/` con las mismas rutas.
 - [ ] Despliegue en Vercel (export estático).
 - [ ] Imagen Open Graph. (Favicon hecho: `app/icon.svg`; falta `.ico`/apple-touch-icon si hace falta.)
 
@@ -98,14 +109,22 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 
 ## Limpieza de v4
 
-- [ ] Quitar el chrome heredado que ya no usa nadie: `ShowreelModal`, `Modal`, `Toast`, `Cursor`,
-      `Reveal`, `core/ui/store.ts`, el bloque `cut`, y en `app/globals.css` los tokens dorados y
+- [ ] Quitar el chrome heredado que ya no usa nadie: `Cursor`, `Reveal`, el bloque `cut`, y en
+      `app/globals.css` los tokens dorados y
       las clases `.glass-card`, `.action-pill`, `.btn-flat-gold`, `.text-glow-*`,
       `.irregular-cut-*`, `.scroll-reveal`, `.animate-float`, `.custom-cursor`.
 - [ ] `core/scroll/ScrollGate.tsx`, `core/scroll/useScrollMagnet.ts` y `core/scroll/schemas.ts`:
       ya no los usa ningún bloque (el carrete se arrastra). Decidir si se quedan en el núcleo.
 
 ## Hecho
+
+- [x] Optimización de carga (impeccable optimize):
+  - Fuentes precargadas de ~390 KB a 113 KB: Archivo solo `latin` y sin cursiva. El eslogan del
+    pie pasa a Instrument Serif, como el del hero.
+  - `/` redirige en el borde (`vercel.json`) o con meta refresh, sin bajar React.
+  - Capa de medios `lib/media.ts` con preconnect a los CDN; la foto del carrete ya no es Pexels.
+  - Las portadas se descodifican antes de subir como textura.
+  - Fuera `ShowreelModal`, `Modal`, `Toast` y `core/ui/store.ts`.
 
 - [x] Idiomas EN / CA / ES: rutas `app/[lang]/` prerenderizadas, `/` redirige a `/en`, copy por
       idioma en `content/`, selector EN · CA · ES en el hero.

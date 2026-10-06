@@ -1,8 +1,14 @@
 import { locales, localeNames, type Locale } from "@/content/locales";
+import { imageUrl, videoUrl } from "@/lib/media";
 
 // Primera pantalla de la home. Película: FL1 (public/media/videos/bici/FL1 insta.mp4),
-// transcodificada a public/media/web/ sin las pausas en negro del arranque (0–13 s) ni el cartón
-// del logo del final (desde 106,8 s). En local por ahora; más adelante, Vimeo.
+// transcodificada sin las pausas en negro del arranque (0–13 s) ni el cartón del logo del final
+// (desde 106,8 s).
+//
+// El hero es un <video> nativo a propósito, también cuando el resto pase a Vimeo: el loader mide
+// su búfer, la salida le cambia la velocidad y es el LCP. Un iframe de Vimeo añadiría su player
+// (cientos de KB) antes del primer fotograma. Al CDN van estos mismos MP4 (o los enlaces de
+// fichero de Vimeo, si el plan los da), vía NEXT_PUBLIC_VIDEO_BASE.
 const text = {
   en: {
     filmLabel: "free lost film: road cycling and running.",
@@ -27,10 +33,10 @@ export const heroContent = (lang: Locale) => ({
   sloganLang: lang === "en" ? undefined : "en",
   film: {
     label: text[lang].filmLabel,
-    poster: "/media/web/fl1-poster.jpg",
+    poster: imageUrl("fl1-poster.jpg", 1920),
     sources: [
-      { src: "/media/web/fl1-720.mp4", media: "(max-width: 960px)" },
-      { src: "/media/web/fl1-1080.mp4" },
+      { src: videoUrl("fl1-720.mp4"), media: "(max-width: 960px)" },
+      { src: videoUrl("fl1-1080.mp4") },
     ],
   },
   labels: text[lang].labels,

@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { preconnect } from "react-dom";
 import { useCriticalAssets, useReleaseHold } from "@/core/lifecycle/BlockSlot";
 import { useLifecycle } from "@/core/lifecycle/store";
 import { scrollController } from "@/core/scroll/controller";
@@ -420,6 +421,19 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, lens, liquid, 
       root.classList.remove(styles.revealed, styles.arrived);
     };
   }, [provide, releaseHold, router, pathname, n, slides, gap, aspect, lens, liquid, squeeze, setCaption]);
+
+  // Con películas en Vimeo, el anillo de carga del proyecto no debería esperar al handshake ni al
+  // SDK: se abre la conexión con el player y su CDN, y el SDK (~8 KB) se baja cuando el hilo
+  // está libre. Sin diapositivas de Vimeo no se toca la red.
+  useEffect(() => {
+    if (!slides.some((s) => s.kind === "video")) return;
+    preconnect("https://player.vimeo.com");
+    preconnect("https://f.vimeocdn.com");
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1500));
+    const cancel = window.cancelIdleCallback ?? window.clearTimeout;
+    const id = idle(() => void import("@vimeo/player"));
+    return () => cancel(id);
+  }, [slides]);
 
   return (
     <section ref={sectionRef} id={anchor} className={styles.section}>
