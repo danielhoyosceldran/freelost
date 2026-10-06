@@ -51,6 +51,11 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       tarjeta WebGL; si se nota, decidir entre crossfade o recalcular la escala con la proporción
       de la imagen.
 
+- [ ] Montaje del scroll (`plans/007-montaje-del-scroll.md`): fases 0–5 aplicadas. Falta el feel
+      check conjunto con `npm run dev` (inercia de la rueda, salida del hero, rise del carrete,
+      barrido del equipo, relleno del contacto, timecode) y decidir: plano del hero → tarjeta
+      central, inclinación en perspectiva de la tarjeta (shaders) e imán del equipo.
+
 ## Limpieza de v4
 
 - [ ] Quitar el chrome heredado que ya no usa nadie: `ShowreelModal`, `Modal`, `Toast`, `Cursor`,

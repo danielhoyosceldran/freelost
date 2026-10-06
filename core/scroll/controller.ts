@@ -13,6 +13,12 @@
  * - lockOverflow: overflow:hidden en <body> (modales). Nunca en <html>: propagaría el scroll al
  *   <body> y rompería el position:sticky de todas las escenas.
  *
+ * - inercia: con rueda de ratón (puntero fino, sin movimiento reducido) la rueda no salta de golpe:
+ *   mueve un destino y la posición lo persigue con un muelle exponencial. Los trackpads (deltas
+ *   pequeños) ya traen su inercia del sistema y se dejan nativos. El mismo bucle mide la
+ *   velocidad del scroll y la publica (velocity / subscribeVelocity / --scroll-v): es el único
+ *   requestAnimationFrame del scroll, y solo corre mientras hay movimiento.
+ *
  * Singleton de módulo: el constructor no toca window, así que importarlo en el servidor es seguro.
  */
 
@@ -25,6 +31,15 @@ const DOWN_KEYS = ["ArrowDown", "PageDown", " ", "Spacebar"];
 const UP_KEYS = ["ArrowUp", "PageUp", "Home"];
 const KEY_DELTA = 220;
 const TOUCH_GAIN = 2.2;
+/** Constantes de tiempo (ms) del muelle: la rueda es ágil, los saltos programáticos (seek) más lentos. */
+const WHEEL_TAU = 95;
+const JUMP_TAU = 170;
+/** Por debajo de este deltaY (px) se asume trackpad y se deja el scroll nativo. */
+const TRACKPAD_MAX = 40;
+const LINE_PX = 16;
+/** Constante de tiempo (ms) del filtro de la velocidad y velocidad (px/ms) que cuenta como 1. */
+const VEL_TAU = 120;
+const VEL_REF = 3;
 
 /** Y absoluta en el documento de la parte de arriba de un elemento. */
 export function docTop(el: Element) {
@@ -41,10 +56,28 @@ class ScrollController {
   private reduce: MediaQueryList | null = null;
   private touchY: number | null = null;
 
+  // inercia
+  private finePointer: MediaQueryList | null = null;
+  private looping = false;
+  private current = 0;
+  private target = 0;
+  private tau = WHEEL_TAU;
+  /** Última Y escrita por el bucle: distingue nuestros eventos de scroll de los externos. */
+  private written = 0;
+
+  // velocidad
+  private velListeners = new Set<(v: number) => void>();
+  private vel = 0;
+  private published = 0;
+  private lastY = 0;
+  private lastT = 0;
+  private tickId = 0;
+
   init() {
     if (this.initialized || typeof window === "undefined") return;
     this.initialized = true;
     this.reduce = matchMedia("(prefers-reduced-motion: reduce)");
+    this.finePointer = matchMedia("(hover: hover) and (pointer: fine)");
 
     // Refrescar la página siempre arranca desde arriba: las escenas no se diseñaron para
     // aparecer a mitad de recorrido.
@@ -58,6 +91,7 @@ class ScrollController {
     window.addEventListener("keydown", this.onKey);
 
     window.scrollTo({ top: 0, behavior: "instant" });
+    this.current = this.target = this.written = 0;
     this.onScroll();
   }
 
@@ -71,13 +105,52 @@ class ScrollController {
     };
   }
 
+  /**
+   * Velocidad del scroll normalizada a −1…1 (1 = 3 px/ms hacia abajo), ya suavizada. Con
+   * movimiento reducido es siempre 0.
+   */
+  velocity() {
+    return this.published;
+  }
+
+  /** Avisa de cada cambio de velocidad; termina siempre con un 0. Devuelve la baja. */
+  subscribeVelocity(listener: (v: number) => void) {
+    this.velListeners.add(listener);
+    return () => {
+      this.velListeners.delete(listener);
+    };
+  }
+
   // ---------- movimiento ----------
+
+  /** ¿Se mueve la página con el muelle propio en lugar del scroll nativo? */
+  private get smoothing() {
+    return !!this.finePointer?.matches && !this.reduce?.matches && this.pins.size === 0 && this.overflowLocks.size === 0;
+  }
+
+  private maxY() {
+    return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  }
+
+  private stopLoop() {
+    this.looping = false;
+    this.current = this.target = window.scrollY;
+  }
 
   /**
    * 'motion' = suave salvo con prefers-reduced-motion. Nunca 'auto': <html> lleva
    * scroll-behavior:smooth, así que 'auto' seguiría animando aunque se pida movimiento reducido.
    */
   scrollTo(top: number, mode: ScrollMode = "motion") {
+    if (mode !== "instant" && this.smoothing) {
+      if (!this.looping) this.current = window.scrollY;
+      this.target = Math.min(this.maxY(), Math.max(0, top));
+      this.tau = JUMP_TAU;
+      this.looping = true;
+      this.kick();
+      return;
+    }
+    this.stopLoop();
     const behavior = mode === "motion" ? (this.reduce?.matches ? "instant" : "smooth") : mode;
     window.scrollTo({ top, behavior });
   }
@@ -92,6 +165,7 @@ class ScrollController {
     // Borrar antes de poner: el último pin es el que manda, y Map conserva el orden de inserción.
     this.pins.delete(owner);
     this.pins.set(owner, y);
+    this.stopLoop();
     if (window.scrollY !== y) window.scrollTo({ top: y, behavior: "instant" });
     this.pinListeners.forEach((l) => l());
   }
@@ -154,8 +228,58 @@ class ScrollController {
       if (window.scrollY !== pinY) window.scrollTo({ top: pinY, behavior: "instant" });
       return;
     }
+    // Un scroll que no escribió el bucle (barra, teclado, trackpad) manda: el muelle lo acepta
+    // como nueva posición en vez de devolver la página a su destino anterior.
+    if (this.looping && Math.abs(window.scrollY - this.written) > 2) this.stopLoop();
+    else if (!this.looping) this.current = this.target = window.scrollY;
     this.listeners.forEach((l) => l());
+    this.kick();
   };
+
+  // ---------- bucle: muelle de la rueda y velocidad ----------
+
+  private kick() {
+    if (this.tickId) return;
+    this.lastT = performance.now();
+    this.lastY = window.scrollY;
+    this.tickId = requestAnimationFrame(this.tick);
+  }
+
+  private tick = (t: number) => {
+    this.tickId = 0;
+    // Tope al dt: tras una pestaña en segundo plano no debe haber un salto ni un pico de velocidad.
+    const dt = Math.min(50, Math.max(1, t - this.lastT));
+    this.lastT = t;
+
+    if (this.looping && !this.smoothing) this.stopLoop();
+    if (this.looping) {
+      const max = this.maxY();
+      this.target = Math.min(max, Math.max(0, this.target));
+      this.current += (this.target - this.current) * (1 - Math.exp(-dt / this.tau));
+      if (Math.abs(this.target - this.current) < 0.5) {
+        this.current = this.target;
+        this.looping = false;
+      }
+      this.written = this.current;
+      window.scrollTo({ top: this.current, behavior: "instant" });
+    }
+
+    const y = window.scrollY;
+    const raw = this.pins.size ? 0 : (y - this.lastY) / dt;
+    this.lastY = y;
+    this.vel += (raw - this.vel) * (1 - Math.exp(-dt / VEL_TAU));
+    const moving = this.looping || Math.abs(this.vel) > 0.002 || raw !== 0;
+    if (!moving) this.vel = 0;
+    this.publish(this.reduce?.matches ? 0 : Math.max(-1, Math.min(1, this.vel / VEL_REF)));
+    if (moving) this.tickId = requestAnimationFrame(this.tick);
+  };
+
+  private publish(v: number) {
+    if (v === this.published || (v !== 0 && Math.abs(v - this.published) < 0.002)) return;
+    this.published = v;
+    document.documentElement.style.setProperty("--scroll-v", v.toFixed(3));
+    this.velListeners.forEach((l) => l(v));
+  }
 
   private currentPinY() {
     let y: number | null = null;
@@ -164,9 +288,23 @@ class ScrollController {
   }
 
   private onWheel = (e: WheelEvent) => {
-    if (!this.capture) return;
+    if (this.capture) {
+      e.preventDefault();
+      this.capture(e.deltaY, e);
+      return;
+    }
+    // Pellizco (ctrl), gesto horizontal o deltas de trackpad: nativo.
+    if (e.ctrlKey || e.deltaY === 0 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    if (e.deltaMode === 0 && Math.abs(e.deltaY) < TRACKPAD_MAX) return;
+    if (!this.smoothing) return;
     e.preventDefault();
-    this.capture(e.deltaY, e);
+    const delta =
+      e.deltaMode === 1 ? e.deltaY * LINE_PX : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
+    if (!this.looping) this.current = this.target = window.scrollY;
+    this.target = Math.min(this.maxY(), Math.max(0, this.target + delta));
+    this.tau = WHEEL_TAU;
+    this.looping = true;
+    this.kick();
   };
 
   private onTouchStart = (e: TouchEvent) => {

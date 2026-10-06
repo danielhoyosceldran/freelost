@@ -1,0 +1,59 @@
+/* Hilo de progreso y timecode: viven en los márgenes, fuera del plano. Nacen con la página (tras
+   el loader) y se apartan con un proyecto abierto. */
+
+.root {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.root[data-ready] {
+  opacity: 1;
+  /* Espera a que el velo del loader termine de abrirse. */
+  transition-delay: var(--t-veil);
+}
+
+.root[data-away] {
+  opacity: 0;
+  /* Se aparta rápido: el proyecto abierto manda. */
+  transition-delay: 0s;
+  transition-duration: 0.18s;
+}
+
+.bar {
+  height: 1px;
+  background: var(--color-ember);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+}
+
+/* Arriba al centro: el hero lleva el eslogan abajo a la derecha y los controles arriba a la
+   derecha, así que el centro superior es lo único libre en todas las escenas. Centrado en
+   vertical con los controles (hit de 44px). */
+.code {
+  position: absolute;
+  top: calc(var(--gutter) + 22px);
+  left: 50%;
+  translate: -50% -50%;
+  font-size: 0.72rem;
+  font-weight: 500;
+  font-stretch: 112%;
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+  color: rgb(238 241 240 / 0.6);
+}
+
+@media (max-width: 720px) {
+  .code {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    transition-delay: 0s;
+  }
+}

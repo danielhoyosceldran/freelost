@@ -30,32 +30,29 @@
   width: 100%;
   height: 100%;
   overflow: visible;
+  /* Opacidad y posición las escribe el scroll (Contact.tsx): sin transición, que iría con retraso. */
   opacity: 0;
-  transition:
-    transform 1.6s var(--ease-out-expo),
-    opacity 1.2s ease;
 }
 
 .blades path {
-  fill: none;
+  /* --fill (0→1) lo escribe el scroll: al encajar, las hojas se rellenan de ember como en el loader. */
+  fill: var(--color-ember);
+  fill-opacity: calc(var(--fill, 0) * 0.9);
   stroke: rgb(238 241 240 / 0.16);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
 
-/* El mismo gesto que el loader: la F baja, la L sube. */
-.bladeF {
-  transform: translateY(-40%);
+/* El mismo gesto que el loader: la F baja, la L sube (translateY, desde el JS). Al encajar, el
+   mismo golpe de escala. */
+.contact[data-locked] .blades {
+  animation: lock 0.5s var(--ease-out);
 }
 
-.bladeL {
-  transform: translateY(40%);
-}
-
-.contact[data-in] .bladeF,
-.contact[data-in] .bladeL {
-  opacity: 1;
-  transform: none;
+@keyframes lock {
+  40% {
+    scale: 1.025;
+  }
 }
 
 /* ---------- texto ---------- */
@@ -88,7 +85,7 @@
   display: inline-block;
   transform: translateY(105%);
   transition: transform 1.1s var(--ease-out-expo);
-  transition-delay: calc(0.1s + var(--i, 0) * 0.07s);
+  transition-delay: calc(0.1s + var(--i, 0) * var(--stagger, 0.07s));
 }
 
 .contact[data-in] .word {
@@ -196,10 +193,10 @@
 
 .mail {
   /* El subrayado es hover, no entrada: va a su aire y rápido. */
-  transition-property: opacity, transform, background-size;
-  transition-duration: 0.9s, 0.9s, 0.28s;
-  transition-timing-function: var(--ease-out-expo), var(--ease-out-expo), var(--ease-out);
-  transition-delay: 0.45s, 0.45s, 0s;
+  transition-property: opacity, transform, background-size, translate;
+  transition-duration: 0.9s, 0.9s, 0.28s, 0.35s;
+  transition-timing-function: var(--ease-out-expo), var(--ease-out-expo), var(--ease-out), var(--ease-out);
+  transition-delay: 0.45s, 0.45s, 0s, 0s;
 }
 
 .channels {
@@ -219,16 +216,20 @@
 
   .blades path {
     stroke: rgb(238 241 240 / 0.1);
+    /* En móvil la marca queda tras el texto: el relleno se contiene. */
+    fill-opacity: calc(var(--fill, 0) * 0.5);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .word,
-  .bladeF,
-  .bladeL,
   .mail,
   .channels {
     transform: none;
     transition: opacity 0.4s ease;
+  }
+
+  .contact[data-locked] .blades {
+    animation: none;
   }
 }

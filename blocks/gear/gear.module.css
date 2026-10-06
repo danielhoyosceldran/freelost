@@ -50,6 +50,10 @@
   touch-action: pan-y;
 }
 
+.viewer canvas:active {
+  cursor: grabbing;
+}
+
 .list {
   position: absolute;
   left: var(--gutter);
@@ -76,7 +80,9 @@
   line-height: 0.9;
   text-transform: uppercase;
   color: rgb(238 241 240 / 0.3);
-  transition: color 0.35s ease;
+  transition:
+    color 0.35s ease,
+    font-stretch 0.5s var(--ease-out-expo);
 }
 
 .item:hover .name {
@@ -85,6 +91,8 @@
 
 .item[aria-current] .name {
   color: var(--color-paper);
+  /* El ancho es la voz: el activo se ensancha, el resto sigue condensado. */
+  font-stretch: 96%;
 }
 
 /* Cuánto del tramo de cada objeto se ha recorrido. */
@@ -107,6 +115,12 @@
 .item:focus-visible {
   outline: 1px solid var(--color-ember);
   outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .name {
+    transition: color 0.35s ease;
+  }
 }
 
 @media (max-width: 720px) {

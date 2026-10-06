@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
+import { PageProgress } from "@/components/ui/PageProgress";
 import { ShowreelModal } from "@/components/ui/ShowreelModal";
 import { Toast } from "@/components/ui/Toast";
 import { LifecycleBoot } from "@/core/lifecycle/LifecycleBoot";
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" className={`${archivo.variable} scroll-smooth`}>
       <body className="font-sans antialiased">
         {children}
+        <PageProgress />
         {/* Chrome heredado de v4 que aún usan bloques fuera de la home (reel). */}
         <ShowreelModal />
         <Toast />

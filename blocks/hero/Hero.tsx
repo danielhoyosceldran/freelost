@@ -5,7 +5,7 @@ import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { useCriticalAssets } from "@/core/lifecycle/BlockSlot";
 import { useLifecycle, useReady } from "@/core/lifecycle/store";
 import { ScrollScene, useSceneProgress } from "@/core/scroll/ScrollScene";
-import { clamp01, easeInOut } from "@/lib/easing";
+import { easeIn, easeInOut, segment } from "@/lib/easing";
 import { LOGO_F, LOGO_L, LOGO_VIEWBOX } from "@/lib/brand/logo";
 import type { HeroProps } from "./index";
 import styles from "./hero.module.css";
@@ -21,9 +21,9 @@ function bufferedFromStart(v: HTMLVideoElement) {
 }
 
 /**
- * La primera pantalla es una escena corta: mientras dura, la película se desencaja (encoge y se
- * ladea un poco, separándose de los bordes) y los créditos se van. Después la escena se suelta y
- * el plano ya suelto sube mientras llega el carrete.
+ * La primera pantalla es una escena corta con ritmo de montaje: el plano sostiene, acelera
+ * (encoge, se ladea y la película entra en cámara lenta) y corta. Los créditos no se apagan a la
+ * vez: cada pieza se va por su lado y a su hora. Después la escena se suelta y llega el carrete.
  */
 export function Hero({ exit, ...stage }: HeroProps) {
   return (
@@ -36,7 +36,9 @@ export function Hero({ exit, ...stage }: HeroProps) {
 function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit }: HeroProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
-  const chromeRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLElement>(null);
+  const nameRef = useRef<HTMLDivElement>(null);
+  const sloganRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<SVGSVGElement>(null);
   const slotRef = useRef<HTMLSpanElement>(null);
   const reduceRef = useRef(false);
@@ -143,20 +145,42 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
     return () => io.disconnect();
   }, []);
 
-  // Salida: el progreso de la escena desencaja el plano. Estilo directo, sin re-render.
+  // Salida: el progreso de la escena monta el plano. Estilo directo, sin re-render.
   useSceneProgress((p) => {
     const frame = frameRef.current;
-    const chrome = chromeRef.current;
-    if (!frame || !chrome) return;
-    const e = easeInOut(p);
-    if (!reduceRef.current) {
-      frame.style.transform = e > 0 ? `scale(${(1 - (1 - exit.scale) * e).toFixed(4)}) rotate(${(exit.tilt * e).toFixed(3)}deg)` : "";
+    const v = videoRef.current;
+    const top = topRef.current;
+    const name = nameRef.current;
+    const slogan = sloganRef.current;
+    if (!frame || !top || !name || !slogan) return;
+    const calm = reduceRef.current;
+
+    // Tres tiempos: sostiene → acelera (easeIn) → corta.
+    const ramp = easeIn(segment(p, exit.hold, exit.cutAt));
+    const cut = easeIn(segment(p, exit.cutAt, 1));
+    const scale = 1 - (1 - exit.scale) * ramp;
+    frame.style.transform =
+      calm || ramp <= 0
+        ? ""
+        : `translateY(${(-cut * 36).toFixed(2)}%) scale(${scale.toFixed(4)}) rotate(${(exit.tilt * ramp).toFixed(3)}deg)`;
+    frame.style.opacity = cut > 0 ? String(1 - Math.min(1, cut * 1.5)) : "";
+
+    // Cámara lenta justo antes del corte; vuelve a 1 al rebobinar.
+    if (v && !calm) {
+      const rate = 1 + (exit.slowTo - 1) * ramp;
+      if (Math.abs(v.playbackRate - rate) > 0.02) v.playbackRate = rate;
     }
-    // Los créditos se van en la primera mitad: el plano suelto se queda solo.
-    const c = clamp01(e * 1.8);
-    chrome.style.opacity = c > 0 ? String(1 - c) : "";
-    chrome.style.transform = c > 0 && !reduceRef.current ? `translateY(${(-c * 4).toFixed(2)}vh)` : "";
-    chrome.style.visibility = c >= 1 ? "hidden" : "";
+
+    // Los créditos se van por turnos y en sentidos contrarios: arriba, el nombre a la izquierda y,
+    // el último, el eslogan a la derecha.
+    const away = (el: HTMLElement, t: number, x: number, y: number) => {
+      el.style.opacity = t > 0 ? String(1 - t) : "";
+      el.style.transform = t > 0 && !calm ? `translate(${(x * t).toFixed(2)}vw, ${(y * t).toFixed(2)}vh)` : "";
+      el.style.visibility = t >= 1 ? "hidden" : "";
+    };
+    away(top, easeInOut(segment(p, 0, 0.3)), 0, -5);
+    away(name, easeIn(segment(p, 0.05, 0.5)), -14, 0);
+    away(slogan, easeIn(segment(p, 0.15, 0.7)), 10, 0);
   });
 
   // El estado de los botones sale del propio vídeo, no de lo que se pidió.
@@ -212,9 +236,9 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
       {/* Hueco invisible con la geometría de la marca del loader: el punto de partida del vuelo. */}
       <span ref={slotRef} className="brand-mark" aria-hidden="true" />
 
-      {/* Créditos y controles: se van juntos al desencajarse el plano. */}
-      <div ref={chromeRef} className={styles.chrome}>
-      <header className={styles.top}>
+      {/* Créditos y controles: cada pieza sale por su lado (ver useSceneProgress). */}
+      <div className={styles.chrome}>
+      <header ref={topRef} className={styles.top}>
         <div className={styles.lockup}>
           <svg ref={markRef} className={styles.mark} viewBox={LOGO_VIEWBOX} aria-hidden="true">
             <path d={LOGO_F} />
@@ -239,7 +263,7 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
       </header>
 
       <div className={styles.credits}>
-        <div>
+        <div ref={nameRef}>
           <h1 className={styles.name}>
             {/* El espacio va fuera de cada palabra: dentro de un inline-block se recortaría. */}
             {words.map((w, i) => (
@@ -255,9 +279,11 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, exit 
           </h1>
           <p className={styles.role}>{role}</p>
         </div>
-        <p className={styles.slogan} lang={sloganLang}>
-          {slogan}
-        </p>
+        <div ref={sloganRef}>
+          <p className={styles.slogan} lang={sloganLang}>
+            {slogan}
+          </p>
+        </div>
       </div>
       </div>
     </div>

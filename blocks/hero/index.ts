@@ -21,14 +21,19 @@ export const heroSchema = z.object({
     sources: z.array(z.object({ src: z.string(), media: z.string().optional() })).min(1),
   }),
   /**
-   * Salida: la escena dura `height` (una pantalla más el recorrido de salida). Al terminar, el
-   * plano ha encogido a `scale` y está ladeado `tilt` grados: se ha desencajado.
+   * Salida, en tres tiempos sobre el progreso de la escena (que dura `height`): sostiene hasta
+   * `hold`; acelera hasta `cutAt` (el plano encoge a `scale`, se ladea `tilt` grados y la
+   * película baja a `slowTo`× de velocidad: cámara lenta justo antes del corte); y corta, sin
+   * fundido largo, en lo que queda.
    */
   exit: z
     .object({
-      height: z.string().default("165vh"),
-      scale: z.number().default(0.84),
-      tilt: z.number().default(-1.5),
+      height: z.string().default("190vh"),
+      scale: z.number().default(0.62),
+      tilt: z.number().default(-2.5),
+      hold: z.number().default(0.25),
+      cutAt: z.number().default(0.85),
+      slowTo: z.number().default(0.6),
     })
     .prefault({}),
   labels: z.object({

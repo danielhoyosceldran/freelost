@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-06T08:34:21.636Z",
+  "title": "Design System: free lost",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta de sombras",
+        "canonical": "#060a0c",
+        "tonalRamp": [
+          "#060a0c",
+          "#060a0c",
+          "#060a0c",
+          "#060a0c",
+          "#242829",
+          "#5f6364",
+          "#9b9e9f",
+          "#d7dad9"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Papel de cielo",
+        "canonical": "#eef1f0",
+        "tonalRamp": [
+          "#060a0c",
+          "#484c4d",
+          "#8b8e8e",
+          "#cdd0cf",
+          "#eef1f0",
+          "#eef1f0",
+          "#eef1f0",
+          "#eef1f0"
+        ]
+      },
+      "ember": {
+        "role": "primary",
+        "displayName": "Ember, el sol bajo",
+        "canonical": "#e0602a",
+        "tonalRamp": [
+          "#060a0c",
+          "#442315",
+          "#833b1d",
+          "#c15426",
+          "#e27343",
+          "#e59876",
+          "#e9bda9",
+          "#ede3dc"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Nombre del hero y titular del contacto; wdth 72, mayúsculas."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Títulos de sección arriba a la izquierda."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Pie de foto del carrete."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Eslogan en cursiva y enlace de correo."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Rol, controles, canales, contador, legal."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "«free lost» junto a la marca."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "UI que entra o sale."
+      },
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Entradas largas del hero, el contacto y el carrete."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Movimiento en pantalla."
+      },
+      {
+        "name": "t-veil",
+        "value": "1.1s",
+        "purpose": "Duración del velo del loader; de ella cuelga la entrada del hero."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile",
+        "value": "720px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Control",
+      "kind": "button",
+      "refersTo": "control",
+      "description": "Sonido y play/pausa del hero: etiqueta con icono, sin caja.",
+      "html": "<button class=\"ds-control\" aria-pressed=\"true\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 9v6h4l5 4V5L8 9H4z\"/><path d=\"M16 9a4 4 0 010 6\"/></svg>Sonido</button>",
+      "css": ".ds-control{display:inline-flex;align-items:center;gap:.55rem;min-height:44px;min-width:44px;justify-content:center;padding:0 .6rem;background:none;border:0;border-radius:0;font:500 .7rem Archivo,sans-serif;font-stretch:112%;letter-spacing:.16em;text-transform:uppercase;color:rgb(238 241 240/.78);cursor:pointer;transition:color .25s ease,scale .14s cubic-bezier(.23,1,.32,1)}.ds-control svg{width:15px;height:15px}.ds-control:hover,.ds-control[aria-pressed=true]{color:#eef1f0}.ds-control[aria-pressed=true] svg{color:#e0602a}.ds-control:active{scale:.96}.ds-control:focus-visible{outline:1px solid #e0602a;outline-offset:-6px}"
+    },
+    {
+      "name": "Mail link",
+      "kind": "custom",
+      "refersTo": "mail-link",
+      "description": "El correo como acción: grande, ligero, subrayado que se llena de ember.",
+      "html": "<a class=\"ds-mail\" href=\"#\">hola@ejemplo.com</a>",
+      "css": ".ds-mail{display:inline-flex;padding-bottom:.2em;font:300 2rem/1.1 Archivo,sans-serif;letter-spacing:-.01em;color:#eef1f0;text-decoration:none;background:linear-gradient(#e0602a,#e0602a) 0 100%/0% 1px no-repeat,linear-gradient(rgb(238 241 240/.25),rgb(238 241 240/.25)) 0 100%/100% 1px no-repeat;transition:background-size .28s cubic-bezier(.23,1,.32,1)}.ds-mail:hover,.ds-mail:focus-visible{background-size:100% 1px,100% 1px}.ds-mail:focus-visible{outline:1px solid #e0602a;outline-offset:6px}"
+    },
+    {
+      "name": "Channel link",
+      "kind": "nav",
+      "refersTo": "channel-link",
+      "description": "Redes en etiqueta con tracking amplio.",
+      "html": "<a class=\"ds-channel\" href=\"#\">Instagram</a>",
+      "css": ".ds-channel{display:inline-flex;align-items:center;min-height:44px;font:500 .72rem Archivo,sans-serif;font-stretch:112%;letter-spacing:.18em;text-transform:uppercase;color:rgb(238 241 240/.72);text-decoration:none;transition:color .25s ease}.ds-channel:hover{color:#eef1f0}.ds-channel:focus-visible{outline:1px solid #e0602a;outline-offset:6px}"
+    },
+    {
+      "name": "Name display",
+      "kind": "custom",
+      "refersTo": "display",
+      "description": "Titular condensado en mayúsculas con rol en etiqueta debajo.",
+      "html": "<div class=\"ds-name\">Guillem<br>Salvador</div><div class=\"ds-role\">Filmmaker</div>",
+      "css": ".ds-name{font:800 4rem/.86 Archivo,sans-serif;font-stretch:72%;letter-spacing:-.012em;text-transform:uppercase;color:#eef1f0}.ds-role{margin-top:1rem;font:500 .72rem Archivo,sans-serif;font-stretch:112%;letter-spacing:.18em;text-transform:uppercase;color:rgb(238 241 240/.74)}"
+    },
+    {
+      "name": "Gear index item",
+      "kind": "nav",
+      "refersTo": "headline",
+      "description": "Nombre de objeto como índice: tenue, pleno si activo, con hilo de progreso ember.",
+      "html": "<div class=\"ds-item\"><span class=\"ds-n\">Cámara</span><span class=\"ds-track\"><span class=\"ds-fill\"></span></span></div>",
+      "css": ".ds-item{width:260px;padding:.55rem 0}.ds-n{display:block;font:800 1.8rem/.9 Archivo,sans-serif;font-stretch:72%;text-transform:uppercase;color:rgb(238 241 240/.3);transition:color .35s ease}.ds-item:hover .ds-n{color:rgb(238 241 240/.62)}.ds-track{display:block;height:1px;margin-top:.65rem;background:rgb(238 241 240/.14);overflow:hidden}.ds-fill{display:block;height:100%;width:55%;background:#e0602a}"
+    },
+    {
+      "name": "Footer",
+      "kind": "nav",
+      "refersTo": "footer",
+      "description": "Marca + estudio, aviso legal y eslogan sobre un hilo de 1px.",
+      "html": "<footer class=\"ds-footer\"><span class=\"ds-brand\">free lost</span><span class=\"ds-legal\">© 2026</span><span class=\"ds-slogan\">Feel free to get lost.</span></footer>",
+      "css": ".ds-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.5rem;padding:1.25rem 2rem;border-top:1px solid rgb(238 241 240/.1);background:#060a0c;color:#eef1f0}.ds-brand{font:600 .9rem Archivo,sans-serif;font-stretch:125%}.ds-legal{font:500 .7rem Archivo,sans-serif;font-stretch:112%;letter-spacing:.16em;text-transform:uppercase;color:rgb(238 241 240/.6)}.ds-slogan{justify-self:end;font:italic 300 1rem Archivo,sans-serif}"
+    }
+  ],
+  "narrative": {
+    "northStar": "El cartón de título",
+    "overview": "Una película a pantalla completa, enmarcada como el título de un film: el plano manda y todo lo demás son créditos en sus márgenes. Superficie de modo Experience; esquinas rectas, hilos de 1px, ni tarjetas ni cristal ni sombras. Único momento propio: la marca montándose y abriendo la película por su costura.",
+    "keyCharacteristics": [
+      "Tinta azulada, blanco frío y un único acento, ember.",
+      "Una familia (Archivo) trabajada en su eje de anchura.",
+      "Hilos de 1px y esquinas rectas; cero sombras, cero cristal, cero tarjetas.",
+      "Créditos en los márgenes del plano."
+    ],
+    "rules": [
+      {
+        "name": "The One Ember Rule",
+        "body": "Ember es el único color del sistema y aparece solo como estado, progreso o foco; nunca como relleno de superficie ni de texto corrido.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tinted Neutral Rule",
+        "body": "No hay grises: la jerarquía de tono se hace con papel a distinta opacidad sobre la tinta.",
+        "section": "colors"
+      },
+      {
+        "name": "The Width-Is-Voice Rule",
+        "body": "El ancho comunica el rol: 72% titulares, 88% pies, 112% etiquetas, 125% marca.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tight Display Rule",
+        "body": "Titulares con interlineado 0,86 y tracking −0,012em; las máscaras reservan 0,06em abajo.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Frame Rule",
+        "body": "Ninguna superficie lleva sombra, borde grueso ni cristal. Si algo debe separarse, se usa un hilo de 1px a papel al 10%.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Dejar que el metraje lidere: la interfaz a los márgenes, el centro del plano limpio.",
+      "Usar solo tinta, papel y ember; la jerarquía, por opacidad del papel.",
+      "Mover con las curvas de la casa (ease-out, ease-out-expo, ease-in-out).",
+      "Respetar prefers-reduced-motion.",
+      "Revelar texto con máscara de palabra escalonada.",
+      "Hit de 44px en todo lo clicable y foco visible con 1px ember."
+    ],
+    "donts": [
+      "Usar la identidad v4 (negro/oro, Cinzel, Cormorant, Syne), glass-card, action-pill ni cortes angulares.",
+      "Poner tarjetas, cristal, sombras, esquinas redondeadas ni desenfoque en el chrome.",
+      "Usar ember como relleno de superficie, texto corrido ni decoración.",
+      "Añadir un segundo tipo de letra ni grises neutros.",
+      "Hardcodear copy en los componentes.",
+      "Afirmar créditos, clientes ni premios no confirmados."
+    ]
+  }
+}

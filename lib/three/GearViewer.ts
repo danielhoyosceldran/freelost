@@ -39,7 +39,12 @@ const PROP_SPEED = 30; // rad/s
 const MAX_TILT_Y = 0.42; // rad que el modelo se gira hacia el puntero (horizontal)
 const MAX_TILT_X = 0.22; // ídem en vertical
 const SMOOTHING = 0.08; // 0 = no sigue al puntero, 1 = lo sigue sin inercia
-const SPIN_SMOOTHING = 0.12; // ídem para el giro atado al scroll: la rueda va a saltos
+const SPIN_SMOOTHING = 0.16; // ídem para el giro atado al scroll: la rueda va a saltos
+// Arrastre: radianes por píxel y constantes de tiempo (s). La inercia sigue al gesto y el desvío
+// vuelve poco a poco a la guía del scroll.
+const DRAG_GAIN = 0.009;
+const DRAG_INERTIA = 0.28;
+const DRAG_RETURN = 0.55;
 // Los modelos pesan bastante (el dron ronda los 14 MB): solo se descargan cuando su bloque se
 // acerca al viewport, y solo se renderiza el visor que está en pantalla.
 const LOAD_MARGIN = "200px 0px";
@@ -55,7 +60,9 @@ export class GearViewer {
   private readonly resizeObs: ResizeObserver;
   private readonly io: IntersectionObserver;
   // El giro se lleva en spinY aparte de la inclinación para que ambos se sumen sin pisarse.
-  private readonly state = { spinY: 0, tiltX: 0, tiltY: 0, targetTiltX: 0, targetTiltY: 0, hover: false };
+  private readonly state = { spinY: 0, tiltX: 0, tiltY: 0, targetTiltX: 0, targetTiltY: 0, hover: false, dragY: 0, dragVel: 0 };
+  private dragging: { id: number; x: number } | null = null;
+  private lastMoveT = 0;
   /** Ángulo que marca el scroll; null = giro automático. */
   private spinTarget: number | null = null;
   private active = true;
@@ -99,6 +106,9 @@ export class GearViewer {
 
     this.canvas.addEventListener("pointermove", this.onPointerMove);
     this.canvas.addEventListener("pointerleave", this.onPointerLeave);
+    this.canvas.addEventListener("pointerdown", this.onPointerDown);
+    this.canvas.addEventListener("pointerup", this.onPointerUp);
+    this.canvas.addEventListener("pointercancel", this.onPointerUp);
 
     this.resizeObs = new ResizeObserver(() => this.resize());
     this.resizeObs.observe(host);
@@ -136,6 +146,9 @@ export class GearViewer {
     this.resizeObs.disconnect();
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
     this.canvas.removeEventListener("pointerleave", this.onPointerLeave);
+    this.canvas.removeEventListener("pointerdown", this.onPointerDown);
+    this.canvas.removeEventListener("pointerup", this.onPointerUp);
+    this.canvas.removeEventListener("pointercancel", this.onPointerUp);
     this.scene.environment?.dispose();
     this.scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
@@ -197,7 +210,13 @@ export class GearViewer {
 
     if (this.spinTarget === null) st.spinY += ROTATION_SPEED * (st.hover ? HOVER_SPIN_FACTOR : 1) * dt;
     else st.spinY += (this.spinTarget - st.spinY) * (1 - Math.pow(1 - SPIN_SMOOTHING, dt * 60));
-    this.group.rotation.y = st.spinY + st.tiltY;
+    // Arrastre: sigue al dedo; al soltar, la inercia se apaga y el desvío vuelve a la guía.
+    if (!this.dragging) {
+      st.dragY += st.dragVel * dt;
+      st.dragVel *= Math.exp(-dt / DRAG_INERTIA);
+      st.dragY *= Math.exp(-dt / DRAG_RETURN);
+    }
+    this.group.rotation.y = st.spinY + st.tiltY + st.dragY;
     this.group.rotation.x = BASE_TILT_X + st.tiltX;
     this.props.forEach((p) => p.node.rotateY(p.dir * PROP_SPEED * dt));
 
@@ -205,8 +224,32 @@ export class GearViewer {
     this.raf = requestAnimationFrame(this.frame);
   };
 
+  private onPointerDown = (e: PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    this.dragging = { id: e.pointerId, x: e.clientX };
+    this.lastMoveT = e.timeStamp;
+    this.state.dragVel = 0;
+    this.canvas.setPointerCapture(e.pointerId);
+  };
+
+  private onPointerUp = (e: PointerEvent) => {
+    if (this.dragging?.id !== e.pointerId) return;
+    this.dragging = null;
+    // Soltar tras quedarse quieto no lanza el modelo.
+    if (e.timeStamp - this.lastMoveT > 80) this.state.dragVel = 0;
+  };
+
   // Hover: el usuario «sostiene» el modelo y puede mirar la cara que quiera. La escala no se toca.
   private onPointerMove = (e: PointerEvent) => {
+    if (this.dragging?.id === e.pointerId) {
+      const dr = (e.clientX - this.dragging.x) * DRAG_GAIN;
+      this.dragging.x = e.clientX;
+      this.state.dragY += dr;
+      // Velocidad del gesto (rad/s), suavizada, para la inercia al soltar.
+      const dt = Math.max(0.008, (e.timeStamp - this.lastMoveT) / 1000);
+      this.lastMoveT = e.timeStamp;
+      this.state.dragVel = this.state.dragVel * 0.6 + (dr / dt) * 0.4;
+    }
     const r = this.canvas.getBoundingClientRect();
     if (!r.width || !r.height) return;
     const nx = ((e.clientX - r.left) / r.width) * 2 - 1; // [-1, 1]
