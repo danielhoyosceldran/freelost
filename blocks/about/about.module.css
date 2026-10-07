@@ -4,7 +4,7 @@
 
 .about {
   position: relative;
-  padding: var(--gutter) var(--gutter) clamp(6rem, 18vh, 11rem);
+  padding: var(--gutter) var(--gutter) clamp(6rem, 18svh, 11rem);
   background: var(--color-ink);
   color: var(--color-paper);
 }
@@ -22,7 +22,7 @@
 /* La frase que explica el estudio a quien no lo conoce: ocupa la primera pantalla sola. */
 .lead {
   max-width: 22ch;
-  margin-top: clamp(6rem, 22vh, 12rem);
+  margin-top: clamp(6rem, 22svh, 12rem);
   margin-bottom: clamp(10rem, 40svh, 24rem);
   font-size: clamp(1.75rem, 3.4vw, 3rem);
   font-weight: 400;
@@ -35,7 +35,9 @@
   display: grid;
   gap: 1.4em;
   width: min(100%, 34ch);
-  margin-left: clamp(0px, 38vw, 40rem);
+  /* Proporción del ancho y no un tope fijo: con tope, en pantallas anchas la columna acababa a la
+     izquierda del centro y la diagonal de lectura se perdía. */
+  margin-left: 38%;
   font-size: clamp(1.125rem, 1.7vw, 1.6rem);
   line-height: 1.35;
   color: rgb(238 241 240 / 0.72);
@@ -57,7 +59,7 @@
 /* Quién lleva el estudio: más pequeño, separado y sin competir con el texto de arriba. */
 .credit {
   max-width: 48ch;
-  margin-top: clamp(6rem, 22vh, 13rem);
+  margin-top: clamp(6rem, 22svh, 13rem);
   padding-top: 1.5rem;
   border-top: 1px solid rgb(238 241 240 / 0.1);
   font-size: 0.95rem;
@@ -67,21 +69,34 @@
 
 /* ---------- máscaras de línea ---------- */
 
-/* Cada palabra recorta su propia subida; el aire de abajo evita cortar los descendentes. */
+/* Texto entero para lectores de pantalla; las palabras partidas van con aria-hidden. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Cada palabra recorta su propia subida. El aire de abajo evita cortar los descendentes; el de
+   arriba, las tildes de las mayúsculas (À, É) en ca/es. */
 .mask {
   display: inline-block;
   overflow: hidden;
   vertical-align: top;
-  padding-bottom: 0.12em;
-  margin-bottom: -0.12em;
+  padding-block: 0.08em 0.12em;
+  margin-block: -0.08em -0.12em;
 }
 
-/* --r (0→1, el scroll) recorre las --n líneas del párrafo: la línea --l sube mientras --r·--n va
-   de --l a --l + 1. */
+/* --r (0→1, el scroll) recorre las --n líneas del párrafo. Cada línea ocupa 1,6 huecos, así que
+   la siguiente arranca antes de que la anterior acabe: sube como una ola y no línea a línea. La
+   última sigue llegando a 1 con --r = 1. El recorrido sale con ease-out cuadrática, (1 − t)², para
+   que la línea frene al asentarse en vez de pararse en seco. */
 .word {
-  --t: clamp(0, var(--r, 0) * var(--n, 1) - var(--l, 0), 1);
+  --t: clamp(0, (var(--r, 0) * (var(--n, 1) + 0.6) - var(--l, 0)) / 1.6, 1);
   display: inline-block;
-  translate: 0 calc((1 - var(--t)) * 110%);
+  translate: 0 calc((1 - var(--t)) * (1 - var(--t)) * 110%);
 }
 
 @media (max-width: 720px) {

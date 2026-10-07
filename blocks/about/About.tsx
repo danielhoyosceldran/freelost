@@ -20,14 +20,28 @@ const REVEAL_TO = 0.5;
  * que se rompería al cambiar el ancho.
  */
 function Lines({ text }: { text: string }) {
-  return text.split(/\s+/).map((w, i) => (
-    <Fragment key={i}>
-      {i > 0 && " "}
-      <span className={styles.mask}>
-        <span className={styles.word}>{w}</span>
+  // La raya va pegada a la palabra anterior (espacio irrompible) para que nunca abra línea.
+  const words = text.split(/\s+/).reduce<string[]>((acc, w) => {
+    if (w === "—" && acc.length) acc[acc.length - 1] += "\u00a0—";
+    else acc.push(w);
+    return acc;
+  }, []);
+  return (
+    <>
+      {/* Los lectores de pantalla leen la frase entera; las palabras sueltas son solo imagen. */}
+      <span className={styles.sr}>{text}</span>
+      <span aria-hidden="true">
+        {words.map((w, i) => (
+          <Fragment key={i}>
+            {i > 0 && " "}
+            <span className={styles.mask}>
+              <span className={styles.word}>{w}</span>
+            </span>
+          </Fragment>
+        ))}
       </span>
-    </Fragment>
-  ));
+    </>
+  );
 }
 
 export function About({ anchor, title, lead, body, closing, credit }: AboutProps) {
@@ -64,14 +78,23 @@ export function About({ anchor, title, lead, body, closing, credit }: AboutProps
       blocks.forEach((b) => b.style.setProperty("--r", "1"));
       return;
     }
-    return scrollController.subscribe(() => {
+    // Último valor escrito por párrafo: --r lo hereda cada palabra, así que reescribirlo igual
+    // recalcula el estilo de todas. Fuera de su tramo (0 o 1) no se toca.
+    const last = blocks.map(() => "");
+    const update = () => {
       const vh = window.innerHeight;
-      for (const b of blocks) {
+      blocks.forEach((b, i) => {
         const top = b.getBoundingClientRect().top;
-        const r = clamp01((vh * REVEAL_FROM - top) / (vh * (REVEAL_FROM - REVEAL_TO)));
-        b.style.setProperty("--r", r.toFixed(3));
-      }
-    });
+        const r = clamp01((vh * REVEAL_FROM - top) / (vh * (REVEAL_FROM - REVEAL_TO))).toFixed(3);
+        if (r === last[i]) return;
+        last[i] = r;
+        b.style.setProperty("--r", r);
+      });
+    };
+    // El controlador solo avisa al moverse: si se llega con el About ya en pantalla (volviendo de
+    // un proyecto, por ejemplo), sin esto el texto seguiría oculto hasta el primer scroll.
+    update();
+    return scrollController.subscribe(update);
   }, []);
 
   return (

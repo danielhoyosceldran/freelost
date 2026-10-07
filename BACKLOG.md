@@ -29,7 +29,9 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       Vuelta a papel al final (`FILL_BACK` 0,82–0,91).
 - [ ] Feel check del ritmo nuevo (`npm run dev`): «Lo que uso» → About → contacto. About
       (`blocks/about`): ritmo de las máscaras de línea (`REVEAL_FROM`/`REVEAL_TO`), aire entre
-      entradilla, cuerpo y cierre, y la columna desplazada en portátiles bajos y en móvil.
+      entradilla, cuerpo y cierre, y la columna desplazada (38% del ancho) en portátiles bajos, pantallas
+      anchas y móvil. Ola de líneas: solape de 1,6 huecos y ease-out en `.word` (`about.module.css`).
+      Cuerpo del crédito (0,95rem) y de entradilla/cierre en móvil: fuera de la escala de DESIGN.md.
 - [ ] Feel check del título del carrete (`npm run dev`): tramo de scroll entre el título en el
       centro y el rise (`RISE_AFTER`), fundido de salida (0,6 s) y reaparición en su sitio
       (`SETTLE_DELAY`, `TITLE_SPAN`, `TITLE_MAX_S` en `blocks/reel/Reel.tsx`). Mirar si el contorno de Archivo
