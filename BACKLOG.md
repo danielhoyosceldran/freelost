@@ -9,7 +9,6 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       Archivo 125/900. Al llegar: `next/font/local` en `app/[lang]/layout.tsx` y los tokens
       `--font-title`, `--title-weight` y `--title-stretch` en `app/globals.css`. Revisar después
       el cuerpo de los títulos: Druk Wide es más ancha que el sustituto.
-- [ ] **[cliente]** ¿Druk Wide también en el rótulo «free lost» del hero (hoy Six Caps)? Plan 009, D2.
 - [ ] **[cliente]** ¿Foto de Guillem en el About, junto al crédito? Plan 009, D8.
 - [ ] Feel check del ritmo nuevo (`npm run dev`): «Lo que uso» → eslogan → About → contacto.
       Eslogan (`blocks/slogan`): si se encuentra o se pierde, posición (64 % / 58 %), tramo de
@@ -77,9 +76,10 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       su máscara. Si se hace largo o se pisa con el velo, ajustar el 0.5s o el 0.35; si «lost» asoma en alguna fuente de
       reserva, subir el 0.3em.
 
-- [ ] Hero rediseñado (la marca manda, no el vídeo): rótulo «free lost» en Six Caps, ya sin eslogan,
-      vídeo oscurecido (`.scrim`). Ver con `npm run dev`: tamaño del rótulo (`min(46vw, 58svh)`,
-      calculado sin verlo), contraste sobre planos claros, apilado en móvil y la salida (free sube /
+- [ ] Hero rediseñado (la marca manda, no el vídeo): rótulo «FREE / LOST» apilado en la fuente de
+      título, ya sin eslogan, vídeo oscurecido (`.scrim`). Ver con `npm run dev`: tamaño del rótulo
+      (`min(22vw, 34svh)`, calculado con las medidas de Archivo 125/900 sin verlo; con Druk Wide
+      hay que recalcularlo), la máscara de entrada (que no asome ningún pie de letra), contraste sobre planos claros, apilado en móvil y la salida (free sube /
       lost baja). `DESIGN.md` aún dice «el metraje lidera»: revisar con la revisión final.
 - [ ] Nombre del hero a 20 px (el rol de pie del carrete): comprobar en móviles bajos (360×640)
       que los créditos no pisan el rótulo.

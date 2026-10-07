@@ -7,10 +7,10 @@ colors:
   ember: "#e0602a"
 typography:
   brand:
-    fontFamily: "Six Caps, sans-serif"
-    fontSize: "min(46vw, 58svh)"
-    fontWeight: 400
-    lineHeight: 0.9
+    fontFamily: "Druk Wide (sustituto: Archivo wdth 125 / 900), Arial Black, sans-serif"
+    fontSize: "min(22vw, 34svh)"
+    fontWeight: 900
+    lineHeight: 0.84
   display:
     fontFamily: "Druk Wide (sustituto: Archivo wdth 125 / 900), Arial Black, sans-serif"
     fontSize: "clamp(2rem, 5vw, 4.75rem)"
@@ -99,7 +99,7 @@ Es una superficie de modo Experience: el artefacto (el metraje) lidera desde el 
 
 **Key Characteristics:**
 - Tinta azulada, blanco frío y un único acento, ember, que solo marca estado y progreso.
-- Títulos en una grotesca muy ancha (Druk Wide, elección de Guillem), texto en Instrument Sans, el rótulo del hero en Six Caps y el eslogan en Instrument Serif cursiva.
+- Títulos en una grotesca muy ancha (Druk Wide, elección de Guillem), también para el rótulo del hero; texto en Instrument Sans y el eslogan en Instrument Serif cursiva.
 - Mayúsculas anchas para títulos; versalitas espaciadas para etiquetas.
 - Hilos de 1px y esquinas rectas; cero sombras, cero cristal, cero tarjetas.
 - Créditos en los márgenes: abajo a la izquierda el texto, arriba los controles.
@@ -122,11 +122,11 @@ Paleta tomada de la propia película del hero, sin ningún tono ajeno al plano.
 
 ## Typography
 
-Cuatro voces, cada una con un solo papel (Guillem, 7/10/2026):
+Tres voces, cada una con un solo papel (Guillem, 7/10/2026):
 
 - **Títulos:** Druk Wide (Commercial Type, de pago). Mientras no haya licencia la sustituye Archivo a `wdth` 125 y peso 900. Todo cuelga de tres tokens en `app/globals.css` (`--font-title`, `--title-weight`, `--title-stretch`): cambiar de fuente es cambiar esos tres y cargar el woff2 con `next/font/local`.
 - **Texto:** Instrument Sans variable (peso 400–700, anchura 75–100). Cuerpo, entradillas, etiquetas, pies y el índice del equipo.
-- **Rótulo del hero:** Six Caps, alta y estrecha como las hojas de la marca. Pendiente de decidir si pasa a Druk Wide (plan 009, D2).
+- **Rótulo del hero:** la fuente de título, «FREE» sobre «LOST» siempre apiladas, como las dos hojas de la marca. Al llegar Druk Wide hay que bajar el ancho (`--brand`, hoy 22vw), porque es más ancha que el sustituto.
 - **Eslogan:** Instrument Serif cursiva. Solo en la escena del eslogan; no se precarga.
 
 ### Hierarchy

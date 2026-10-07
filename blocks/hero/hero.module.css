@@ -164,13 +164,15 @@
   outline-offset: -6px;
 }
 
-/* El rótulo, centrado y solo. Six Caps es muy estrecha y alta, como las hojas de la marca; el
-   tamaño lo limita el ancho (cabe en una línea) y la altura. «FREE LOST» mide 1,8em de ancho y sus
-   mayúsculas 0,84em de alto: el ancho manda en casi cualquier pantalla (46vw ocupa el 83% del
-   ancho) y la altura solo en las muy apaisadas, donde 58svh deja aire a los créditos. Sin el
-   eslogan debajo ya no hace falta reservarle sitio. */
+/* El rótulo, centrado: «FREE» sobre «LOST» en la fuente de título, un bloque ancho y pesado.
+   Con el sustituto (Archivo 125/900) «LOST», la palabra más ancha, mide 3,55em y las mayúsculas
+   0,686em de alto. A 22vw ocupa el 78% del ancho; la altura (34svh: las dos líneas, a 0,84 de
+   interlineado, llenan el 57% de la pantalla) solo manda en pantallas apaisadas y bajas, y deja
+   aire a la cabecera y a los créditos.
+   Druk Wide es más ancha que el sustituto: cuando llegue, medir «LOST» y bajar los 22vw para que
+   siga cabiendo con el gutter. */
 .title {
-  --brand: min(46vw, 58svh);
+  --brand: min(22vw, 34svh);
   position: absolute;
   inset: 0;
   display: grid;
@@ -182,18 +184,20 @@
 }
 
 .brand {
-  font-family: var(--font-six-caps), var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-title);
   font-size: var(--brand);
-  font-weight: 400;
-  line-height: 0.9;
-  letter-spacing: 0.01em;
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
+  line-height: 0.84;
+  letter-spacing: 0;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-/* Cada palabra entra desde fuera de su propia línea de corte. */
+/* Cada palabra entra desde fuera de su propia línea de corte. Apiladas siempre: una encima de la
+   otra, como las dos hojas de la marca. */
 .line {
-  display: inline-block;
+  display: block;
   overflow: hidden;
   vertical-align: top;
   /* El recorte no puede comerse la base de las mayúsculas: aire arriba y abajo, devuelto con el
@@ -253,7 +257,7 @@
 
 /* Como la marca del loader: «free» baja desde arriba, «lost» sube desde abajo. El recorrido tiene
    que salir de la máscara entera: 100% es la caja de la palabra (line-height 0.9), pero la máscara
-   tiene 0.08em de aire y la tinta de Six Caps desborda la caja; con 105% asomaba el pie de «free». */
+   tiene 0.08em de aire y la tinta puede desbordar la caja; con 105% asomaba el pie de «free». */
 .word {
   transform: translateY(calc(var(--dir, 1) * (100% + 0.3em)));
   transition: transform 1.2s var(--ease-out-expo);
@@ -314,18 +318,6 @@
     width: calc(44px * 0.29285);
   }
 
-  /* «free» y «lost» apiladas: tan estrechas, a lo ancho quedarían diminutas. */
-  .line {
-    display: block;
-  }
-
-  .title {
-    --brand: min(60vw, 33svh);
-  }
-
-  .brand {
-    line-height: 0.88;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, Instrument_Sans, Instrument_Serif, Six_Caps } from "next/font/google";
+import { Archivo, Instrument_Sans, Instrument_Serif } from "next/font/google";
 import { notFound } from "next/navigation";
 import { preconnect } from "react-dom";
 import { PageProgress } from "@/components/ui/PageProgress";
@@ -21,17 +21,16 @@ const instrumentSans = Instrument_Sans({
 // Títulos: Guillem quiere Druk Wide (Commercial Type, de pago). Hasta tener la licencia hace de
 // sustituto Archivo en su anchura máxima y su peso más alto, lo más parecido entre las gratuitas.
 // Cuando llegue el woff2 se carga con next/font/local en este mismo sitio y se cambian los tokens
-// --title-* de globals.css. Solo se usa en títulos, nunca en texto corrido.
+// --title-* de globals.css. Solo se usa en títulos (también el rótulo del hero), nunca en texto
+// corrido.
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin"],
   axes: ["wdth"],
 });
 
-// Six Caps, alta y estrecha como las hojas de la marca, para el rótulo del hero. Instrument Serif
-// cursiva, de título de crédito, solo para el eslogan: está varias pantallas más abajo, así que no
-// se precarga y no compite con el vídeo del hero.
-const sixCaps = Six_Caps({ variable: "--font-six-caps", subsets: ["latin"], weight: "400" });
+// Instrument Serif cursiva, de título de crédito, solo para el eslogan: está varias pantallas más
+// abajo, así que no se precarga y no compite con el vídeo del hero.
 const instrument = Instrument_Serif({
   variable: "--font-instrument",
   subsets: ["latin"],
@@ -66,7 +65,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   if (media.image) preconnect(media.image, { crossOrigin: "anonymous" });
   if (media.video) preconnect(media.video);
   return (
-    <html lang={lang} className={`${instrumentSans.variable} ${archivo.variable} ${sixCaps.variable} ${instrument.variable} scroll-smooth`}>
+    <html lang={lang} className={`${instrumentSans.variable} ${archivo.variable} ${instrument.variable} scroll-smooth`}>
       <body className="font-sans antialiased">
         {children}
         <PageProgress />
