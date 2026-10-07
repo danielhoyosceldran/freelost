@@ -35,19 +35,16 @@ const BACK_S = 0.9;
 const MAX_DT = 0.05;
 const DIGITS = Array.from({ length: 10 }, (_, n) => n);
 /**
- * Llegada a la sección: cuando su borde superior está a esta fracción de pantalla del techo,
- * entra el título; RISE_DELAY ms después, las tarjetas suben (el "rise" de React Bits). La pausa
- * es a propósito: primero se llega a la sección y luego aparece el material. Se llega pronto (la
- * sección aún va por debajo de media pantalla) y con poca pausa: sin hueco de tinta entre el plano
- * del hero y las tarjetas.
+ * Llegada a la sección: cuando su borde superior está a ARRIVE_AT de pantalla del techo, entra el
+ * título, solo, grande y en el centro. Las tarjetas esperan a que se baje un poco más: suben (el
+ * "rise" de React Bits) cuando el techo de la sección ha pasado RISE_AFTER pantallas por encima
+ * del de la ventana, ya clavada. Ese tramo de scroll es el momento del título; al arrancar el
+ * rise se desvanece y, SETTLE_DELAY ms después de que acabe, reaparece en su sitio arriba a la
+ * izquierda. En el centro ocupa TITLE_SPAN del ancho, sin pasar de TITLE_MAX_S veces su tamaño
+ * final.
  */
 const ARRIVE_AT = 0.45;
-const RISE_DELAY = 200;
-/**
- * Título: la primera vez entra en el centro, grande y detrás de las tarjetas (que suben encima
- * de él), y SETTLE_DELAY ms después de que acabe el rise se va a su sitio arriba a la izquierda.
- * En el centro ocupa TITLE_SPAN del ancho, sin pasar de TITLE_MAX_S veces su tamaño final.
- */
+const RISE_AFTER = 0.3;
 const SETTLE_DELAY = 250;
 const TITLE_SPAN = 0.78;
 const TITLE_MAX_S = 3.2;
@@ -144,6 +141,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
     };
     const settle = () => {
       settled = true;
+      root.classList.remove(styles.rising);
       root.classList.add(styles.settled);
     };
     // Con movimiento reducido no hay viaje: el título aparece ya en su sitio.
@@ -230,12 +228,12 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
     viewRef.current = view;
     select = (i) => view.enter(i);
 
-    // Llegada: una sola vez. El título entra ya; las tarjetas, tras la pausa. La intro corre con
-    // su propio reloj (no la pilota el scroll), así que se ve entera aunque se siga bajando.
-    let riseTimer = 0;
+    // Llegada y rise: una vez cada uno. El rise lo dispara el scroll, pero corre con su propio
+    // reloj (no lo pilota el scroll), así que se ve entero aunque se siga bajando.
     const back = handoff.pending(pathname);
     // De vuelta ya se llegó una vez: ni título que esperar ni rise (la cinta entra barriendo).
     let arrived = !!back;
+    let risen = !!back;
     if (back) {
       root.classList.add(styles.arrived);
       settle();
@@ -243,14 +241,22 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
     }
     const checkArrival = () => {
       const section = sectionRef.current;
-      if (arrived || !section || !useLifecycle.getState().ready) return;
-      if (section.getBoundingClientRect().top > window.innerHeight * ARRIVE_AT) return;
-      arrived = true;
-      centerTitle();
-      root.classList.add(styles.arrived);
-      riseTimer = window.setTimeout(() => carousel.start(), RISE_DELAY);
-      // Ya estamos aquí: lo de debajo (three.js de "Lo que uso") puede empezar a cargar.
-      releaseHold();
+      if (risen || !section || !useLifecycle.getState().ready) return;
+      const top = section.getBoundingClientRect().top;
+      if (!arrived) {
+        if (top > window.innerHeight * ARRIVE_AT) return;
+        arrived = true;
+        centerTitle();
+        root.classList.add(styles.arrived);
+        // Ya estamos aquí: lo de debajo (three.js de "Lo que uso") puede empezar a cargar.
+        releaseHold();
+      }
+      // Si se llega de golpe (salto de ancla, recarga a media página) el rise sale en el mismo
+      // paso: el título se ve un instante y se va con las tarjetas.
+      if (top > -window.innerHeight * RISE_AFTER) return;
+      risen = true;
+      root.classList.add(styles.rising);
+      carousel.start();
     };
     checkArrival();
     // Mientras el carrete está clavado, el scroll de la página también mueve la cinta (el
@@ -262,7 +268,8 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       const dy = y - lastY;
       lastY = y;
       const section = sectionRef.current;
-      if (reduced || !section) return;
+      // Antes del rise la cinta no está a la vista: no se mueve, y el rise parte de la primera.
+      if (reduced || !risen || !section) return;
       const r = section.getBoundingClientRect();
       // Clavado = el techo de la sección ya pasó y su pie aún no ha subido de la pantalla.
       if (r.top <= 0 && r.bottom >= window.innerHeight) carousel.nudge(dy * SCROLL_FOLLOW);
@@ -444,7 +451,6 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       window.removeEventListener("resize", onResize);
       close.removeEventListener("click", onClose);
       offIntro();
-      clearTimeout(riseTimer);
       clearTimeout(settleTimer);
       clearTimeout(swapTimer.current);
       view.destroy();
@@ -452,7 +458,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       scrollController.unpin(PIN_OWNER);
       viewRef.current = null;
       carousel.destroy();
-      root.classList.remove(styles.revealed, styles.arrived, styles.settled);
+      root.classList.remove(styles.revealed, styles.arrived, styles.rising, styles.settled);
       title.style.removeProperty("--title-dx");
       title.style.removeProperty("--title-dy");
       title.style.removeProperty("--title-s");

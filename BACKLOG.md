@@ -20,11 +20,12 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [ ] Feel check del ritmo nuevo (`npm run dev`): «Lo que uso» → About → contacto. About
       (`blocks/about`): ritmo de las máscaras de línea (`REVEAL_FROM`/`REVEAL_TO`), aire entre
       entradilla, cuerpo y cierre, y la columna desplazada en portátiles bajos y en móvil.
-- [ ] Feel check del título del carrete (`npm run dev`): entrada en el centro detrás de las
-      tarjetas y viaje a su sitio (`SETTLE_DELAY`, `TITLE_SPAN`, `TITLE_MAX_S` en
-      `blocks/reel/Reel.tsx`; 1,2 s ease-in-out en el CSS). Mirar si el contorno de Archivo
+- [ ] Feel check del título del carrete (`npm run dev`): tramo de scroll entre el título en el
+      centro y el rise (`RISE_AFTER`), fundido de salida (0,6 s) y reaparición en su sitio
+      (`SETTLE_DELAY`, `TITLE_SPAN`, `TITLE_MAX_S` en `blocks/reel/Reel.tsx`). Mirar si el contorno de Archivo
       variable enseña solapes de contornos dentro de las letras (pasa con `text-stroke` en fuentes
-      variables); con Druk Wide no debería. «PROJECTES» en móvil.
+      variables); con Druk Wide no debería. «PROJECTES» en móvil. El rótulo de fondo (papel al
+      12%): que se lea sin competir con las tarjetas.
 - [ ] Feel check de los títulos en la fuente ancha: equipo a clamp(1.6rem, 3vw, 3rem);
       «EL QUE FAIG SERVIR» es el más largo. Titular del contacto en 3–4 líneas, también en móvil.
 - [ ] **[cliente]** Títulos reales de las 12 películas del carrete. Los de `content/reel.ts` salen

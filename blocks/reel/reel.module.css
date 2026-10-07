@@ -50,10 +50,10 @@
   cursor: progress;
 }
 
-/* Título de la sección, arriba a la izquierda y en contorno. La primera vez entra en el centro,
-   grande y por detrás del lienzo (z-index por debajo de .flex): las tarjetas suben tapándolo.
-   Al acabar el rise (.settled) viaja a su sitio. El viaje es un transform hacia el centro
-   (--title-dx/dy/s, los mide el JS: dependen del ancho del texto) que se suelta; el margen de
+/* Título de la sección. La primera vez entra solo en el centro (.arrived), grande y en contorno;
+   al empezar el rise (.rising) se desvanece y, acabado el rise (.settled), reaparece arriba a la
+   izquierda como rótulo de fondo. El centro es un transform (--title-dx/dy/s, los mide el JS:
+   dependen del ancho del texto) que se suelta sin transición mientras no se ve. El margen de
    arriba es del absolute, no empuja nada de la sección. */
 .title {
   position: absolute;
@@ -81,14 +81,25 @@
   transform: translate(var(--title-dx, 0px), var(--title-dy, 0px)) scale(var(--title-s, 1));
   transition:
     opacity 0.9s var(--ease-out-expo),
-    translate 0.9s var(--ease-out-expo),
-    transform 1.2s var(--ease-in-out);
+    translate 0.9s var(--ease-out-expo);
 }
 .arrived .title {
   opacity: 1;
   translate: 0 0;
 }
+/* Salida del centro al empezar a subir las tarjetas: más corta que la entrada. */
+.rising:not(.settled) .title {
+  opacity: 0;
+  transition-duration: 0.6s;
+  transition-timing-function: var(--ease-out);
+}
+/* En su sitio pasa a ser un rótulo de fondo: más grande, relleno y casi transparente, sin
+   contorno, para que se disimule detrás de las tarjetas. Cuerpo, color y transform cambian sin
+   transición mientras no se ve; solo entra la opacidad. */
 .settled .title {
+  font-size: clamp(2.4rem, 7vw, 7.5rem);
+  color: rgb(238 241 240 / 0.12);
+  -webkit-text-stroke: 0;
   transform: none;
 }
 
