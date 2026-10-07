@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, Instrument_Sans, Instrument_Serif } from "next/font/google";
+import { Archivo, Instrument_Sans } from "next/font/google";
 import { notFound } from "next/navigation";
 import { preconnect } from "react-dom";
 import { PageProgress } from "@/components/ui/PageProgress";
@@ -21,23 +21,13 @@ const instrumentSans = Instrument_Sans({
 // Títulos: Guillem quiere Druk Wide (Commercial Type, de pago). Hasta tener la licencia hace de
 // sustituto Archivo en su anchura máxima y su peso más alto, lo más parecido entre las gratuitas.
 // Cuando llegue el woff2 se carga con next/font/local en este mismo sitio y se cambian los tokens
-// --title-* de globals.css. Solo se usa en títulos (también el rótulo del hero), nunca en texto
-// corrido.
+// --title-* de globals.css. Solo se usa en títulos, nunca en texto corrido. El rótulo del hero no
+// la usa: va dibujado en Druk Wide, igual que el eslogan en Instrument Serif (content/words.ts),
+// así que ninguna de las dos se carga como fuente.
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin"],
   axes: ["wdth"],
-});
-
-// Instrument Serif cursiva, de título de crédito, solo para el eslogan: sale en la salida del hero,
-// con el scroll, así que no se precarga y no compite con el vídeo. El hero remide el eslogan
-// cuando llega.
-const instrument = Instrument_Serif({
-  variable: "--font-instrument",
-  subsets: ["latin"],
-  weight: "400",
-  style: "italic",
-  preload: false,
 });
 
 // Solo se prerenderizan los idiomas listados; cualquier otro segmento es 404.
@@ -66,7 +56,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   if (media.image) preconnect(media.image, { crossOrigin: "anonymous" });
   if (media.video) preconnect(media.video);
   return (
-    <html lang={lang} className={`${instrumentSans.variable} ${archivo.variable} ${instrument.variable} scroll-smooth`}>
+    <html lang={lang} className={`${instrumentSans.variable} ${archivo.variable} scroll-smooth`}>
       <body className="font-sans antialiased">
         {children}
         <PageProgress />

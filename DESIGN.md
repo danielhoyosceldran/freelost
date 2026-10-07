@@ -126,8 +126,8 @@ Tres voces, cada una con un solo papel (Guillem, 7/10/2026):
 
 - **Títulos:** Druk Wide (Commercial Type, de pago). Mientras no haya licencia la sustituye Archivo a `wdth` 125 y peso 900. Todo cuelga de tres tokens en `app/globals.css` (`--font-title`, `--title-weight`, `--title-stretch`): cambiar de fuente es cambiar esos tres y cargar el woff2 con `next/font/local`.
 - **Texto:** Instrument Sans variable (peso 400–700, anchura 75–100). Cuerpo, entradillas, etiquetas, pies y el índice del equipo.
-- **Rótulo del hero:** la fuente de título, «FREE» sobre «LOST» siempre apiladas, como las dos hojas de la marca. Al llegar Druk Wide hay que bajar el ancho (`--brand`, hoy 22vw), porque es más ancha que el sustituto.
-- **Eslogan:** Instrument Serif cursiva. Solo en la salida del hero; no se precarga.
+- **Rótulo del hero:** Druk Wide ya, dibujado: contornos exportados de Figma (`public/media/words/*-hero.svg`, una `<path>` por letra) que se leen en el build (`content/words.ts`). «FREE» sobre «LOST» siempre apiladas, como las dos hojas de la marca; mayúsculas de 0,686em de `--brand` (min(21vw, 32svh)) y 0,154em entre líneas.
+- **Eslogan:** Instrument Serif cursiva, también dibujado (`*-slogan.svg`, una palabra por fichero). Ninguna de las dos fuentes se carga: el morph del hero necesita las formas como contornos.
 
 ### Hierarchy
 - **Display** (título, 900, clamp(2rem, 5vw, 4.75rem), 0.92, mayúsculas): titular del contacto, entre 3 y 4 líneas.
@@ -137,7 +137,7 @@ Tres voces, cada una con un solo papel (Guillem, 7/10/2026):
 - **Body** (400, clamp(1.125rem, 1.7vw, 1.6rem), 1.35, papel 0,72): cuerpo del About; subtítulo del contacto algo menor.
 - **Label** (500, 0.72rem, 0,18em de tracking, mayúsculas): rol, controles, canales, contador, aviso legal, dirección de correo.
 - **Wordmark** (título a 0,8rem, minúsculas «free lost»): en el pie.
-- **Slogan** (Instrument Serif cursiva, dos líneas a 0,92 de interlineado; sin cuerpo fijo: lo escala la salida del hero del 42 % al 94 % de lo que cabe en pantalla).
+- **Slogan** (Instrument Serif cursiva dibujada, «Feel free» / «to get lost.», a 0,92em entre líneas base y 0,24em entre palabras; sin cuerpo fijo: lo escala la salida del hero del 42 % al 94 % de lo que cabe en pantalla).
 
 ### Named Rules
 **The Wide-Is-Title Rule.** La fuente ancha es solo para títulos cortos y la marca escrita; nunca para párrafos ni para el eslogan.
@@ -184,7 +184,7 @@ Esquinas rectas en todo (0px). Contornos de 1px (papel al 16% en la marca gigant
 - Tarjetas 16:9 con separación de 12px, arrastre con inercia, bucle infinito. La banda es el 50% de la altura de la sección. Marca de 1px ember sobre la tarjeta central; pie con título y contador de dígitos que ruedan; progreso de 1px ember. Desktop: lente curva en los bordes; táctil: tarjetas planas.
 
 ### Eslogan
-- «Feel free to get lost.» es la salida del hero. Con el scroll se van los créditos y la película se queda quieta, a sangre. El rótulo no se va: se convierte en el eslogan. «FREE» y «LOST» viajan hasta su sitio en la frase (0,03–0,26 de la escena), encogiendo, y por el camino cambian de fuente con un fundido desenfocado (la fuente de título se apaga y la cursiva se enfoca en la misma caja). Mientras tanto «Feel», «to get» y el punto aparecen alrededor (0,14–0,28). El eslogan, en papel y en dos líneas, y crece de forma geométrica hasta casi llenar la pantalla (0,3–0,86). Mientras crece, lo de fuera de las letras pasa a tinta, el relleno de papel se aparta y el velo de la película se va: la película (en cámara lenta, 0,6×) queda solo por dentro de las letras. Al acabar de crecer (0,82–0,91) las letras vuelven a papel, suave pero sin hacerse esperar, y la escena se suelta con el eslogan en blanco sobre tinta, sin costura con el carrete. Con movimiento reducido no crece: aparece a su tamaño final y solo cambian las opacidades. Nunca en la fuente de título.
+- «Feel free to get lost.» es la salida del hero. Con el scroll se van los créditos y la película se queda quieta, a sangre. El rótulo no se va: se convierte en el eslogan. Cada letra de «FREE» y «LOST» se transforma en la suya de «free» y «lost.» (F→f, R→r… el contorno de una se deforma en el de la otra; los huecos que solo tiene una nacen o mueren en un punto, y el punto final crece desde el suyo) mientras la palabra viaja a su sitio en la frase y encoge (0,03–0,26 de la escena). Las letras arrancan escalonadas, de izquierda a derecha. Mientras tanto «Feel», «to get» y el punto aparecen alrededor (0,14–0,28). El eslogan, en papel y en dos líneas, y crece de forma geométrica hasta casi llenar la pantalla (0,3–0,86). Mientras crece, lo de fuera de las letras pasa a tinta, el relleno de papel se aparta y el velo de la película se va: la película (en cámara lenta, 0,6×) queda solo por dentro de las letras. Al acabar de crecer (0,82–0,91) las letras vuelven a papel, suave pero sin hacerse esperar, y la escena se suelta con el eslogan en blanco sobre tinta, sin costura con el carrete. Con movimiento reducido no crece: aparece a su tamaño final y solo cambian las opacidades. Nunca en la fuente de título.
 
 ### Carrete (título)
 - «Proyectos» entra en contorno (1px papel, sin relleno): la primera vez que se llega aparece solo en el centro, grande (78% del ancho, máx. 3,2× su tamaño), por detrás del lienzo. Las tarjetas esperan un tramo de scroll (hasta que la sección clavada ha subido 0,3 pantallas): al empezar a subir, el título del centro se desvanece, y al acabar el rise reaparece arriba a la izquierda (a 2,2 gutters del techo) como rótulo de fondo disimulado: relleno, sin contorno, papel al 12% y más grande (clamp(2.4rem, 7vw, 7.5rem)). Con movimiento reducido, o volviendo de todos los proyectos, está ya en su sitio.

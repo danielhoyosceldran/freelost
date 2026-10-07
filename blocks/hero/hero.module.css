@@ -19,9 +19,8 @@
   overflow: hidden;
 }
 
-/* El eslogan de la salida, encima del plano y debajo de los créditos. Su tamaño, posición y
-   opacidades los escribe el scroll (Hero.tsx); aquí solo la voz: la cursiva de título de crédito
-   que el eslogan ha tenido siempre. */
+/* El eslogan de la salida, encima del plano y debajo de los créditos. Va dibujado (Instrument Serif
+   cursiva, a contornos); su tamaño, posición y opacidades los escribe el scroll (Hero.tsx). */
 .slogan {
   position: absolute;
   inset: 0;
@@ -29,9 +28,6 @@
   height: 100%;
   overflow: visible;
   pointer-events: none;
-  font-family: var(--font-instrument), Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
 }
 
 /* Lo que tapa el plano fuera de las letras: la misma tinta del fondo de la página, para que al
@@ -187,15 +183,14 @@
   outline-offset: -6px;
 }
 
-/* El rótulo, centrado: «FREE» sobre «LOST» en la fuente de título, un bloque ancho y pesado.
-   Con el sustituto (Archivo 125/900) «LOST», la palabra más ancha, mide 3,55em y las mayúsculas
-   0,686em de alto. A 22vw ocupa el 78% del ancho; la altura (34svh: las dos líneas, a 0,84 de
-   interlineado, llenan el 57% de la pantalla) solo manda en pantallas apaisadas y bajas, y deja
-   aire a la cabecera y a los créditos.
-   Druk Wide es más ancha que el sustituto: cuando llegue, medir «LOST» y bajar los 22vw para que
-   siga cabiendo con el gutter. */
+/* El rótulo, centrado: «FREE» sobre «LOST» dibujados en Druk Wide (contornos, ver
+   content/words.ts), un bloque ancho y pesado. Se mide en «em» de --brand: las mayúsculas tienen
+   0,686em de alto y entre las dos líneas quedan 0,154em, las proporciones que tenía con el
+   sustituto de texto. «LOST», la palabra más ancha, mide 5,3 veces su altura: a 21vw ocupa el 76%
+   del ancho. La altura (32svh: las dos líneas llenan el 49% de la pantalla) solo manda en
+   pantallas apaisadas y bajas, y deja aire a la cabecera y a los créditos. */
 .title {
-  --brand: min(22vw, 34svh);
+  --brand: min(21vw, 32svh);
   position: absolute;
   inset: 0;
   display: grid;
@@ -206,15 +201,15 @@
   pointer-events: none;
 }
 
+/* Sin texto que maquetar: las palabras son bloques apilados, y line-height 0 evita que el puntal
+   de línea les añada aire. El hueco entre mayúsculas es el `gap`. */
 .brand {
-  font-family: var(--font-title);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.154em;
   font-size: var(--brand);
-  font-weight: var(--title-weight);
-  font-stretch: var(--title-stretch);
-  line-height: 0.84;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  white-space: nowrap;
+  line-height: 0;
 }
 
 /* Cada palabra entra desde fuera de su propia línea de corte. Apiladas siempre: una encima de la
@@ -222,15 +217,23 @@
 .line {
   display: block;
   overflow: hidden;
-  vertical-align: top;
-  /* El recorte no puede comerse la base de las mayúsculas: aire arriba y abajo, devuelto con el
+  /* El recorte no puede comerse los rebases de la O y la S: aire arriba y abajo, devuelto con el
      margen. */
   padding-block: 0.08em;
   margin-block: -0.08em;
 }
 
 .word {
-  display: inline-block;
+  display: block;
+}
+
+/* La caja es la altura de mayúscula (el viewBox); lo redondo rebasa por fuera. */
+.glyphs {
+  display: block;
+  height: 0.686em;
+  width: auto;
+  overflow: visible;
+  fill: currentColor;
 }
 
 /* Rótulo en negativo: blanco en «difference» invierte el plano bajo cada letra, y se lee oscuro

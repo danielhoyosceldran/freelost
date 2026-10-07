@@ -4,11 +4,22 @@ import { Hero } from "./Hero";
 
 // Primera pantalla: cartón de título con el rótulo sobre la película (la marca del
 // loader vuela a la esquina) y los créditos abajo. Al salir, la interfaz se va, la película se
-// queda, el rótulo se convierte en el eslogan (sus palabras viajan a su sitio en la frase) y el
+// queda, el rótulo se convierte en el eslogan (cada letra se transforma en la suya) y el
 // eslogan crece hasta ser la ventana por la que se ve la película. Es `critical`: el loader espera a que el vídeo tenga búfer suficiente para arrancar
 // sin cortes.
+/** Una palabra dibujada (content/words.ts): una `d` por letra, de izquierda a derecha. */
+const wordArt = z.object({
+  text: z.string(),
+  letters: z.array(z.string()).min(1),
+  box: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+  baseline: z.number(),
+  capTop: z.number(),
+});
+
 export const heroSchema = z.object({
   studio: z.string(),
+  /** El rótulo dibujado, una palabra por línea. `studio` es su texto para lectores de pantalla. */
+  studioArt: z.array(wordArt).min(1),
   name: z.string(),
   role: z.string(),
   /**
@@ -19,6 +30,11 @@ export const heroSchema = z.object({
     text: z.string(),
     /** Idioma del eslogan si no es el de la página (es inglés también en es/ca). */
     lang: z.string().optional(),
+    /**
+     * El eslogan dibujado, en líneas. `from` es la palabra del rótulo que se convierte en esta, letra
+     * a letra; las demás aparecen alrededor.
+     */
+    lines: z.array(z.array(wordArt.extend({ from: z.number().int().min(0).optional() })).min(1)).min(1),
   }),
   film: z.object({
     /** Descripción para lectores de pantalla. */

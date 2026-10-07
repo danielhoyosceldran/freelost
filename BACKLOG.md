@@ -10,19 +10,22 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       `--font-title`, `--title-weight` y `--title-stretch` en `app/globals.css`. Revisar después
       el cuerpo de los títulos: Druk Wide es más ancha que el sustituto.
 - [ ] **[cliente]** ¿Foto de Guillem en el About, junto al crédito? Plan 009, D8.
-- [ ] Feel check del morph rótulo → eslogan (`npm run dev`): viaje de «FREE»/«LOST» a su sitio en
-      «Feel free to get lost.» con relevo de fuente desenfocado. Tramos en `Hero.tsx`: `MORPH`
-      (0,03–0,26), `REST_IN` (0,14–0,28), y dentro del viaje `TITLE_OUT` / `SERIF_IN` y
-      `MORPH_BLUR_PX`. Mirar que al aterrizar no haya salto entre la copia y el eslogan, el tamaño
-      intermedio (media geométrica de anchos y altos), el `blur` con `mix-blend-mode` en el rótulo,
-      y la vuelta atrás con scroll. Con movimiento reducido: solo fundido. Si no convence, pasar
-      los glifos a SVG y hacer un morph de contornos de verdad.
+- [ ] Feel check del morph de contornos rótulo → eslogan (`npm run dev`). Tramos en `Hero.tsx`:
+      `MORPH` (0,03–0,26), `REST_IN` (0,14–0,28), `HANDOFF` (relevo del rótulo en `difference` al
+      morph en papel) y `STAGGER`. Composición del eslogan: `WORD_GAP` y `LEADING` (unidades de
+      los SVG). Mirar: salto al arrancar (rótulo → polígonos de 256 puntos) y al aterrizar
+      (polígonos → eslogan), esquinas de Druk algo redondeadas a tamaño grande (subir `N_OUTER` en
+      `lib/morph/letters.ts`), fluidez en móvil (se reescriben 9 `d` por fotograma), la vuelta
+      atrás con scroll, y movimiento reducido (solo fundido). El rótulo ya va en Druk Wide
+      dibujado: comprobar su tamaño (`--brand`, min(21vw, 32svh)) y el aire de la máscara de
+      entrada. `fit` ahora es la caja exacta de los glifos (antes, la del texto): quizá bajar `to`.
+- [ ] Borrar `morph-preview.svg` de la raíz (previsualización estática del morph).
 - [ ] Feel check de la salida del hero con el eslogan como máscara (`npm run dev`): alto de la
       escena (320vh), tamaños `from`/`to` (0,42 / 0,94 en `blocks/hero/index.ts`), tramos
       (`SLOGAN_GROW`, `INK`, `FILL_OUT`, `SCRIM_OUT` en `Hero.tsx`), si la cursiva
       deja ver bastante película por dentro (si no, más `to` o más cuerpo de línea), y fluidez del
       `mask` SVG a pantalla completa en portátiles flojos y en móvil. Probar con movimiento
-      reducido. Comprobar que no hay salto cuando Instrument Serif llega tarde (se remide).
+      reducido.
       Vuelta a papel al final (`FILL_BACK` 0,82–0,91).
 - [ ] Feel check del ritmo nuevo (`npm run dev`): «Lo que uso» → About → contacto. About
       (`blocks/about`): ritmo de las máscaras de línea (`REVEAL_FROM`/`REVEAL_TO`), aire entre
