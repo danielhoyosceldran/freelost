@@ -25,7 +25,7 @@ const MAGNET_MAX = 6;
  * se encajan y se rellenan de ember, como en el loader. El titular sale palabra a palabra como
  * el nombre del hero.
  */
-export function Contact({ anchor, title, email, channels }: ContactProps) {
+export function Contact({ anchor, title, subtitle, email, channels }: ContactProps) {
   const rootRef = useRef<HTMLElement>(null);
   const bladeFRef = useRef<SVGSVGElement>(null);
   const bladeLRef = useRef<SVGSVGElement>(null);
@@ -130,10 +130,13 @@ export function Contact({ anchor, title, email, channels }: ContactProps) {
           ))}
         </h2>
 
+        {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
+
         <a ref={mailRef} className={styles.mail} {...inert(email.href)}>
           <span className={styles.mailText}>{email.label}</span>
           <ArrowUpRight className={styles.arrow} aria-hidden="true" />
         </a>
+        {email.address && <p className={styles.address}>{email.address}</p>}
 
         <ul className={styles.channels}>
           {channels.map((c) => (

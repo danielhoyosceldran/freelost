@@ -2,14 +2,19 @@ import { z } from "zod";
 import { defineBlock } from "../types";
 import { Contact } from "./Contact";
 
-// Cierre de la página: titular, correo y redes. Sin formulario (PRODUCT.md: contacto solo por
+// Cierre de la página: titular, subtítulo, correo y redes. Sin formulario (PRODUCT.md: contacto solo por
 // enlace de correo). Mientras no haya datos reales, los enlaces van sin `href` y no hacen nada.
 export const contactSchema = z.object({
   /** id del <section>, ancla de los enlaces internos. */
   anchor: z.string().default("contacto"),
   title: z.string(),
+  /** Línea pequeña bajo el titular (disponibilidad). */
+  subtitle: z.string().optional(),
   email: z.object({
+    /** Texto del enlace grande ("Email"). */
     label: z.string(),
+    /** La dirección, en pequeño debajo del enlace, para copiarla sin abrir el cliente de correo. */
+    address: z.string().optional(),
     /** mailto: real. Sin él, el enlace se pinta pero no lleva a ningún sitio. */
     href: z.string().optional(),
   }),

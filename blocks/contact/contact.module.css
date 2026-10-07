@@ -62,13 +62,16 @@
   max-width: 62rem;
 }
 
+/* Fuente de título, ancha: la frase entra en tres o cuatro líneas, y ese peso es el que tiene que
+   tener el cierre. */
 .title {
-  max-width: 13ch;
-  font-size: clamp(2.75rem, 7vw, 6rem);
-  font-weight: 800;
-  font-stretch: 72%;
-  line-height: 0.86;
-  letter-spacing: -0.012em;
+  max-width: 16ch;
+  font-family: var(--font-title);
+  font-size: clamp(2rem, 5vw, 4.75rem);
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
+  line-height: 0.92;
+  letter-spacing: 0;
   text-transform: uppercase;
   text-wrap: balance;
 }
@@ -90,6 +93,24 @@
 
 .contact[data-in] .word {
   transform: none;
+}
+
+.subtitle {
+  max-width: 34ch;
+  margin-top: clamp(1.25rem, 3vh, 2rem);
+  font-size: clamp(1rem, 1.4vw, 1.25rem);
+  line-height: 1.35;
+  color: rgb(238 241 240 / 0.72);
+}
+
+/* La dirección, pequeña y seleccionable, bajo el enlace grande. */
+.address {
+  margin-top: 0.75rem;
+  font-size: var(--label-size);
+  font-weight: 500;
+  letter-spacing: var(--label-track);
+  color: rgb(238 241 240 / 0.6);
+  user-select: all;
 }
 
 /* El correo es la acción: grande, ligero y con un subrayado que se llena de acento. */
@@ -182,7 +203,9 @@
 }
 
 /* Entrada: el correo y las redes, después del titular. background-size es el subrayado. */
+.subtitle,
 .mail,
+.address,
 .channels {
   opacity: 0;
   transform: translateY(12px);
@@ -199,11 +222,18 @@
   transition-delay: 0.45s, 0.45s, 0s, 0s;
 }
 
+.subtitle {
+  transition-delay: 0.35s;
+}
+
+.address,
 .channels {
   transition-delay: 0.6s;
 }
 
+.contact[data-in] .subtitle,
 .contact[data-in] .mail,
+.contact[data-in] .address,
 .contact[data-in] .channels {
   opacity: 1;
   transform: none;
@@ -223,7 +253,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .word,
+  .subtitle,
   .mail,
+  .address,
   .channels {
     transform: none;
     transition: opacity 0.4s ease;
