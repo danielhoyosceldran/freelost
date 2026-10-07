@@ -28,14 +28,16 @@ const archivo = Archivo({
   axes: ["wdth"],
 });
 
-// Las dos voces de película del primer cartón: Six Caps, alta y estrecha como las hojas de la marca,
-// para el rótulo; Instrument Serif cursiva, de título de crédito, para el eslogan.
+// Six Caps, alta y estrecha como las hojas de la marca, para el rótulo del hero. Instrument Serif
+// cursiva, de título de crédito, solo para el eslogan: está varias pantallas más abajo, así que no
+// se precarga y no compite con el vídeo del hero.
 const sixCaps = Six_Caps({ variable: "--font-six-caps", subsets: ["latin"], weight: "400" });
 const instrument = Instrument_Serif({
   variable: "--font-instrument",
   subsets: ["latin"],
   weight: "400",
   style: "italic",
+  preload: false,
 });
 
 // Solo se prerenderizan los idiomas listados; cualquier otro segmento es 404.

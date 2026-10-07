@@ -2,7 +2,7 @@ import { z } from "zod";
 import { defineBlock } from "../types";
 import { Hero } from "./Hero";
 
-// Primera pantalla: cartón de título con el rótulo y el eslogan sobre la película (la marca del
+// Primera pantalla: cartón de título con el rótulo sobre la película (la marca del
 // loader vuela a la esquina) y los créditos abajo. Al salir, el plano encoge a 80vh
 // (escena de scroll corta). Es `critical`: el loader
 // espera a que el vídeo tenga búfer suficiente para arrancar sin cortes.
@@ -10,9 +10,6 @@ export const heroSchema = z.object({
   studio: z.string(),
   name: z.string(),
   role: z.string(),
-  slogan: z.string(),
-  /** Idioma del eslogan si no es el de la página (es inglés también en es/ca). */
-  sloganLang: z.string().optional(),
   film: z.object({
     /** Descripción para lectores de pantalla. */
     label: z.string(),

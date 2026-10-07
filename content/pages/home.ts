@@ -29,5 +29,5 @@ export const home = (lang: Locale) =>
       { type: "about", props: aboutContent(lang) },
       { type: "contact", props: contactContent(lang) },
     ],
-    after: [{ type: "footer", props: footerContent(lang) }],
+    after: [{ type: "footer", props: footerContent() }],
   }) satisfies PageConfig;

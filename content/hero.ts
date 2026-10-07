@@ -27,9 +27,7 @@ export const heroContent = (lang: Locale) => ({
   studio: "free lost",
   name: "Guillem Salvador",
   role: "Filmmaker",
-  slogan: "Feel free to get lost.",
-  // El eslogan es inglés en los tres idiomas; solo hay que marcarlo en las páginas que no lo son.
-  sloganLang: lang === "en" ? undefined : "en",
+  // Sin eslogan: Guillem lo quiere más adelante, descubierto en el scroll (bloque `slogan`).
   film: {
     label: text[lang].filmLabel,
     poster: imageUrl("downurban-poster.jpg", 1920),

@@ -21,7 +21,7 @@ function bufferedFromStart(v: HTMLVideoElement) {
 }
 
 /**
- * La primera pantalla es un cartón de título: el rótulo «free lost» y su eslogan mandan, y la
+ * La primera pantalla es un cartón de título: el rótulo «free lost» manda, y la
  * película queda detrás, oscurecida. Es una escena corta con ritmo de montaje: el plano sostiene, acelera
  * (encoge, se ladea y la película entra en cámara lenta) y corta. Los créditos no se apagan a la
  * vez: cada pieza se va por su lado y a su hora. Después la escena se suelta y llega el carrete.
@@ -34,14 +34,13 @@ export function Hero({ exit, ...stage }: HeroProps) {
   );
 }
 
-function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, languages, exit }: HeroProps) {
+function HeroStage({ studio, name, role, film, labels, languages, exit }: HeroProps) {
   // Cada palabra de la marca es una línea con su máscara: son las que se abren al salir.
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLElement>(null);
   const creditsRef = useRef<HTMLDivElement>(null);
-  const sloganRef = useRef<HTMLDivElement>(null);
   const reduceRef = useRef(false);
   const provide = useCriticalAssets();
   const ready = useReady();
@@ -116,8 +115,7 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
     const v = videoRef.current;
     const top = topRef.current;
     const credits = creditsRef.current;
-    const slogan = sloganRef.current;
-    if (!frame || !top || !credits || !slogan) return;
+    if (!frame || !top || !credits) return;
     const calm = reduceRef.current;
 
     // El plano no desaparece: encoge hasta `scale` y se queda. Luego la escena se suelta y sube
@@ -133,7 +131,7 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
     }
 
     // La marca se abre por la costura, como el velo del loader: «free» sube y «lost» baja. Luego
-    // se van los créditos y, el último, el eslogan.
+    // se van los créditos.
     const away = (el: HTMLElement, t: number, x: number, y: number) => {
       el.style.opacity = t > 0 ? String(1 - t) : "";
       el.style.transform = t > 0 && !calm ? `translate(${(x * t).toFixed(2)}vw, ${(y * t).toFixed(2)}vh)` : "";
@@ -142,7 +140,6 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
     away(top, easeInOut(segment(p, 0, 0.3)), 0, -5);
     away(credits, easeIn(segment(p, 0.05, 0.45)), -8, 0);
     wordRefs.current.forEach((w, i) => w && away(w, easeIn(segment(p, 0.08, 0.6)), 0, i % 2 === 0 ? -26 : 26));
-    away(slogan, easeIn(segment(p, 0.2, 0.75)), 0, 6);
   });
 
   // El estado de los botones sale del propio vídeo, no de lo que se pidió.
@@ -235,7 +232,8 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
         </div>
       </header>
 
-      {/* La marca es la protagonista: el rótulo del film, centrado, con su eslogan debajo. */}
+      {/* La marca es la protagonista: el rótulo del film, centrado. El eslogan no va aquí: se
+          descubre más abajo (bloque `slogan`). */}
       <div className={styles.title}>
         <h1 className={styles.brand}>
           {/* El espacio va fuera de cada palabra: dentro de un inline-block se recortaría. */}
@@ -250,11 +248,6 @@ function HeroStage({ studio, name, role, slogan, sloganLang, film, labels, langu
             </Fragment>
           ))}
         </h1>
-        <div ref={sloganRef} className={styles.negative}>
-          <p className={styles.slogan} lang={sloganLang}>
-            {slogan}
-          </p>
-        </div>
       </div>
 
       <div ref={creditsRef} className={styles.credits}>

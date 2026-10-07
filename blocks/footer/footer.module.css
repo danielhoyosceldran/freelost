@@ -1,6 +1,6 @@
 .footer {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 1.5rem;
   padding: 1.25rem var(--gutter);
@@ -41,24 +41,10 @@
   color: rgb(238 241 240 / 0.6);
 }
 
-/* La misma voz que el eslogan del hero. Además ahorra la cursiva de Archivo (dos ficheros
-   precargados) solo para esta línea. La serif tiene menos ojo medio: un punto más de cuerpo. */
-.slogan {
-  justify-self: end;
-  font-family: var(--font-instrument), Georgia, serif;
-  font-size: 1.125rem;
-  font-style: italic;
-  font-weight: 400;
-}
-
 @media (max-width: 720px) {
   .footer {
     grid-template-columns: 1fr;
     gap: 0.9rem;
     padding-block: 1.75rem;
-  }
-
-  .slogan {
-    justify-self: start;
   }
 }

@@ -28,9 +28,7 @@ export const contactContent = (lang: Locale) => ({
   channels: [{ label: "Instagram" }],
 });
 
-export const footerContent = (lang: Locale) => ({
+export const footerContent = () => ({
   brand: "free lost",
   legal: "© 2026 Guillem Salvador",
-  slogan: "Feel free to get lost.",
-  sloganLang: lang === "en" ? undefined : "en",
 });
