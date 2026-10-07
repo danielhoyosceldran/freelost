@@ -29,8 +29,9 @@ const archivo = Archivo({
   axes: ["wdth"],
 });
 
-// Instrument Serif cursiva, de título de crédito, solo para el eslogan: está varias pantallas más
-// abajo, así que no se precarga y no compite con el vídeo del hero.
+// Instrument Serif cursiva, de título de crédito, solo para el eslogan: sale en la salida del hero,
+// con el scroll, así que no se precarga y no compite con el vídeo. El hero remide el eslogan
+// cuando llega.
 const instrument = Instrument_Serif({
   variable: "--font-instrument",
   subsets: ["latin"],

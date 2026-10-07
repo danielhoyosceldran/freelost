@@ -30,7 +30,7 @@
   transform: scaleX(0);
 }
 
-/* Arriba al centro: el hero lleva el eslogan abajo a la derecha y los controles arriba a la
+/* Arriba al centro: el hero lleva los créditos abajo a la izquierda y los controles arriba a la
    derecha, así que el centro superior es lo único libre en todas las escenas. Centrado en
    vertical con los controles (hit de 44px). */
 .code {

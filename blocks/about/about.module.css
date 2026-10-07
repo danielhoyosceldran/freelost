@@ -42,7 +42,8 @@
   text-wrap: pretty;
 }
 
-/* El gancho del eco con el eslogan: mismo cuerpo que la entradilla y en papel entero. */
+/* El gancho del eco con el eslogan (la salida del hero): mismo cuerpo que la entradilla y en papel
+   entero. */
 .closing {
   max-width: 24ch;
   margin-top: clamp(10rem, 45svh, 26rem);

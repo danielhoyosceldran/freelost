@@ -1,3 +1,4 @@
+import { SLOGAN, sloganLang } from "@/content/brand";
 import { locales, localeNames, type Locale } from "@/content/locales";
 import { imageUrl, videoUrl } from "@/lib/media";
 
@@ -27,7 +28,8 @@ export const heroContent = (lang: Locale) => ({
   studio: "free lost",
   name: "Guillem Salvador",
   role: "Filmmaker",
-  // Sin eslogan: Guillem lo quiere más adelante, descubierto en el scroll (bloque `slogan`).
+  // No en la primera pantalla: aparece con el scroll y se vuelve la máscara de la película.
+  slogan: { text: SLOGAN, lang: sloganLang(lang) },
   film: {
     label: text[lang].filmLabel,
     poster: imageUrl("downurban-poster.jpg", 1920),

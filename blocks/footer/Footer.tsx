@@ -3,7 +3,7 @@ import type { FooterProps } from "./index";
 import styles from "./footer.module.css";
 
 // La firma: la misma marca que abre el hero, el nombre del estudio y el aviso legal. Sin eslogan:
-// se ha descubierto unas pantallas antes (bloque `slogan`) y repetirlo aquí le quitaría fuerza.
+// ya lo ha dicho el hero en grande (su salida) y repetirlo aquí le quitaría fuerza.
 export function Footer({ brand, legal }: FooterProps) {
   return (
     <footer className={styles.footer}>

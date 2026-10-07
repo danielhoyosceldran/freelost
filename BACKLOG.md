@@ -10,10 +10,14 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       `--font-title`, `--title-weight` y `--title-stretch` en `app/globals.css`. Revisar después
       el cuerpo de los títulos: Druk Wide es más ancha que el sustituto.
 - [ ] **[cliente]** ¿Foto de Guillem en el About, junto al crédito? Plan 009, D8.
-- [ ] Feel check del ritmo nuevo (`npm run dev`): «Lo que uso» → eslogan → About → contacto.
-      Eslogan (`blocks/slogan`): si se encuentra o se pierde, posición (64 % / 58 %), tramo de
-      aparición (0,25–0,5) y cuánto lo apaga la velocidad (`SPEED_DIM` 0,5). Si el eco no funciona,
-      probar el eslogan detrás del About (una línea en `content/pages/home.ts`). About
+- [ ] Feel check de la salida del hero con el eslogan como máscara (`npm run dev`): alto de la
+      escena (320vh), tamaños `from`/`to` (0,42 / 0,94 en `blocks/hero/index.ts`), tramos
+      (`SLOGAN_IN`, `SLOGAN_GROW`, `INK`, `FILL_OUT`, `SCRIM_OUT` en `Hero.tsx`), si la cursiva
+      deja ver bastante película por dentro (si no, más `to` o más cuerpo de línea), y fluidez del
+      `mask` SVG a pantalla completa en portátiles flojos y en móvil. Probar con movimiento
+      reducido. Comprobar que no hay salto cuando Instrument Serif llega tarde (se remide).
+      Vuelta a papel al final (`FILL_BACK` 0,82–0,91).
+- [ ] Feel check del ritmo nuevo (`npm run dev`): «Lo que uso» → About → contacto. About
       (`blocks/about`): ritmo de las máscaras de línea (`REVEAL_FROM`/`REVEAL_TO`), aire entre
       entradilla, cuerpo y cierre, y la columna desplazada en portátiles bajos y en móvil.
 - [ ] Feel check de los títulos en la fuente ancha: carrete y equipo a clamp(1.6rem, 3vw, 3rem);

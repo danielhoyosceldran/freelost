@@ -11,14 +11,37 @@
   color: var(--color-paper);
 }
 
-/* El plano: lo que encoge al salir, hacia su pie para que no quede tinta entre él y el carrete.
-   Sin borde ni radio. El scrim va dentro para que encoja con él. */
+/* El plano: a sangre y quieto toda la escena. En la salida es lo que se ve por dentro del
+   eslogan. */
 .frame {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  transform-origin: 50% 100%;
-  will-change: transform;
+}
+
+/* El eslogan de la salida, encima del plano y debajo de los créditos. Su tamaño, posición y
+   opacidades los escribe el scroll (Hero.tsx); aquí solo la voz: la cursiva de título de crédito
+   que el eslogan ha tenido siempre. */
+.slogan {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  font-family: var(--font-instrument), Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Lo que tapa el plano fuera de las letras: la misma tinta del fondo de la página, para que al
+   soltarse la escena no haya costura con el carrete. */
+.ink {
+  fill: var(--color-ink);
+}
+
+.sloganFill {
+  fill: var(--color-paper);
 }
 
 .chrome {
