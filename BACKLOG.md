@@ -5,6 +5,8 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 
 ## Contenido
 
+- [ ] Peticiones de Guillem del 7/10/2026 (About, eslogan descubierto en el scroll, Contact nuevo,
+      Druk Wide + Instrument Sans): ver `plans/009-guille-plan.md`, con sus decisiones abiertas D1–D8.
 - [ ] **[cliente]** Títulos reales de las 12 películas del carrete. Los de `content/reel.ts` salen
       de los nombres de carpeta y fichero ("Raz Surfcamp · Camp 12", "Ironman · FL3"…).
 - [ ] **[cliente]** Lista real de equipo para "Lo que uso". Hoy son tres categorías ("Cámara y
@@ -66,6 +68,15 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       (`min(46vw, 54svh)` calculado sin verlo), contraste sobre planos claros, apilado en móvil y la
       salida (free sube / lost baja). `DESIGN.md` queda desfasado (una sola familia, «el metraje lidere»,
       eslogan a la derecha): actualizar al cerrar.
+- [ ] Tipografía del hero (impeccable typeset): rótulo, hueco y eslogan cuelgan de `--brand`
+      (`.title` en `hero.module.css`), con el eslogan a 0,12 del rótulo. Medidos con las fuentes
+      reales, sin verlos en pantalla. Ver con `npm run dev` a 1440×900, 1920×1080 y un portátil
+      bajo (~1280×650): el eslogan pasa de 49 a 58 px y de 56 a 70 px en las dos primeras. El
+      nombre sube a 20 px (el rol de pie del carrete): comprobar en móviles bajos (360×640) que
+      los créditos no pisan el eslogan.
+- [ ] Etiquetas: el hero ya usa `--label-size` / `--label-track` (0,72rem, 0,18em). El carrete
+      (`11px`, 0,22em) y el pie (`.legal`, 0,7rem, 0,16em) aún llevan sus propios valores.
+      Pasarlos al token, o documentar por qué difieren.
 - [ ] Revisión final (finish review) con capturas de escritorio y móvil, y su veredicto.
 - [ ] `DESIGN.md` + `.impeccable/design.json` a partir de lo construido.
 - [ ] Ajustar en dispositivo: el carrete en móvil (`--reel-card: 0.26`, tarjetas 16:9), el

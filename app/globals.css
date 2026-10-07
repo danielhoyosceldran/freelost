@@ -43,6 +43,11 @@
      otra al pasar de uno a otro. */
   --mark-h: clamp(168px, 36svh, 380px);
   --gutter: clamp(1.25rem, 2.6vw, 2.5rem);
+  /* Etiquetas (rol, controles, idiomas): versalitas de Archivo expandida. Un solo cuerpo y un
+     solo tracking para que la misma voz no salga en tres tamaños casi iguales. En :root por lo
+     mismo que las curvas. */
+  --label-size: 0.72rem;
+  --label-track: 0.18em;
   /* Curvas de la casa. Van en :root y no en @theme: Tailwind solo emite las variables de @theme
      que ve usadas en sus utilidades, y los CSS modules se procesan aparte. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* UI que entra o sale */
