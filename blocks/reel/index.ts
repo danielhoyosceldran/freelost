@@ -8,8 +8,8 @@ import { slideSchema } from "./schema";
 // Al llegar, pausa y "rise"; al pulsar la tarjeta del centro, vista de proyecto.
 //
 // Los valores por defecto son los del panel de React Bits elegidos para la web (preset Liquid
-// retocado): intro Rise, fit Natural, alto 0,5, hueco 12 px, radio 0, lente 0,74 × 1,18 a 65°,
-// redondez 1, bend 0,34, reach 0,38, curl Twist, dispersión 0,45, liquid 0, squeeze 0,2.
+// retocado): intro Rise, fit Natural, alto 0,5, hueco 12 px, radio 0, squeeze 0,2. Sin lente:
+// la web no quiere efectos en los bordes.
 export const reelSchema = z.object({
   anchor: z.string().default("proyectos"),
   slides: z.array(slideSchema).min(1),
@@ -32,24 +32,6 @@ export const reelSchema = z.object({
   gap: z.number().default(12),
   /** Proporción fija de las tarjetas; sin ella, "natural" (la de cada portada). */
   aspect: z.number().optional(),
-  /**
-   * Lente de los bordes. width/height son fracciones del ANCHO del lienzo; curl 0 = "twist":
-   * cada lateral se curva hacia su propio lado. Solo en ordenador (puntero fino).
-   */
-  lens: z
-    .object({
-      width: z.number().default(0.74),
-      height: z.number().default(1.18),
-      tilt: z.number().default(65),
-      roundness: z.number().default(1),
-      bend: z.number().default(0.34),
-      reach: z.number().default(0.38),
-      curl: z.number().default(0),
-      dispersion: z.number().default(0.45),
-    })
-    .prefault({}),
-  /** La lente se deforma con la velocidad de la cinta (muelle). */
-  liquid: z.number().default(0),
   /** Cuánto encogen las tarjetas con la velocidad. */
   squeeze: z.number().default(0.2),
 });

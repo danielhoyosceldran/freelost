@@ -8,7 +8,7 @@ import { VimeoClip } from "./vimeo";
  * propósito: es una coreografía de transiciones CSS, medidas de layout y carga con progreso que
  * en estado React solo ganaría re-renders y carreras.
  *
- * Fases (clases en el root): splitting (las demás fotos se apartan, la lente se endereza) →
+ * Fases (clases en el root): splitting (las demás fotos se apartan) →
  * loading (el anillo del marco se rellena con la carga real) → in-project (el marco ha crecido
  * a pantalla completa y el vídeo arranca). Los vídeos son locales (clip.ts) o de Vimeo (vimeo.ts).
  * Al salir, la página vuelve a la foto vista.
@@ -155,7 +155,7 @@ export class ProjectView {
     this.growAnims = null;
     el.frame.style.left = el.frame.style.top = "";
     el.frame.style.width = el.frame.style.height = "";
-    // Las demás fotos vuelven a su sitio (focus → 0) y la lente se vuelve a curvar.
+    // Las demás fotos vuelven a su sitio (focus → 0).
     this.carousel.setProject(-1);
     this.carousel.setFocus(0);
     if (notify) this.o.onClose(seen);

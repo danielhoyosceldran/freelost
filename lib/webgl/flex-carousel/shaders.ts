@@ -1,7 +1,5 @@
-// Shaders del carrete, portados tal cual de mockup/v4 (FlexCarousel de React Bits a WebGL2).
-
-/** Muestras de la dispersión cromática. */
-export const TAPS = 12;
+// Shader de las tarjetas del carrete, portado de mockup/v4 (FlexCarousel de React Bits a WebGL2).
+// La pasada de la lente se quitó: la web no quiere efectos en los bordes.
 
 export const cardVertex = `#version 300 es
 in vec2 position;
@@ -48,81 +46,4 @@ void main() {
   vec3 color = mix(uPlaceholder, image, uReady);
   float alpha = mask * uAlpha;
   fragColor = vec4(color * alpha, alpha);
-}`;
-
-export const lensVertex = `#version 300 es
-in vec2 position;
-void main() { gl_Position = vec4(position, 0.0, 1.0); }`;
-
-export const lensFragment = `#version 300 es
-precision highp float;
-uniform sampler2D tScene;
-uniform vec2 uResolution;
-uniform float uDpr;
-uniform vec2 uCenter;
-uniform vec2 uHalf;
-uniform float uAngle;
-uniform float uExponent;
-uniform float uInner;
-uniform float uOuter;
-uniform float uFlow;
-uniform float uCurl;
-uniform float uDispersion;
-uniform float uStrength;
-uniform float uSceneAlpha;
-out vec4 fragColor;
-void main() {
-  vec2 frag = gl_FragCoord.xy / uDpr;
-  vec2 uv = frag / uResolution;
-  vec2 rel = frag - vec2(uCenter.x, uResolution.y - uCenter.y);
-  float ca = cos(uAngle);
-  float sa = sin(uAngle);
-  vec2 local = vec2(ca * rel.x + sa * rel.y, -sa * rel.x + ca * rel.y);
-  vec2 k = max(abs(local) / uHalf, vec2(1e-5));
-  // Normalizado por la componente mayor (q en [0,1], sn en [1, 2^(1/e)]): con roundness 0 el
-  // exponente es 12 y, cerca del centro, pow(k, 12) se iba a 0 en float32 y el gradiente daba
-  // 0 * inf = NaN -> un punto negro en mitad de la pantalla. Así nada desborda: nd = m*sn y
-  // el gradiente original k^(e-1) * nd^(1-e) se reduce a q^(e-1) * sn^(1-e).
-  float m = max(k.x, k.y);
-  vec2 q = k / m;
-  float sn = pow(pow(q.x, uExponent) + pow(q.y, uExponent), 1.0 / uExponent);
-  float nd = m * sn;
-  vec2 grad = pow(q, vec2(uExponent - 1.0)) * sign(local) / uHalf * pow(sn, 1.0 - uExponent);
-  float glen = max(length(grad), 1e-6);
-  float edge = (nd - 1.0) / glen;
-  vec2 outward = grad / glen;
-  vec2 normal = vec2(ca * outward.x - sa * outward.y, sa * outward.x + ca * outward.y);
-  vec2 along = vec2(-normal.y, normal.x);
-  float t = clamp((edge + uInner) / (uInner + uOuter), 0.0, 1.0);
-  float ramp = t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
-  float slope = 16.0 * t * t * (1.0 - t) * (1.0 - t);
-  float reachX = rel.x / (uResolution.x * 0.5);
-  float side = smoothstep(0.02, 0.3, abs(reachX)) * (uCurl == 0.0 ? sign(reachX) : uCurl);
-  float lift = ramp * side * uFlow * uStrength;
-  vec2 swirl = along * along.y * side * slope * uFlow * uStrength * 0.35;
-  vec2 drift = vec2(0.0, -lift) - swirl;
-  vec2 shifted = uv + drift / uResolution;
-  vec2 texels = uResolution * uDpr;
-  vec2 gx = dFdx(shifted);
-  vec2 gy = dFdy(shifted);
-  gx *= min(1.0, 3.0 / max(length(gx * texels), 1e-4));
-  gy *= min(1.0, 3.0 / max(length(gy * texels), 1e-4));
-  vec4 color = textureGrad(tScene, shifted, gx, gy);
-  vec2 spread = vec2(0.0, side * slope * uFlow * uStrength) / uResolution * uDispersion;
-  float spreadPx = length(spread * texels);
-  if (color.a > 0.002 && spreadPx > 0.25) {
-    vec3 base = color.rgb / color.a;
-    vec3 sumColor = vec3(0.0);
-    vec3 sumWeight = vec3(0.0);
-    for (int i = 0; i < ${TAPS}; i++) {
-      float s = (float(i) + 0.5) / float(${TAPS});
-      vec4 c = textureGrad(tScene, shifted + spread * (s - 0.5), gx, gy);
-      vec3 w = max(1.0 - abs(vec3(s) - vec3(0.15, 0.5, 0.85)) * 2.6, 0.0) * c.a;
-      sumColor += c.rgb * (w / max(c.a, 0.002));
-      sumWeight += w;
-    }
-    vec3 split = mix(base, sumColor / max(sumWeight, vec3(1e-4)), clamp(sumWeight * 2.0, 0.0, 1.0));
-    color.rgb = mix(color.rgb, clamp(split, 0.0, 1.0) * color.a, smoothstep(0.25, 1.5, spreadPx));
-  }
-  fragColor = color * uSceneAlpha;
 }`;

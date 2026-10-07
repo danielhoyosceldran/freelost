@@ -47,15 +47,13 @@ const RISE_DELAY = 200;
 const SWAP_SETTLE_MS = 80;
 /** Píxeles que avanza la cinta por cada píxel de scroll mientras el carrete está clavado. */
 const SCROLL_FOLLOW = 0.9;
-/** Lente de los bordes: solo con ratón o trackpad (ordenador), no en táctil. */
-const LENS_QUERY = "(hover: hover) and (pointer: fine)";
 
 /**
  * Monta el motor WebGL (FlexCarousel) y la vista de proyecto (ProjectView) y los conecta con el
  * núcleo: llegada → título y rise, pin de la página con un proyecto abierto, y el hold de los
  * bloques de debajo. No re-renderiza nunca: todo lo que cambia va por refs.
  */
-export function Reel({ anchor, slides, labels, more, gap, aspect, lens, liquid, squeeze }: ReelProps) {
+export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: ReelProps) {
   const router = useRouter();
   const pathname = usePathname();
   const provide = useCriticalAssets();
@@ -123,8 +121,6 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, lens, liquid, 
     let select: (i: number) => void = () => {};
     const carousel = FlexCarousel.create(host, {
       covers: slides.map(coverOf),
-      lens,
-      liquid,
       squeeze,
       gap,
       aspect,
@@ -151,11 +147,6 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, lens, liquid, 
       }
       return;
     }
-
-    const lensMq = matchMedia(LENS_QUERY);
-    const syncLens = () => carousel.setLens(lensMq.matches);
-    syncLens();
-    lensMq.addEventListener("change", syncLens);
 
     provide(carousel.loads);
 
@@ -406,7 +397,6 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, lens, liquid, 
       box.style.removeProperty("--box-k");
       host.removeEventListener("pointermove", onPointerMove);
       host.removeEventListener("pointerleave", onPointerLeave);
-      lensMq.removeEventListener("change", syncLens);
       document.removeEventListener("keydown", onDocKey);
       window.removeEventListener("resize", onResize);
       close.removeEventListener("click", onClose);
@@ -420,7 +410,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, lens, liquid, 
       carousel.destroy();
       root.classList.remove(styles.revealed, styles.arrived);
     };
-  }, [provide, releaseHold, router, pathname, n, slides, gap, aspect, lens, liquid, squeeze, setCaption]);
+  }, [provide, releaseHold, router, pathname, n, slides, gap, aspect, squeeze, setCaption]);
 
   // Con películas en Vimeo, el anillo de carga del proyecto no debería esperar al handshake ni al
   // SDK: se abre la conexión con el player y su CDN, y el SDK (~8 KB) se baja cuando el hilo

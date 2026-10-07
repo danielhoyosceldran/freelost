@@ -70,8 +70,8 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [ ] `DESIGN.md` + `.impeccable/design.json` a partir de lo construido.
 - [ ] Ajustar en dispositivo: el carrete en móvil (`--reel-card: 0.26`, tarjetas 16:9), el
       encuadre de los modelos 3D en el nuevo escenario, el desencaje del hero en móvil.
-- [ ] Carrete: probar en ordenador la lente del panel de React Bits (0,74 × 1,18, 65°…) con las
-      portadas 16:9; si curva demasiado, retocar `lens` en `blocks/reel/index.ts`.
+- [x] Carrete: quitada la lente de los bordes (curvatura y dispersión). Se pinta en una sola
+      pasada, sin render target ni mipmaps por fotograma. Se conservan intro, parallax y squeeze.
 - [ ] Feel check de las animaciones (`plans/`, 001–006, ya aplicadas): sobre todo el crecimiento del
       marco de proyecto (`blocks/reel/project.ts`, clip-path + escala). En móvil la proporción de la
       tarjeta y la del viewport difieren y el recorte del primer frame puede no coincidir con la

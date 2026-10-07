@@ -92,8 +92,8 @@
   opacity: 1;
 }
 
-/* El lienzo ocupa toda la sección: la lente curva las tarjetas hacia arriba y hacia abajo en los
-   laterales, así que necesita alto de sobra fuera de la banda. touch-action pan-y: el gesto
+/* El lienzo ocupa toda la sección: la intro sube las tarjetas desde abajo y necesita alto de
+   sobra fuera de la banda. touch-action pan-y: el gesto
    vertical es de la página y el horizontal del carrete (el motor lo arrastra). */
 .flex {
   position: absolute;

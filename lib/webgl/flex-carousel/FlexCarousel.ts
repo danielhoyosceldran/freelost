@@ -1,6 +1,6 @@
 import { clamp01, easeInOut, easeOut, easeOutQuint } from "@/lib/easing";
 import { clampToEdge, createProgram, createVao } from "../gl";
-import { cardFragment, cardVertex, lensFragment, lensVertex } from "./shaders";
+import { cardFragment, cardVertex } from "./shaders";
 
 /**
  * Carrete de proyectos: FlexCarousel de React Bits (reactbits.dev/components/flex-carousel)
@@ -8,9 +8,10 @@ import { cardFragment, cardVertex, lensFragment, lensVertex } from "./shaders";
  * bucle infinito siguen el código del original (src/content/Components/FlexCarousel); lo que
  * cambia está anotado donde ocurre.
  *
- * Dos pasadas: las tarjetas se pintan planas en un render target, y una segunda pasada a
- * pantalla completa lo mira a través de una "lente" invisible que curva los laterales y separa
- * el color en los bordes (dispersión). La lente se puede apagar (setLens): en móvil no se usa.
+ * Una sola pasada: las tarjetas se pintan planas, directamente en el lienzo. La "lente" del
+ * original (curvar los laterales y separar el color en los bordes) se quitó a propósito: la web
+ * no quiere efectos en los bordes, y era lo más caro del motor (render target a pantalla
+ * completa, mipmaps en cada fotograma y doce muestras por píxel).
  *
  * Entradas propias, como el original con captureWheel = false: arrastre con inercia y muelle
  * hacia la tarjeta más cercana, flechas izquierda/derecha, Inicio/Fin, y la rueda solo si es
@@ -19,23 +20,9 @@ import { cardFragment, cardVertex, lensFragment, lensVertex } from "./shaders";
  * centro (o al llegar a una lateral pulsada), y setFocus/setProject para su coreografía.
  */
 
-export interface LensConfig {
-  width: number;
-  height: number;
-  tilt: number;
-  roundness: number;
-  bend: number;
-  reach: number;
-  curl: number;
-  dispersion: number;
-}
-
 export interface FlexCarouselOptions {
   /** URL de la portada de cada tarjeta. Necesitan CORS para ser texturas. */
   covers: readonly string[];
-  lens: LensConfig;
-  /** Cuánto se deforma la lente con la velocidad de la cinta (muelle). */
-  liquid: number;
   /** Cuánto encogen las tarjetas con la velocidad de la cinta. */
   squeeze: number;
   /** Separación entre tarjetas (px). */
@@ -81,7 +68,6 @@ interface Metrics {
 
 interface IntroFx {
   sceneAlpha: number;
-  strength: number;
   card: ((rel: number) => { alpha: number; x: number; y: number; scale: number }) | null;
 }
 
@@ -94,7 +80,7 @@ const LEAN_PX = { x: 7, y: 5 };
 const LEAN_SCALE = 0.012;
 /**
  * Barrido: con la cola en el centro, la última tarjeta queda a media pantalla más este margen
- * (fracción del ancho) del centro, fuera del todo aunque la lente estire los laterales.
+ * (fracción del ancho) del centro, fuera del todo.
  */
 const SWEEP_MARGIN = 0.08;
 /** Si alguna portada no llega, la intro no la espera más que esto (como el original). */
@@ -113,18 +99,12 @@ export class FlexCarousel {
   private readonly o: FlexCarouselOptions;
   private readonly n: number;
   private readonly cardProg;
-  private readonly lensProg;
   private readonly quad: WebGLVertexArrayObject;
-  private readonly tri: WebGLVertexArrayObject;
-  private readonly sceneTex: WebGLTexture;
-  private readonly fbo: WebGLFramebuffer;
   private readonly aniso: EXT_texture_filter_anisotropic | null;
   private readonly slots: Slot[];
   private readonly resizeObs: ResizeObserver;
   private readonly visObs: IntersectionObserver;
 
-  private rtW = 2;
-  private rtH = 2;
   private width = 1;
   private height = 1;
   private dpr = 1;
@@ -134,8 +114,6 @@ export class FlexCarousel {
   private visible = true;
   private dirty = true;
   private destroyed = false;
-  private lensOn = true;
-  private lensT = 1;
 
   // Posición de la cinta (px a lo largo de la fila), su objetivo y su velocidad.
   private pos = 0;
@@ -146,8 +124,6 @@ export class FlexCarousel {
   private layout: Metrics | null = null;
   private lastPos = 0;
   private energy = 0;
-  private deform = 0;
-  private deformVel = 0;
   private active = -1;
   /** Lateral pulsada: al llegar al centro, se abre (el focus.pending del original). */
   private pending = -1;
@@ -217,14 +193,7 @@ export class FlexCarousel {
     this.n = o.covers.length;
 
     this.cardProg = createProgram(gl, cardVertex, cardFragment);
-    this.lensProg = createProgram(gl, lensVertex, lensFragment);
     this.quad = createVao(gl, [-0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5]); // TRIANGLE_STRIP
-    this.tri = createVao(gl, [-1, -1, 3, -1, -1, 3]); // triángulo a pantalla completa
-
-    // Render target de la escena plana. Con mipmaps: la lente estira y comprime la imagen, y
-    // sin ellos los bordes curvados parpadean al moverse.
-    this.sceneTex = gl.createTexture()!;
-    this.fbo = gl.createFramebuffer()!;
     this.aniso = gl.getExtension("EXT_texture_filter_anisotropic");
 
     const loads: Promise<void>[] = [];
@@ -297,13 +266,6 @@ export class FlexCarousel {
 
   get activeIndex() {
     return this.active;
-  }
-
-  /** Lente de los bordes encendida o no (en móvil va plana). Transición corta, no salto. */
-  setLens(on: boolean) {
-    this.lensOn = on;
-    if (this.o.reduced) this.lensT = on ? 1 : 0;
-    this.wake();
   }
 
   /**
@@ -383,15 +345,15 @@ export class FlexCarousel {
     this.wake();
   }
 
-  /** 1 = separación (las demás se apartan, la lente se endereza); 0 = vuelta. */
+  /** 1 = separación (las demás se apartan); 0 = vuelta. */
   setFocus(target: number) {
     this.focus.target = target;
     this.wake();
   }
 
   /**
-   * Hit test contra los rectángulos planos de la última pasada (antes de la lente), como el
-   * original. De cerca a lejos porque la del centro se pinta encima.
+   * Hit test contra los rectángulos de la última pasada, como el original. De cerca a lejos
+   * porque la del centro se pinta encima.
    */
   hitTest(clientX: number, clientY: number): CardHit | null {
     if (this.projectIndex >= 0 || !this.intro.done) return null;
@@ -405,7 +367,7 @@ export class FlexCarousel {
     return null;
   }
 
-  /** Rectángulo en viewport de la tarjeta i tal como está ahora (plana, sin lente). */
+  /** Rectángulo en viewport de la tarjeta i tal como está ahora. */
   cardRect(i: number) {
     const m = this.metrics();
     const r = this.host.getBoundingClientRect();
@@ -422,7 +384,6 @@ export class FlexCarousel {
     this.dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PIXEL_BUDGET / (this.width * this.height)));
     this.canvas.width = Math.max(2, Math.round(this.width * this.dpr));
     this.canvas.height = Math.max(2, Math.round(this.height * this.dpr));
-    this.sizeTarget(this.canvas.width, this.canvas.height);
     this.wake();
   }
 
@@ -663,20 +624,6 @@ export class FlexCarousel {
     this.wake();
   }
 
-  private sizeTarget(w: number, h: number) {
-    const gl = this.gl;
-    this.rtW = w;
-    this.rtH = h;
-    gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    clampToEdge(gl);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.sceneTex, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  }
-
   // ---------- geometría ----------
 
   /** Ancho = proporción × alto (fija o la de cada portada). Centros acumulados con su hueco. */
@@ -750,11 +697,10 @@ export class FlexCarousel {
   }
 
   private introEffects(): IntroFx {
-    const e: IntroFx = { sceneAlpha: 1, strength: 1, card: null };
+    const e: IntroFx = { sceneAlpha: 1, card: null };
     const intro = this.intro;
     if (!intro.running && !intro.done) {
       e.sceneAlpha = 0;
-      e.strength = 0;
       return e;
     }
     const t = intro.done ? 1 : intro.t;
@@ -763,9 +709,7 @@ export class FlexCarousel {
     // distancia al centro al arrancar, no de la actual, o al cambiar a media subida saltaría.
     const shift = this.pos - intro.origin;
     if (intro.kind === "rise") {
-      // Las tarjetas suben desde abajo, en abanico desde el centro, y la lente se forma cuando
-      // ya están casi en su sitio.
-      e.strength = easeInOut((t - 0.3) / 0.65);
+      // Las tarjetas suben desde abajo, en abanico desde el centro.
       e.card = (rel) => {
         const delay = Math.min(Math.abs(rel + shift) / (this.width * 0.6), 1) * 0.34;
         const local = clamp01((t - delay) / 0.6);
@@ -779,7 +723,6 @@ export class FlexCarousel {
       };
     } else {
       e.sceneAlpha = easeOut(t);
-      e.strength = easeOut(t);
     }
     return e;
   }
@@ -788,7 +731,6 @@ export class FlexCarousel {
 
   private draw(m: Metrics, focusEase: number, effects: IntroFx) {
     const { gl, width, height, dpr } = this;
-    const { lens } = this.o;
     const homeX = width / 2;
     const homeY = height / 2;
     const shrink = 1 - clamp01(this.o.squeeze) * this.energy;
@@ -810,7 +752,7 @@ export class FlexCarousel {
         const lead = i === this.active && Math.abs(rel) < w / 2;
         let x = homeX + rel + (fx ? fx.x : 0) + (lead ? this.lean.x * LEAN_PX.x : 0);
         const scale = shrink * (fx ? fx.scale : 1) * (lead ? 1 + LEAN_SCALE * this.lean.s : 1);
-        let alpha = fx ? fx.alpha : 1;
+        let alpha = (fx ? fx.alpha : 1) * effects.sceneAlpha;
         if (focusEase > 0) {
           // Separación al entrar en un proyecto: las demás se apartan hacia su lado y se apagan,
           // las más cercanas primero.
@@ -827,8 +769,7 @@ export class FlexCarousel {
     // De lejos a cerca: la del centro se pinta la última, encima de todo.
     draws.sort((a, b) => Math.abs(b.rel) - Math.abs(a.rel));
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
-    gl.viewport(0, 0, this.rtW, this.rtH);
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.enable(gl.BLEND);
@@ -856,36 +797,6 @@ export class FlexCarousel {
       this.instances.push({ index: d.i, x0: d.x - d.cw / 2, x1: d.x + d.cw / 2, y0: d.y - d.ch / 2, y1: d.y + d.ch / 2 });
     }
     gl.disable(gl.BLEND);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
-    gl.generateMipmap(gl.TEXTURE_2D);
-
-    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    gl.useProgram(this.lensProg.p);
-    gl.bindVertexArray(this.tri);
-    const lu = this.lensProg.u;
-    const liquid = this.o.reduced ? 0 : this.o.liquid;
-    const squash = Math.abs(this.deform) * liquid;
-    const halfW = Math.max(1, ((lens.width * width) / 2) * (1 + squash * 0.16));
-    const halfH = Math.max(1, ((lens.height * width) / 2) * (1 - squash * 0.08));
-    const inner = Math.max(4, lens.reach * (halfW + halfH) * 0.5);
-    gl.uniform1i(lu.tScene, 0);
-    gl.uniform2f(lu.uResolution, width, height);
-    gl.uniform1f(lu.uDpr, dpr);
-    gl.uniform2f(lu.uCenter, homeX - this.deform * 14 * liquid, homeY);
-    gl.uniform2f(lu.uHalf, halfW, halfH);
-    gl.uniform1f(lu.uAngle, (lens.tilt * Math.PI) / 180);
-    gl.uniform1f(lu.uExponent, 2 + Math.pow(1 - clamp01(lens.roundness), 1.5) * 10);
-    gl.uniform1f(lu.uInner, inner);
-    gl.uniform1f(lu.uOuter, inner * 1.6);
-    gl.uniform1f(lu.uFlow, lens.bend * (halfW + halfH) * 0.45);
-    gl.uniform1f(lu.uCurl, lens.curl);
-    gl.uniform1f(lu.uDispersion, lens.dispersion * 0.12 * (1 + Math.abs(this.deform) * liquid * 1.2));
-    // La lente se endereza al entrar en un proyecto (el marco crece desde una tarjeta plana) y
-    // no existe si está apagada (móvil).
-    gl.uniform1f(lu.uStrength, effects.strength * (1 - focusEase) * easeInOut(this.lensT));
-    gl.uniform1f(lu.uSceneAlpha, effects.sceneAlpha);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
   }
 
@@ -1014,16 +925,6 @@ export class FlexCarousel {
     this.energy += (target - this.energy) * (1 - Math.exp(-dt / (target > this.energy ? 0.07 : 0.35)));
     if (this.energy > 0.001) animating = true;
     else this.energy = 0;
-    // Deformación "liquid": muelle subamortiguado hacia la velocidad con signo.
-    const push = Math.max(-1, Math.min(1, this.vel / 2200));
-    const dk = 120;
-    this.deformVel += (dk * (push - this.deform) - 2 * Math.sqrt(dk) * 0.32 * this.deformVel) * dt;
-    this.deform += this.deformVel * dt;
-    if (Math.abs(this.deform) > 0.0005 || Math.abs(this.deformVel) > 0.005) animating = true;
-    else {
-      this.deform = 0;
-      this.deformVel = 0;
-    }
 
     const k = 64;
     focus.v += (k * (focus.target - focus.t) - 2 * Math.sqrt(k) * focus.v) * dt;
@@ -1033,13 +934,6 @@ export class FlexCarousel {
       focus.v = 0;
     } else animating = true;
     const focusEase = o.reduced ? focus.target : easeInOut(clamp01(focus.t));
-
-    // Lente: entra y sale en 0,4 s al cambiar de dispositivo (girar la tableta, redimensionar).
-    const lensGoal = this.lensOn ? 1 : 0;
-    if (this.lensT !== lensGoal) {
-      this.lensT = lensGoal > this.lensT ? Math.min(1, this.lensT + dt / 0.4) : Math.max(0, this.lensT - dt / 0.4);
-      animating = true;
-    }
 
     for (const s of this.slots) {
       if (s.loaded && s.ready < 1 && s.image[0] > 1) {
