@@ -17,14 +17,27 @@ const BUFFER_S = 6;
  * solo hero por página. */
 const INK_MASK = "hero-slogan-ink";
 const FILL_MASK = "hero-slogan-fill";
+/** Prefijo de los desenfoques de las palabras que viajan (uno por palabra: cada una va a su escala). */
+const MORPH_BLUR = "hero-morph-blur";
 
 /**
- * Tramos de la salida sobre el progreso de la escena. Primero se va la interfaz (0–0,2); el
- * eslogan entra cuando ya no queda nada encima del plano y crece hasta 0,86. El resto es un
- * respiro sobre el último fotograma antes de que la escena se suelte.
+ * Tramos de la salida sobre el progreso de la escena. Primero se va la interfaz (0–0,16) y, a la
+ * vez, el rótulo se convierte en el eslogan: «FREE» y «LOST» viajan hasta su sitio en «Feel free to
+ * get lost.» y cambian de fuente por el camino (`MORPH`), mientras el resto de la frase aparece
+ * alrededor (`REST_IN`). Con el eslogan completo, crece hasta 0,86. El resto es un respiro sobre el
+ * último fotograma antes de que la escena se suelte.
  */
-const SLOGAN_IN: [number, number] = [0.16, 0.3];
+const MORPH: [number, number] = [0.03, 0.26];
+const REST_IN: [number, number] = [0.14, 0.28];
 const SLOGAN_GROW: [number, number] = [0.3, 0.86];
+/**
+ * Dentro del viaje (0–1): la palabra en la fuente de título se apaga y se desenfoca mientras su
+ * gemela en cursiva se enfoca encima. Se solapan: no hay instante sin palabra.
+ */
+const TITLE_OUT: [number, number] = [0.2, 0.6];
+const SERIF_IN: [number, number] = [0.35, 0.8];
+/** Desenfoque máximo del relevo, en px de pantalla. */
+const MORPH_BLUR_PX = 14;
 /** Lo de fuera de las letras pasa a tinta… */
 const INK: [number, number] = [0.36, 0.7];
 /** …mientras el relleno de papel se aparta y deja ver la película por dentro. */
@@ -49,6 +62,64 @@ function balance(text: string) {
   }
   return words.length < 2 ? [text] : [words.slice(0, best).join(" "), words.slice(best).join(" ")];
 }
+
+/** Un trozo de una línea del eslogan. `match` es la palabra del rótulo que viaja hasta aquí. */
+type Seg = { text: string; key: number; at: number; match?: number };
+
+const norm = (w: string) => w.replace(/[^\p{L}\p{N}]/gu, "").toLowerCase();
+
+/**
+ * Las líneas del eslogan en trozos: cada palabra del rótulo que aparece en él (sin la puntuación:
+ * «lost.» casa con LOST y el punto se queda con el resto) queda suelta, para medirla y para
+ * encenderla aparte. `at` es su primer carácter en el texto entero, que es lo que pide
+ * getStartPositionOfChar.
+ */
+function segmentLines(lines: string[], title: string[]) {
+  const used = new Set<number>();
+  let key = 0;
+  let at = 0;
+  return lines.map((line) => {
+    const segs: Seg[] = [];
+    const push = (text: string) => {
+      if (!text) return;
+      const last = segs.at(-1);
+      if (last && last.match === undefined) last.text += text;
+      else segs.push({ text, key: key++, at });
+      at += text.length;
+    };
+    line.split(" ").forEach((word, wi) => {
+      if (wi > 0) push(" ");
+      const n = norm(word);
+      const ti = title.findIndex((t, i) => !used.has(i) && !!n && norm(t) === n);
+      if (ti < 0) return push(word);
+      used.add(ti);
+      const m = word.toLowerCase().indexOf(n);
+      push(word.slice(0, m));
+      segs.push({ text: word.slice(m, m + n.length), key: key++, at, match: ti });
+      at += n.length;
+      push(word.slice(m + n.length));
+    });
+    return segs;
+  });
+}
+
+/** Posición de `el` dentro de `root` sumando offsets: sin transformaciones, la caja en reposo. */
+function offsetIn(el: HTMLElement, root: HTMLElement) {
+  let x = 0;
+  let y = 0;
+  for (let n: HTMLElement | null = el; n && n !== root; n = n.offsetParent as HTMLElement | null) {
+    x += n.offsetLeft;
+    y += n.offsetTop;
+  }
+  return { x, y };
+}
+
+type Box = { cx: number; cy: number; w: number; h: number };
+/**
+ * Lo que necesita el viaje de una palabra: su caja en el rótulo, el origen de su línea (que es lo
+ * que se transforma) y la caja de su gemela en cursiva en las coordenadas del eslogan a cuerpo 100.
+ */
+type Morph = { from: Box; origin: { x: number; y: number }; to: Box };
 
 /** Hasta dónde llega el tramo cargado que empieza en 0 (el que importa para arrancar). */
 function bufferedFromStart(v: HTMLVideoElement) {
@@ -75,6 +146,13 @@ export function Hero({ exit, ...stage }: HeroProps) {
 function HeroStage({ studio, name, role, slogan, film, labels, languages, exit }: HeroProps) {
   // Cada palabra de la marca es una línea con su máscara: son las que se abren al salir.
   const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const heroRef = useRef<HTMLDivElement>(null);
+  // Trozos del eslogan en la máscara de relleno (se encienden por separado) y las copias en
+  // cursiva que viajan desde el rótulo, con su desenfoque.
+  const segRefs = useRef<(SVGTSpanElement | null)[]>([]);
+  const copyRefs = useRef<(SVGTextElement | null)[]>([]);
+  const blurRefs = useRef<(SVGFEGaussianBlurElement | null)[]>([]);
+  const morphRef = useRef<(Morph | undefined)[]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
   const topRef = useRef<HTMLElement>(null);
   const creditsRef = useRef<HTMLDivElement>(null);
@@ -90,6 +168,10 @@ function HeroStage({ studio, name, role, slogan, film, labels, languages, exit }
   /** Medida del eslogan a cuerpo 100: `fit` es la escala con la que llena la pantalla justa. */
   const fitRef = useRef({ vw: 0, vh: 0, fit: 0, cx: 0, cy: 0 });
   const reduceRef = useRef(false);
+  const words = studio.split(/\s+/);
+  const segLines = segmentLines(balance(slogan.text), words);
+  const segs = segLines.flat();
+  const travellers = segs.filter((s) => s.match !== undefined);
   const provide = useCriticalAssets();
   const ready = useReady();
   const [muted, setMuted] = useState(true);
@@ -167,6 +249,34 @@ function HeroStage({ studio, name, role, slogan, film, labels, languages, exit }
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     fitRef.current = { vw, vh, fit: Math.min(vw / b.width, vh / b.height), cx: b.x + b.width / 2, cy: b.y + b.height / 2 };
+
+    // Cada palabra que viaja: de dónde sale (la del rótulo, en reposo) y adónde llega (su gemela,
+    // puesta en el primer carácter de su trozo para que al aterrizar coincida píxel a píxel).
+    const hero = heroRef.current;
+    morphRef.current = [];
+    if (!hero) return;
+    for (const s of segs) {
+      if (s.match === undefined) continue;
+      const line = wordRefs.current[s.match];
+      const word = line?.firstElementChild as HTMLElement | null;
+      const copy = copyRefs.current[s.match];
+      if (!line || !word || !copy) continue;
+      let pt: DOMPoint;
+      try {
+        pt = t.getStartPositionOfChar(s.at);
+      } catch {
+        continue;
+      }
+      copy.setAttribute("x", pt.x.toFixed(2));
+      copy.setAttribute("y", pt.y.toFixed(2));
+      const c = copy.getBBox();
+      const w = offsetIn(word, hero);
+      morphRef.current[s.match] = {
+        from: { cx: w.x + word.offsetWidth / 2, cy: w.y + word.offsetHeight / 2, w: word.offsetWidth, h: word.offsetHeight },
+        origin: offsetIn(line, hero),
+        to: { cx: c.x + c.width / 2, cy: c.y + c.height / 2, w: c.width, h: c.height },
+      };
+    }
   };
   const measureRef = useRef(measure);
   useEffect(() => {
@@ -196,23 +306,34 @@ function HeroStage({ studio, name, role, slogan, film, labels, languages, exit }
     // El eslogan: aparece, crece y se vuelve ventana. El plano de detrás no se toca.
     if (fitRef.current.vw !== window.innerWidth || fitRef.current.vh !== window.innerHeight) measure();
     const { vw, vh, fit, cx, cy } = fitRef.current;
-    const enter = easeOut(segment(p, ...SLOGAN_IN));
     const grow = easeInOut(segment(p, ...SLOGAN_GROW));
     // Crecimiento geométrico: a ritmo constante el ojo lo lee como un acercamiento uniforme, sin
-    // que el final se dispare. Al entrar arranca un 6 % por debajo (nunca desde cero). Con
-    // movimiento reducido no crece: aparece ya a su tamaño final y solo cambian las opacidades.
-    const scale = calm
-      ? exit.to * fit
-      : exit.from * fit * Math.pow(exit.to / exit.from, grow) * (0.94 + 0.06 * enter);
+    // que el final se dispare. Durante el viaje está quieto en `from`: las palabras aterrizan en un
+    // sitio fijo. Con movimiento reducido no crece: aparece ya a su tamaño final y solo cambian
+    // las opacidades.
+    const base = exit.from * fit;
+    const scale = calm ? exit.to * fit : base * Math.pow(exit.to / exit.from, grow);
     const transform = `translate(${(vw / 2).toFixed(1)} ${(vh / 2).toFixed(1)}) scale(${scale.toFixed(4)}) translate(${(-cx).toFixed(1)} ${(-cy).toFixed(1)})`;
     maskText.setAttribute("transform", transform);
     fillText.setAttribute("transform", transform);
     const paper = 1 - easeInOut(segment(p, ...FILL_OUT)) + easeInOut(segment(p, ...FILL_BACK));
-    fill.style.opacity = (enter * Math.min(1, paper)).toFixed(3);
+    fill.style.opacity = Math.min(1, paper).toFixed(3);
     ink.style.opacity = easeInOut(segment(p, ...INK)).toFixed(3);
     scrim.style.opacity = (1 - easeInOut(segment(p, ...SCRIM_OUT))).toFixed(3);
     // Oculto (no display:none) antes de entrar: así getBBox sigue midiendo.
-    svg.style.visibility = enter > 0 ? "" : "hidden";
+    svg.style.visibility = p > MORPH[0] ? "" : "hidden";
+
+    // El morph. `e` lleva el viaje; las palabras que viajan solo se encienden en el eslogan al
+    // aterrizar, cuando su copia está exactamente encima. Con movimiento reducido no viajan: el
+    // rótulo se funde y la frase entera aparece con el resto.
+    const e = easeInOut(segment(p, ...MORPH));
+    const rest = easeOut(segment(p, ...REST_IN));
+    const morphs = morphRef.current;
+    const travels = (i?: number) => !calm && i !== undefined && !!morphs[i];
+    for (const s of segs) {
+      const o = travels(s.match) ? (e >= 1 ? 1 : 0) : rest;
+      segRefs.current[s.key]?.setAttribute("fill-opacity", o.toFixed(3));
+    }
 
     // Cámara lenta mientras crece; vuelve a 1 al rebobinar.
     if (v && !calm) {
@@ -229,7 +350,50 @@ function HeroStage({ studio, name, role, slogan, film, labels, languages, exit }
     };
     away(top, easeInOut(segment(p, 0, 0.12)), 0, -5);
     away(credits, easeIn(segment(p, 0.02, 0.16)), -8, 0);
-    wordRefs.current.forEach((w, i) => w && away(w, easeIn(segment(p, 0.03, 0.2)), 0, i % 2 === 0 ? -26 : 26));
+    wordRefs.current.forEach((line, i) => {
+      if (!line) return;
+      const m = morphs[i];
+      const copy = copyRefs.current[i];
+      if (!travels(i) || !m) {
+        // Sin gemela en el eslogan (o sin movimiento): se abre por la costura como antes.
+        if (copy) copy.style.visibility = "hidden";
+        return away(line, easeIn(segment(p, 0.03, 0.2)), 0, i % 2 === 0 ? -26 : 26);
+      }
+      // Una caja virtual viaja del rótulo a la cursiva: el centro en línea recta y el tamaño en
+      // progresión geométrica, con `k` (media de la razón de anchos y de altos) como salto total.
+      // Las dos fuentes tienen proporciones muy distintas y ninguna medida sola vale para las dos.
+      const tx = vw / 2 + base * (m.to.cx - cx);
+      const ty = vh / 2 + base * (m.to.cy - cy);
+      const k = Math.sqrt(((base * m.to.w) / m.from.w) * ((base * m.to.h) / m.from.h));
+      const g = Math.pow(k, e);
+      const x = m.from.cx + (tx - m.from.cx) * e;
+      const y = m.from.cy + (ty - m.from.cy) * e;
+
+      // La palabra del rótulo, escalada desde la esquina de su línea (que es lo que se transforma).
+      const out = segment(e, ...TITLE_OUT);
+      line.style.transformOrigin = "0 0";
+      line.style.transform =
+        e > 0
+          ? `translate(${(x - m.origin.x - g * (m.from.cx - m.origin.x)).toFixed(2)}px, ${(y - m.origin.y - g * (m.from.cy - m.origin.y)).toFixed(2)}px) scale(${g.toFixed(4)})`
+          : "";
+      line.style.opacity = out > 0 ? String(1 - out) : "";
+      line.style.filter = out > 0 ? `blur(${((out * MORPH_BLUR_PX) / g).toFixed(2)}px)` : "";
+      line.style.visibility = out >= 1 ? "hidden" : "";
+
+      // Su gemela en cursiva, en la misma caja. Al aterrizar le pasa el relevo a su trozo del eslogan.
+      if (!copy) return;
+      const inn = segment(e, ...SERIF_IN);
+      const sc = (base * g) / k;
+      copy.setAttribute(
+        "transform",
+        `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${sc.toFixed(4)}) translate(${(-m.to.cx).toFixed(1)} ${(-m.to.cy).toFixed(1)})`,
+      );
+      copy.style.opacity = inn.toFixed(3);
+      copy.style.visibility = inn > 0 && e < 1 ? "" : "hidden";
+      // El desenfoque se aplica antes de la escala del texto: se divide para que en pantalla mida
+      // lo mismo a cualquier tamaño.
+      blurRefs.current[i]?.setAttribute("stdDeviation", (((1 - inn) * MORPH_BLUR_PX) / sc).toFixed(2));
+    });
   });
 
   // El estado de los botones sale del propio vídeo, no de lo que se pidió.
@@ -260,21 +424,29 @@ function HeroStage({ studio, name, role, slogan, film, labels, languages, exit }
     else v.pause();
   };
 
-  const words = studio.split(/\s+/);
-  const lines = balance(slogan.text);
-  // Las mismas líneas para la máscara y para el relleno. Cuerpo 100: la escala la pone la salida.
-  const sloganText = (ref?: typeof textRef) => (
+  // Las mismas líneas, en los mismos trozos, para medir, para la máscara y para el relleno: así los
+  // glifos caen en el mismo sitio en las tres. Cuerpo 100: la escala la pone la salida. Solo el
+  // relleno guarda sus trozos, que son los que se encienden.
+  const sloganText = (ref?: typeof textRef, fill?: boolean) => (
     <text ref={ref} fontSize={100} textAnchor="middle">
-      {lines.map((l, i) => (
+      {segLines.map((line, i) => (
         <tspan key={i} x={0} dy={i === 0 ? 0 : "0.92em"}>
-          {l}
+          {line.map((s) => (
+            <tspan
+              key={s.key}
+              ref={fill ? (el) => void (segRefs.current[s.key] = el) : undefined}
+              fillOpacity={fill ? 0 : undefined}
+            >
+              {s.text}
+            </tspan>
+          ))}
         </tspan>
       ))}
     </text>
   );
 
   return (
-    <div className={styles.hero} data-ready={ready || undefined}>
+    <div ref={heroRef} className={styles.hero} data-ready={ready || undefined}>
       <div className={styles.frame}>
       <video
         ref={videoRef}
@@ -307,14 +479,32 @@ function HeroStage({ studio, name, role, slogan, film, labels, languages, exit }
           <mask id={FILL_MASK}>
             <rect width="100%" height="100%" fill="black" />
             <g ref={fillTextRef} fill="white">
-              {sloganText()}
+              {sloganText(undefined, true)}
             </g>
           </mask>
+          {travellers.map((s) => (
+            <filter key={s.match} id={`${MORPH_BLUR}-${s.match}`} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur ref={(el) => void (blurRefs.current[s.match!] = el)} stdDeviation={0} />
+            </filter>
+          ))}
         </defs>
         {/* Sin pintar y sin transformar: solo para medir (getBBox no mide dentro de <defs>). */}
         <g fill="none">{sloganText(textRef)}</g>
         <rect ref={inkRef} className={styles.ink} width="100%" height="100%" mask={`url(#${INK_MASK})`} opacity={0} />
         <rect ref={fillRef} className={styles.sloganFill} width="100%" height="100%" mask={`url(#${FILL_MASK})`} opacity={0} />
+        {/* Las palabras del rótulo en cursiva, de viaje hacia su sitio en el eslogan. */}
+        {travellers.map((s) => (
+          <text
+            key={s.match}
+            ref={(el) => void (copyRefs.current[s.match!] = el)}
+            className={styles.sloganFill}
+            fontSize={100}
+            filter={`url(#${MORPH_BLUR}-${s.match})`}
+            style={{ visibility: "hidden" }}
+          >
+            {s.text}
+          </text>
+        ))}
       </svg>
       <p className="sr-only" lang={slogan.lang}>
         {slogan.text}

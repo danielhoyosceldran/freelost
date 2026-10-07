@@ -4,8 +4,8 @@ import { Hero } from "./Hero";
 
 // Primera pantalla: cartón de título con el rótulo sobre la película (la marca del
 // loader vuela a la esquina) y los créditos abajo. Al salir, la interfaz se va, la película se
-// queda, y el eslogan aparece en el centro y crece hasta ser la ventana por la que se ve la
-// película. Es `critical`: el loader espera a que el vídeo tenga búfer suficiente para arrancar
+// queda, el rótulo se convierte en el eslogan (sus palabras viajan a su sitio en la frase) y el
+// eslogan crece hasta ser la ventana por la que se ve la película. Es `critical`: el loader espera a que el vídeo tenga búfer suficiente para arrancar
 // sin cortes.
 export const heroSchema = z.object({
   studio: z.string(),
