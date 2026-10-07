@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-06T08:34:21.636Z",
+  "generatedAt": "2026-10-07T15:05:22.212568Z",
   "title": "Design System: free lost",
   "extensions": {
     "colorMeta": {
@@ -51,29 +51,41 @@
       }
     },
     "typographyMeta": {
+      "brand": {
+        "displayName": "Brand",
+        "purpose": "Rótulo gigante del hero y marca de contorno del contacto (Druk Wide)."
+      },
       "display": {
         "displayName": "Display",
-        "purpose": "Nombre del hero y titular del contacto; wdth 72, mayúsculas."
+        "purpose": "Titular del contacto, 3–4 líneas."
       },
       "headline": {
         "displayName": "Headline",
         "purpose": "Títulos de sección arriba a la izquierda."
       },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "Entradilla y cierre del About."
+      },
+      "slogan": {
+        "displayName": "Slogan",
+        "purpose": "«Feel free to get lost.» en Instrument Serif cursiva, dibujado como contorno."
+      },
       "title": {
         "displayName": "Title",
-        "purpose": "Pie de foto del carrete."
+        "purpose": "Pie de foto del proyecto activo en el carrete."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Eslogan en cursiva y enlace de correo."
+        "purpose": "Cuerpo del About y subtítulo del contacto."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Rol, controles, canales, contador, legal."
+        "purpose": "Rol, controles, canales, contador, aviso legal, correo."
       },
       "wordmark": {
         "displayName": "Wordmark",
-        "purpose": "«free lost» junto a la marca."
+        "purpose": "«free lost» junto a la marca en el pie."
       }
     },
     "shadows": [],
@@ -132,14 +144,6 @@
       "css": ".ds-channel{display:inline-flex;align-items:center;min-height:44px;font:500 .72rem Archivo,sans-serif;font-stretch:112%;letter-spacing:.18em;text-transform:uppercase;color:rgb(238 241 240/.72);text-decoration:none;transition:color .25s ease}.ds-channel:hover{color:#eef1f0}.ds-channel:focus-visible{outline:1px solid #e0602a;outline-offset:6px}"
     },
     {
-      "name": "Name display",
-      "kind": "custom",
-      "refersTo": "display",
-      "description": "Titular condensado en mayúsculas con rol en etiqueta debajo.",
-      "html": "<div class=\"ds-name\">Guillem<br>Salvador</div><div class=\"ds-role\">Filmmaker</div>",
-      "css": ".ds-name{font:800 4rem/.86 Archivo,sans-serif;font-stretch:72%;letter-spacing:-.012em;text-transform:uppercase;color:#eef1f0}.ds-role{margin-top:1rem;font:500 .72rem Archivo,sans-serif;font-stretch:112%;letter-spacing:.18em;text-transform:uppercase;color:rgb(238 241 240/.74)}"
-    },
-    {
       "name": "Gear index item",
       "kind": "nav",
       "refersTo": "headline",
@@ -154,16 +158,41 @@
       "description": "Marca + estudio, aviso legal y eslogan sobre un hilo de 1px.",
       "html": "<footer class=\"ds-footer\"><span class=\"ds-brand\">free lost</span><span class=\"ds-legal\">© 2026</span><span class=\"ds-slogan\">Feel free to get lost.</span></footer>",
       "css": ".ds-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.5rem;padding:1.25rem 2rem;border-top:1px solid rgb(238 241 240/.1);background:#060a0c;color:#eef1f0}.ds-brand{font:600 .9rem Archivo,sans-serif;font-stretch:125%}.ds-legal{font:500 .7rem Archivo,sans-serif;font-stretch:112%;letter-spacing:.16em;text-transform:uppercase;color:rgb(238 241 240/.6)}.ds-slogan{justify-self:end;font:italic 300 1rem Archivo,sans-serif}"
+    },
+    {
+      "name": "About lead",
+      "kind": "custom",
+      "refersTo": "lead",
+      "description": "Entradilla del About: una frase sola en su pantalla, papel pleno.",
+      "html": "<p class=\"ds-lead\">Una frase que explica el estudio a quien no lo conoce.</p>",
+      "css": ".ds-lead{max-width:22ch;margin:0;font-family:var(--font-sans);font-size:clamp(1.75rem,3.4vw,3rem);font-weight:400;line-height:1.12;letter-spacing:-0.01em;color:var(--color-paper);text-wrap:pretty}"
+    },
+    {
+      "name": "About credit",
+      "kind": "custom",
+      "refersTo": "label",
+      "description": "Crédito pequeño tras un hilo de 1px, sin competir con el texto.",
+      "html": "<p class=\"ds-credit\">Guillem Salvador lleva free lost.</p>",
+      "css": ".ds-credit{max-width:48ch;margin:0;padding-top:1.5rem;border-top:1px solid rgb(238 241 240/.1);font-family:var(--font-sans);font-size:.95rem;line-height:1.5;color:rgb(238 241 240/.6)}"
+    },
+    {
+      "name": "Section title",
+      "kind": "custom",
+      "refersTo": "headline",
+      "description": "Título de sección en Druk Wide (sustituto Archivo 125/900), mayúsculas, arriba a la izquierda.",
+      "html": "<h2 class=\"ds-title\">About</h2>",
+      "css": ".ds-title{margin:0;font-family:var(--font-title);font-size:clamp(1.6rem,3vw,3rem);font-weight:var(--title-weight);font-stretch:var(--title-stretch);line-height:.9;text-transform:uppercase;color:var(--color-paper)}"
     }
   ],
   "narrative": {
     "northStar": "El cartón de título",
-    "overview": "Una película a pantalla completa, enmarcada como el título de un film: el plano manda y todo lo demás son créditos en sus márgenes. Superficie de modo Experience; esquinas rectas, hilos de 1px, ni tarjetas ni cristal ni sombras. Único momento propio: la marca montándose y abriendo la película por su costura.",
+    "overview": "Una película a pantalla completa, enmarcada como el título de un film: el plano manda y todo lo demás son créditos en sus márgenes. La interfaz es tinta y papel; nunca compite con las imágenes. El sistema es la norma de la categoría, jugada en serio y rematada a nivel de portfolio de estudio de cine, y rechaza cualquier disfraz conceptual. Su único momento propio es la marca montándose a sí misma y abriendo la película por su costura.\n\nEs una superficie de modo Experience: el artefacto (el metraje) lidera desde el primer viewport. Esquinas rectas, hilos de 1px, ni tarjetas ni cristal ni sombras. La jerarquía la dan la escala y el ancho de la tipografía, no los contenedores. Todo movimiento sale de una sola gramática: entradas largas con curva expo, máscaras de palabra que suben desde su línea de corte, y el gesto de la marca (la F baja, la L sube).",
     "keyCharacteristics": [
-      "Tinta azulada, blanco frío y un único acento, ember.",
-      "Una familia (Archivo) trabajada en su eje de anchura.",
+      "Tinta azulada, blanco frío y un único acento, ember, que solo marca estado y progreso.",
+      "Títulos en una grotesca muy ancha (Druk Wide, elección de Guillem), también para el rótulo del hero; texto en Instrument Sans y el eslogan en Instrument Serif cursiva.",
+      "Mayúsculas anchas para títulos; versalitas espaciadas para etiquetas.",
       "Hilos de 1px y esquinas rectas; cero sombras, cero cristal, cero tarjetas.",
-      "Créditos en los márgenes del plano."
+      "Créditos en los márgenes: abajo a la izquierda el texto, arriba los controles."
     ],
     "rules": [
       {
@@ -177,13 +206,13 @@
         "section": "colors"
       },
       {
-        "name": "The Width-Is-Voice Rule",
-        "body": "El ancho comunica el rol: 72% titulares, 88% pies, 112% etiquetas, 125% marca.",
+        "name": "The Wide-Is-Title Rule",
+        "body": "La fuente ancha es solo para títulos cortos y la marca escrita; nunca para párrafos ni para el eslogan.",
         "section": "typography"
       },
       {
         "name": "The Tight Display Rule",
-        "body": "Titulares con interlineado 0,86 y tracking −0,012em; las máscaras reservan 0,06em abajo.",
+        "body": "Los títulos llevan interlineado 0,9 y tracking 0; las máscaras de palabra reservan aire abajo (0,06–0,12em) para no cortar astas ni descendentes.",
         "section": "typography"
       },
       {
@@ -193,20 +222,20 @@
       }
     ],
     "dos": [
-      "Dejar que el metraje lidere: la interfaz a los márgenes, el centro del plano limpio.",
-      "Usar solo tinta, papel y ember; la jerarquía, por opacidad del papel.",
-      "Mover con las curvas de la casa (ease-out, ease-out-expo, ease-in-out).",
-      "Respetar prefers-reduced-motion.",
-      "Revelar texto con máscara de palabra escalonada.",
-      "Hit de 44px en todo lo clicable y foco visible con 1px ember."
+      "**Do** dejar que el metraje lidere: la interfaz a los márgenes, el centro del plano limpio.",
+      "**Do** usar solo tinta (#060a0c), papel (#eef1f0) y ember (#e0602a); la jerarquía, por opacidad del papel.",
+      "**Do** mover con las curvas de la casa: `--ease-out` (cubic-bezier(0.23, 1, 0.32, 1)) para UI, `--ease-out-expo` (cubic-bezier(0.16, 1, 0.3, 1)) para entradas largas, `--ease-in-out` (cubic-bezier(0.77, 0, 0.175, 1)) para movimiento en pantalla.",
+      "**Do** respetar `prefers-reduced-motion`: sin traslación y con fundido de 0,4s.",
+      "**Do** revelar texto con máscara de palabra desde la línea de corte, con retraso escalonado o ligado al scroll.",
+      "**Do** mantener hit de 44px en todo lo clicable y foco visible con 1px ember."
     ],
     "donts": [
-      "Usar la identidad v4 (negro/oro, Cinzel, Cormorant, Syne), glass-card, action-pill ni cortes angulares.",
-      "Poner tarjetas, cristal, sombras, esquinas redondeadas ni desenfoque en el chrome.",
-      "Usar ember como relleno de superficie, texto corrido ni decoración.",
-      "Añadir un segundo tipo de letra ni grises neutros.",
-      "Hardcodear copy en los componentes.",
-      "Afirmar créditos, clientes ni premios no confirmados."
+      "**Don't** usar la identidad v4 (negro/oro, Cinzel, Cormorant, Syne), ni `glass-card`, `action-pill` ni los cortes angulares: son residuo heredado que se va con los bloques antiguos. Hoy sobreviven en `components/ui/Cursor.tsx`, `Reveal.tsx` y la barra de `core/scroll/ScrollGate.tsx` (oro); no son referencia.",
+      "**Don't** poner tarjetas, cristal, sombras, esquinas redondeadas ni desenfoque en el chrome.",
+      "**Don't** usar ember como relleno de superficie, texto corrido ni decoración.",
+      "**Don't** añadir una quinta familia ni grises neutros, ni usar la fuente de título en texto corrido.",
+      "**Don't** hardcodear copy en los componentes: viene de `content/` por props.",
+      "**Don't** afirmar créditos, clientes ni premios que el cliente no haya confirmado."
     ]
   }
 }

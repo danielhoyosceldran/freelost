@@ -206,7 +206,7 @@ Esquinas rectas en todo (0px). Contornos de 1px (papel al 16% en la marca gigant
 - **Do** mantener hit de 44px en todo lo clicable y foco visible con 1px ember.
 
 ### Don't:
-- **Don't** usar la identidad v4 (negro/oro, Cinzel, Cormorant, Syne), ni `glass-card`, `action-pill` ni los cortes angulares: son residuo heredado que se va con los bloques antiguos.
+- **Don't** usar la identidad v4 (negro/oro, Cinzel, Cormorant, Syne), ni `glass-card`, `action-pill` ni los cortes angulares: son residuo heredado que se va con los bloques antiguos. Hoy sobreviven en `components/ui/Cursor.tsx`, `Reveal.tsx` y la barra de `core/scroll/ScrollGate.tsx` (oro); no son referencia.
 - **Don't** poner tarjetas, cristal, sombras, esquinas redondeadas ni desenfoque en el chrome.
 - **Don't** usar ember como relleno de superficie, texto corrido ni decoración.
 - **Don't** añadir una quinta familia ni grises neutros, ni usar la fuente de título en texto corrido.
