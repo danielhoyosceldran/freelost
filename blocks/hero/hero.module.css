@@ -11,8 +11,8 @@
   color: var(--color-paper);
 }
 
-/* El plano: a sangre y quieto toda la escena. En la salida es lo que se ve por dentro del
-   eslogan. */
+/* El plano: a sangre al principio. En la salida encoge a 70vh desde el centro y sube con el
+   scroll (la transformación la escribe Hero.tsx). */
 .frame {
   position: absolute;
   inset: 0;
@@ -28,12 +28,6 @@
   height: 100%;
   overflow: visible;
   pointer-events: none;
-}
-
-/* Lo que tapa el plano fuera de las letras: la misma tinta del fondo de la página, para que al
-   soltarse la escena no haya costura con el carrete. */
-.ink {
-  fill: var(--color-ink);
 }
 
 .sloganFill {
@@ -234,14 +228,6 @@
   width: auto;
   overflow: visible;
   fill: currentColor;
-}
-
-/* Rótulo en negativo: blanco en «difference» invierte el plano bajo cada letra, y se lee oscuro
-   sobre lo claro y claro sobre lo oscuro. Va en los nodos que mueve la salida (cada línea) y en
-   ningún ancestro: un transform o una opacidad por encima
-   aislaría la mezcla y dejaría de ver la película. */
-.negative {
-  mix-blend-mode: difference;
 }
 
 /* Créditos del film, abajo a la izquierda: quién firma. */

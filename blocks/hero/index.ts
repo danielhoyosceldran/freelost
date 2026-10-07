@@ -5,7 +5,7 @@ import { Hero } from "./Hero";
 // Primera pantalla: cartón de título con el rótulo sobre la película (la marca del
 // loader vuela a la esquina) y los créditos abajo. Al salir, la interfaz se va, la película se
 // queda, el rótulo se convierte en el eslogan (cada letra se transforma en la suya) y el
-// eslogan crece hasta ser la ventana por la que se ve la película. Es `critical`: el loader espera a que el vídeo tenga búfer suficiente para arrancar
+// eslogan crece en papel mientras la película encoge a 70vh y sube con el scroll. Es `critical`: el loader espera a que el vídeo tenga búfer suficiente para arrancar
 // sin cortes.
 /** Una palabra dibujada (content/words.ts): una `d` por letra, de izquierda a derecha. */
 const wordArt = z.object({
@@ -23,8 +23,8 @@ export const heroSchema = z.object({
   name: z.string(),
   role: z.string(),
   /**
-   * El eslogan de la salida. Va dentro del hero y no en un bloque propio porque es la máscara de
-   * esta película: los bloques no comparten nodos.
+   * El eslogan de la salida. Va dentro del hero y no en un bloque propio porque nace del rótulo y
+   * se monta sobre esta película: los bloques no comparten nodos.
    */
   slogan: z.object({
     text: z.string(),
@@ -46,14 +46,15 @@ export const heroSchema = z.object({
   /**
    * Salida, sobre el progreso de la escena (que dura `height`): se van los créditos y la marca,
    * el plano no se mueve. El eslogan aparece en el centro a `from` del ancho que cabe en pantalla
-   * y crece hasta `to`; mientras crece, lo de fuera de las letras pasa a tinta y la película solo
-   * se ve a través de ellas. La película baja a `slowTo`× de velocidad mientras crece.
+   * y crece hasta `to` del alto de pantalla; mientras crece, la película encoge a 70vh y luego sube con el scroll, y
+   * deja el eslogan en papel sobre tinta. La película baja a `slowTo`× de velocidad mientras crece.
    */
   exit: z
     .object({
-      height: z.string().default("320vh"),
+      height: z.string().default("340vh"),
       from: z.number().default(0.42),
-      to: z.number().default(0.94),
+      /** Alto final del eslogan, en fracción del alto de pantalla (si cabe a lo ancho). */
+      to: z.number().default(0.8),
       slowTo: z.number().default(0.6),
     })
     .prefault({}),

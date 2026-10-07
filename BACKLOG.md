@@ -11,8 +11,8 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       el cuerpo de los títulos: Druk Wide es más ancha que el sustituto.
 - [ ] **[cliente]** ¿Foto de Guillem en el About, junto al crédito? Plan 009, D8.
 - [ ] Feel check del morph de contornos rótulo → eslogan (`npm run dev`). Tramos en `Hero.tsx`:
-      `MORPH` (0,03–0,26), `REST_IN` (0,14–0,28), `HANDOFF` (relevo del rótulo en `difference` al
-      morph en papel) y `STAGGER`. Composición del eslogan: `WORD_GAP` y `LEADING` (unidades de
+      `MORPH` (0,03–0,26), `REST_IN` (0,14–0,28), `STAGGER`; el relevo rótulo → morph es un corte
+      seco en `e > 0` (si al arrancar se nota un saltito de forma, es el remuestreo, ver abajo). Composición del eslogan: `WORD_GAP` y `LEADING` (unidades de
       los SVG). Mirar: salto al arrancar (rótulo → polígonos de 256 puntos) y al aterrizar
       (polígonos → eslogan), esquinas de Druk algo redondeadas a tamaño grande (subir `N_OUTER` en
       `lib/morph/letters.ts`), fluidez en móvil (se reescriben 9 `d` por fotograma), la vuelta
@@ -20,13 +20,12 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       dibujado: comprobar su tamaño (`--brand`, min(21vw, 32svh)) y el aire de la máscara de
       entrada. `fit` ahora es la caja exacta de los glifos (antes, la del texto): quizá bajar `to`.
 - [ ] Borrar `morph-preview.svg` de la raíz (previsualización estática del morph).
-- [ ] Feel check de la salida del hero con el eslogan como máscara (`npm run dev`): alto de la
-      escena (320vh), tamaños `from`/`to` (0,42 / 0,94 en `blocks/hero/index.ts`), tramos
-      (`SLOGAN_GROW`, `INK`, `FILL_OUT`, `SCRIM_OUT` en `Hero.tsx`), si la cursiva
-      deja ver bastante película por dentro (si no, más `to` o más cuerpo de línea), y fluidez del
-      `mask` SVG a pantalla completa en portátiles flojos y en móvil. Probar con movimiento
-      reducido.
-      Vuelta a papel al final (`FILL_BACK` 0,82–0,91).
+- [ ] Feel check de la salida del hero sin máscara (`npm run dev`): el eslogan crece en papel
+      (`SLOGAN_GROW` 0,3–0,55) mientras el plano encoge a 70vh (`SHRINK`, `SHRINK_TO` en
+      `Hero.tsx`) y luego sube 1:1 con el scroll. Escena de 340vh: tras encoger quedan ~108vh, 85
+      para que el plano salga y ~23vh de eslogan solo sobre tinta. El eslogan acaba a 80vh de alto
+      (`to` 0,8, capado al ancho), así que rebasa el plano de 70vh. Mirar si el velo debe irse al encoger, y
+      movimiento reducido (sin escala; el plano sube a sangre).
 - [ ] Feel check del ritmo nuevo (`npm run dev`): «Lo que uso» → About → contacto. About
       (`blocks/about`): ritmo de las máscaras de línea (`REVEAL_FROM`/`REVEAL_TO`), aire entre
       entradilla, cuerpo y cierre, y la columna desplazada (38% del ancho) en portátiles bajos, pantallas
@@ -125,7 +124,7 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       barrido del equipo, relleno del contacto, timecode) y decidir: plano del hero → tarjeta
       central, inclinación en perspectiva de la tarjeta (shaders) e imán del equipo.
 
-- [ ] Feel check de la salida del hero → carrete: el plano encoge a 80vh hacia su pie (escena de
+- [ ] Feel check de la salida del hero → carrete: el plano encoge a 70vh hacia su pie (escena de
       160vh, `hold` 0.2), el carrete llega con su borde a 0,45 de pantalla, pausa de 200 ms y rise de
       1,5 s con recorrido 0,35 del alto. Si las tarjetas suben antes de verse, bajar ARRIVE_AT.
 - [ ] Feel check del scroll durante el rise: la cinta ya sigue el scroll mientras suben las
@@ -191,7 +190,7 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [x] Loader con la marca (entrada de los trazos, relleno con la carga real, apertura por la
       costura).
 - [x] Hero con la película FL1 a sangre, nombre, marca y eslogan; sonido y pausa.
-- [x] Salida del hero: el plano encoge a 80vh sin borde ni fundido y se queda pegado al carrete.
+- [x] Salida del hero: el plano encoge a 70vh sin borde ni fundido y se queda pegado al carrete.
 - [x] Carrete de proyectos con las 12 películas reales y reproducción completa en local.
 - [x] Entrada del carrete: pausa al llegar y después el rise de React Bits.
 - [x] Carrete con la física de React Bits: arrastre con inercia, bucle infinito, ajuste natural,

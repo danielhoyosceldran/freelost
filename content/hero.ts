@@ -46,7 +46,7 @@ export const heroContent = (lang: Locale) => ({
   role: "Filmmaker",
   // El rótulo dibujado, una palabra por línea.
   studioArt: STUDIO_ART,
-  // No en la primera pantalla: aparece con el scroll y se vuelve la máscara de la película.
+  // No en la primera pantalla: aparece con el scroll, en papel, y se queda sobre tinta cuando la película se va.
   slogan: { text: SLOGAN, lang: sloganLang(lang), lines: SLOGAN_ART },
   film: {
     label: text[lang].filmLabel,

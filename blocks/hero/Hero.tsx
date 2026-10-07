@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { useCriticalAssets } from "@/core/lifecycle/BlockSlot";
 import { useLifecycle, useReady } from "@/core/lifecycle/store";
-import { ScrollScene, useSceneProgress } from "@/core/scroll/ScrollScene";
+import { ScrollScene, useScene, useSceneProgress } from "@/core/scroll/ScrollScene";
 import { easeIn, easeInOut, easeOut, segment } from "@/lib/easing";
 import { LOGO_F, LOGO_L, LOGO_VIEWBOX } from "@/lib/brand/logo";
 import { morphWord } from "@/lib/morph/letters";
@@ -14,26 +14,21 @@ import styles from "./hero.module.css";
 /** Segundos de película cargados desde el principio para dar el loader por terminado. */
 const BUFFER_S = 6;
 
-/** ids de las máscaras del eslogan: la tinta con las letras agujereadas y las letras solas. Hay un
- * solo hero por página. */
-const INK_MASK = "hero-slogan-ink";
-const FILL_MASK = "hero-slogan-fill";
-
 /**
  * Tramos de la salida sobre el progreso de la escena. Primero se va la interfaz (0–0,16) y, a la
  * vez, el rótulo se convierte en el eslogan: cada letra de «FREE» y «LOST» se transforma en la suya
  * de «free» y «lost.» mientras viaja a su sitio en la frase (`MORPH`), y el resto de la frase
- * aparece alrededor (`REST_IN`). Con el eslogan completo, crece hasta 0,86. El resto es un respiro
- * sobre el último fotograma antes de que la escena se suelte.
+ * aparece alrededor (`REST_IN`). Con el eslogan completo, crece y, a la vez, el plano encoge hasta
+ * `SHRINK_TO` de la pantalla (`SHRINK`). Ahí se queda fijo y sube con el scroll, como si la página lo
+ * soltara, hasta dejar el eslogan en papel sobre tinta. El último tramo es ese fotograma quieto
+ * antes de que la escena se suelte.
  */
 const MORPH: [number, number] = [0.03, 0.26];
 const REST_IN: [number, number] = [0.14, 0.28];
-const SLOGAN_GROW: [number, number] = [0.3, 0.86];
-/**
- * Dentro del viaje (0–1), relevo del rótulo al dibujo que se transforma. El rótulo se pinta en
- * `difference` y el morph en papel: un fundido corto tapa el cambio de mezcla.
- */
-const HANDOFF = 0.08;
+const SLOGAN_GROW: [number, number] = [0.3, 0.55];
+const SHRINK: [number, number] = [0.3, 0.55];
+/** Alto del plano encogido, en fracción de pantalla: 70vh. */
+const SHRINK_TO = 0.7;
 /** Cada letra empieza un poco después que la anterior: la palabra se transforma de izquierda a derecha. */
 const STAGGER = 0.06;
 /**
@@ -42,18 +37,6 @@ const STAGGER = 0.06;
  */
 const WORD_GAP = 24;
 const LEADING = 92;
-/** Lo de fuera de las letras pasa a tinta… */
-const INK: [number, number] = [0.36, 0.7];
-/** …mientras el relleno de papel se aparta y deja ver la película por dentro. */
-const FILL_OUT: [number, number] = [0.4, 0.66];
-/**
- * Al final del crecimiento las letras vuelven a papel: el último fotograma es el eslogan en blanco
- * sobre tinta, y es lo que se lleva la escena al soltarse. Corto (unos 20vh de scroll) y con
- * curva de entrada y salida: suave, sin hacerse esperar.
- */
-const FILL_BACK: [number, number] = [0.82, 0.91];
-/** El velo también se va: por dentro de las letras la película se ve limpia. */
-const SCRIM_OUT: [number, number] = [0.5, 0.8];
 
 type Word = HeroProps["studioArt"][number];
 type SloganWord = HeroProps["slogan"]["lines"][number][number];
@@ -108,9 +91,9 @@ function bufferedFromStart(v: HTMLVideoElement) {
 /**
  * La primera pantalla es un cartón de título: el rótulo «free lost» manda, y la
  * película queda detrás, oscurecida. Al bajar, los créditos no se apagan a la vez: cada pieza se va
- * por su lado y a su hora, y el plano se queda solo. Entonces aparece el eslogan en el centro y
- * crece; mientras crece, la pantalla se cierra a tinta alrededor de las letras y la película queda
- * dentro de ellas, en cámara lenta. Después la escena se suelta y llega el carrete.
+ * por su lado y a su hora, y el rótulo se convierte en el eslogan, en papel. Mientras crece, el
+ * plano encoge a 70vh en cámara lenta; luego sube con el scroll y deja el eslogan sobre tinta.
+ * Después la escena se suelta y llega el carrete.
  */
 export function Hero({ exit, ...stage }: HeroProps) {
   return (
@@ -130,16 +113,11 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
   const morphRef = useRef<SVGGElement>(null);
   const letterRefs = useRef<(SVGPathElement | null)[][]>([]);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLElement>(null);
   const creditsRef = useRef<HTMLDivElement>(null);
-  const scrimRef = useRef<HTMLDivElement>(null);
-  // El eslogan se pinta dos veces con la misma transformación, las dos como máscara: una agujerea
-  // la tinta y la otra recorta el papel que se lee antes de que la tinta llegue y al final.
   const sloganRef = useRef<SVGSVGElement>(null);
-  const maskTextRef = useRef<SVGGElement>(null);
-  const fillTextRef = useRef<SVGGElement>(null);
-  const fillRef = useRef<SVGRectElement>(null);
-  const inkRef = useRef<SVGRectElement>(null);
+  const sloganTextRef = useRef<SVGGElement>(null);
   /**
    * Medidas que dependen de la pantalla: `fit` es la escala con la que el eslogan la llena justa, y
    * `title`, la caja en px de cada palabra del rótulo en reposo (centro y tamaño), de donde sale
@@ -160,6 +138,7 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
       }),
     [studioArt, layout],
   );
+  const scene = useScene();
   const provide = useCriticalAssets();
   const ready = useReady();
   const [muted, setMuted] = useState(true);
@@ -249,18 +228,15 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
   // Salida: el progreso de la escena monta el plano. Estilo directo, sin re-render.
   useSceneProgress((p) => {
     const v = videoRef.current;
+    const frame = frameRef.current;
     const top = topRef.current;
     const credits = creditsRef.current;
     const svg = sloganRef.current;
-    const maskText = maskTextRef.current;
-    const fill = fillRef.current;
-    const fillText = fillTextRef.current;
-    const ink = inkRef.current;
-    const scrim = scrimRef.current;
-    if (!top || !credits || !svg || !maskText || !fillText || !fill || !ink || !scrim) return;
+    const sloganText = sloganTextRef.current;
+    if (!frame || !top || !credits || !svg || !sloganText) return;
     const calm = reduceRef.current;
 
-    // El eslogan: aparece, crece y se vuelve ventana. El plano de detrás no se toca.
+    // El eslogan: aparece y crece, siempre en papel y encima del plano.
     if (fitRef.current.vw !== window.innerWidth || fitRef.current.vh !== window.innerHeight) measure();
     const { vw, vh, fit, title } = fitRef.current;
     const { cx, cy } = layout.box;
@@ -268,17 +244,24 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
     // Crecimiento geométrico: a ritmo constante el ojo lo lee como un acercamiento uniforme, sin
     // que el final se dispare. Durante el viaje está quieto en `from`: las palabras aterrizan en un
     // sitio fijo. Con movimiento reducido no crece: aparece ya a su tamaño final y solo cambian
-    // las opacidades.
+    // las opacidades. El final es `to` del alto de pantalla, salvo que a ese tamaño no quepa a lo
+    // ancho (móvil vertical): entonces, lo que quepa.
     const base = exit.from * fit;
-    const scale = calm ? exit.to * fit : base * Math.pow(exit.to / exit.from, grow);
+    const end = Math.max(base, Math.min((exit.to * vh) / layout.box.h, fit));
+    const scale = calm ? end : base * Math.pow(end / base, grow);
     const transform = `translate(${(vw / 2).toFixed(1)} ${(vh / 2).toFixed(1)}) scale(${scale.toFixed(4)}) translate(${(-cx).toFixed(1)} ${(-cy).toFixed(1)})`;
-    maskText.setAttribute("transform", transform);
-    fillText.setAttribute("transform", transform);
-    const paper = 1 - easeInOut(segment(p, ...FILL_OUT)) + easeInOut(segment(p, ...FILL_BACK));
-    fill.style.opacity = Math.min(1, paper).toFixed(3);
-    ink.style.opacity = easeInOut(segment(p, ...INK)).toFixed(3);
-    scrim.style.opacity = (1 - easeInOut(segment(p, ...SCRIM_OUT))).toFixed(3);
+    sloganText.setAttribute("transform", transform);
     svg.style.visibility = p > MORPH[0] ? "" : "hidden";
+
+    // El plano encoge hasta 70vh (sin escala con movimiento reducido) y, a partir de ahí, se queda
+    // de ese tamaño y sube lo mismo que el scroll: se lee como si la página lo soltara, mientras el
+    // eslogan sigue quieto en el centro. Lo que deja detrás es la tinta del fondo.
+    const shrink = calm ? 0 : easeInOut(segment(p, ...SHRINK));
+    const lift = Math.max(0, p - SHRINK[1]) * scene.span();
+    frame.style.transform =
+      shrink > 0 || lift > 0
+        ? `translateY(${(-lift).toFixed(1)}px) scale(${(1 - (1 - SHRINK_TO) * shrink).toFixed(4)})`
+        : "";
 
     // El morph. `e` lleva el viaje; las palabras de destino solo se encienden en el eslogan al
     // aterrizar, cuando el dibujo que se transforma ya es exactamente ellas. Con movimiento
@@ -291,10 +274,7 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
       sloganWordRefs.current[w.key]?.setAttribute("fill-opacity", o.toFixed(3));
     }
     const morphing = !calm && e > 0 && e < 1;
-    if (morphRef.current) {
-      morphRef.current.style.visibility = morphing ? "" : "hidden";
-      morphRef.current.style.opacity = segment(e, 0, HANDOFF).toFixed(3);
-    }
+    if (morphRef.current) morphRef.current.style.visibility = morphing ? "" : "hidden";
     if (morphing) {
       morphs.forEach((m, i) => {
         if (!m || !travels(i)) return;
@@ -345,10 +325,10 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
       if (!line) return;
       // Sin pareja en el eslogan (o sin movimiento): se abre por la costura.
       if (!travels(i)) return away(line, easeIn(segment(p, 0.03, 0.2)), 0, i % 2 === 0 ? -26 : 26);
-      // Con pareja, el rótulo le pasa el relevo al dibujo que se transforma, que arranca encima.
-      const out = segment(e, 0, HANDOFF);
-      line.style.opacity = out > 0 ? String(1 - out) : "";
-      line.style.visibility = out >= 1 ? "hidden" : "";
+      // Con pareja, el rótulo le pasa el relevo al dibujo que se transforma en el mismo fotograma,
+      // sin fundido: los dos son el mismo dibujo en papel y en el mismo sitio, así que el corte no
+      // se ve. Un fundido sí se veía: a medias las dos capas se apagaban y se separaban.
+      line.style.visibility = e > 0 ? "hidden" : "";
     });
   });
 
@@ -380,15 +360,15 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
     else v.pause();
   };
 
-  // El mismo dibujo para la máscara y para el relleno, en las unidades del eslogan: la escala la pone
-  // la salida. Solo el relleno guarda sus palabras, que son las que se encienden.
-  const sloganArt = (fill?: boolean) =>
+  // El eslogan en las unidades de sus SVG: la escala la pone la salida. Cada palabra se enciende por
+  // separado.
+  const sloganArt = () =>
     layout.words.map((w) => (
       <g
         key={w.key}
-        ref={fill ? (el) => void (sloganWordRefs.current[w.key] = el) : undefined}
+        ref={(el) => void (sloganWordRefs.current[w.key] = el)}
         transform={`translate(${w.ox.toFixed(2)} ${w.oy.toFixed(2)})`}
-        fillOpacity={fill ? 0 : undefined}
+        fillOpacity={0}
       >
         {w.letters.map((d, j) => (
           <path key={j} d={d} />
@@ -398,7 +378,7 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
 
   return (
     <div ref={heroRef} className={styles.hero} data-ready={ready || undefined}>
-      <div className={styles.frame}>
+      <div ref={frameRef} className={styles.frame}>
       <video
         ref={videoRef}
         className={styles.film}
@@ -413,29 +393,15 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
           <source key={s.src} src={s.src} media={s.media} type="video/mp4" />
         ))}
       </video>
-        <div ref={scrimRef} className={styles.scrim} aria-hidden="true" />
+        <div className={styles.scrim} aria-hidden="true" />
       </div>
 
-      {/* El eslogan de la salida: tinta con las letras recortadas encima de la película, y las
-          mismas letras en papel para antes de que llegue la tinta y para el final. Lo lee el <p>
-          oculto. */}
+      {/* El eslogan de la salida, en papel encima del plano y, cuando el plano se va, sobre la
+          tinta. Lo lee el <p> oculto. */}
       <svg ref={sloganRef} className={styles.slogan} aria-hidden="true" style={{ visibility: "hidden" }}>
-        <defs>
-          <mask id={INK_MASK}>
-            <rect width="100%" height="100%" fill="white" />
-            <g ref={maskTextRef} fill="black">
-              {sloganArt()}
-            </g>
-          </mask>
-          <mask id={FILL_MASK}>
-            <rect width="100%" height="100%" fill="black" />
-            <g ref={fillTextRef} fill="white">
-              {sloganArt(true)}
-            </g>
-          </mask>
-        </defs>
-        <rect ref={inkRef} className={styles.ink} width="100%" height="100%" mask={`url(#${INK_MASK})`} opacity={0} />
-        <rect ref={fillRef} className={styles.sloganFill} width="100%" height="100%" mask={`url(#${FILL_MASK})`} opacity={0} />
+        <g ref={sloganTextRef} className={styles.sloganFill}>
+          {sloganArt()}
+        </g>
         {/* Las letras del rótulo transformándose en las del eslogan, en px de pantalla. Su `d` la
             escribe la salida en cada fotograma. */}
         <g ref={morphRef} className={styles.sloganFill} style={{ visibility: "hidden" }}>
@@ -503,7 +469,7 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
             <span
               key={i}
               ref={(el) => void (wordRefs.current[i] = el)}
-              className={`${styles.line} ${styles.negative}`}
+              className={styles.line}
               aria-hidden="true"
             >
               <span className={styles.word} style={{ "--i": i, "--dir": i % 2 === 0 ? -1 : 1 } as CSSProperties}>
