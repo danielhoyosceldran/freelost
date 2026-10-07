@@ -1,0 +1,101 @@
+/* About: texto sobre tinta, sin imagen. La lectura baja en diagonal: entradilla a la izquierda y
+   sola en su pantalla, cuerpo en una columna desplazada a la derecha, cierre otra vez a la
+   izquierda con aire encima y, separado por un hilo, el crédito pequeño. */
+
+.about {
+  position: relative;
+  padding: var(--gutter) var(--gutter) clamp(6rem, 18vh, 11rem);
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* Título de sección arriba a la izquierda, como el carrete y el equipo. */
+.title {
+  font-family: var(--font-title);
+  font-size: clamp(1.6rem, 3vw, 3rem);
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+/* La frase que explica el estudio a quien no lo conoce: ocupa la primera pantalla sola. */
+.lead {
+  max-width: 22ch;
+  margin-top: clamp(6rem, 22vh, 12rem);
+  margin-bottom: clamp(10rem, 40svh, 24rem);
+  font-size: clamp(1.75rem, 3.4vw, 3rem);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+
+.body {
+  display: grid;
+  gap: 1.4em;
+  width: min(100%, 34ch);
+  margin-left: clamp(0px, 38vw, 40rem);
+  font-size: clamp(1.125rem, 1.7vw, 1.6rem);
+  line-height: 1.35;
+  color: rgb(238 241 240 / 0.72);
+  text-wrap: pretty;
+}
+
+/* El gancho del eco con el eslogan: mismo cuerpo que la entradilla y en papel entero. */
+.closing {
+  max-width: 24ch;
+  margin-top: clamp(10rem, 45svh, 26rem);
+  font-size: clamp(1.75rem, 3.4vw, 3rem);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+
+/* Quién lleva el estudio: más pequeño, separado y sin competir con el texto de arriba. */
+.credit {
+  max-width: 48ch;
+  margin-top: clamp(6rem, 22vh, 13rem);
+  padding-top: 1.5rem;
+  border-top: 1px solid rgb(238 241 240 / 0.1);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: rgb(238 241 240 / 0.6);
+}
+
+/* ---------- máscaras de línea ---------- */
+
+/* Cada palabra recorta su propia subida; el aire de abajo evita cortar los descendentes. */
+.mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+
+/* --r (0→1, el scroll) recorre las --n líneas del párrafo: la línea --l sube mientras --r·--n va
+   de --l a --l + 1. */
+.word {
+  --t: clamp(0, var(--r, 0) * var(--n, 1) - var(--l, 0), 1);
+  display: inline-block;
+  translate: 0 calc((1 - var(--t)) * 110%);
+}
+
+@media (max-width: 720px) {
+  .lead,
+  .closing {
+    font-size: clamp(1.5rem, 6.4vw, 1.9rem);
+  }
+
+  .body {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .word {
+    translate: none;
+  }
+}

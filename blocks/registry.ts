@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { about } from "./about";
 import { contact } from "./contact";
 import { cut } from "./cut";
 import { footer } from "./footer";
@@ -13,6 +14,7 @@ import { reel } from "./reel";
  * registrarlo aquí; la página lo usa por su clave `type` desde content/pages/*.
  */
 export const registry = {
+  about,
   contact,
   cut,
   footer,
