@@ -1,0 +1,31 @@
+/* El eslogan en el silencio: pequeño, descentrado (tercio inferior, hacia la derecha) y con toda
+   la pantalla vacía alrededor. Centrado sería un cartel; descentrado se encuentra. */
+
+.stage {
+  position: absolute;
+  inset: 0;
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.slogan {
+  position: absolute;
+  top: 64%;
+  left: 58%;
+  padding-right: var(--gutter);
+  /* La voz de título de crédito que el eslogan ha tenido siempre. */
+  font-family: var(--font-instrument), Georgia, serif;
+  font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.1;
+  /* Opacidad y posición las escribe el scroll (Slogan.tsx). */
+  opacity: 0;
+}
+
+@media (max-width: 720px) {
+  .slogan {
+    top: 66%;
+    left: 34%;
+  }
+}

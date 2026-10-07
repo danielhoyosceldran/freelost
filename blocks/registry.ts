@@ -8,6 +8,7 @@ import { hero } from "./hero";
 import { loader } from "./loader";
 import { projects } from "./projects";
 import { reel } from "./reel";
+import { slogan } from "./slogan";
 
 /**
  * Catálogo de bloques disponibles. Añadir un bloque = crear su carpeta en blocks/ y
@@ -23,6 +24,7 @@ export const registry = {
   loader,
   projects,
   reel,
+  slogan,
 } as const;
 
 type Registry = typeof registry;
