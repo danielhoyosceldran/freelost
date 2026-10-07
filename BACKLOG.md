@@ -5,8 +5,20 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 
 ## Contenido
 
-- [ ] Peticiones de Guillem del 7/10/2026 (About, eslogan descubierto en el scroll, Contact nuevo,
-      Druk Wide + Instrument Sans): ver `plans/009-guille-plan.md`, con sus decisiones abiertas D1–D8.
+- [ ] **[cliente]** Licencia web de Druk Wide (un peso, woff2). Hasta entonces los títulos van en
+      Archivo 125/900. Al llegar: `next/font/local` en `app/[lang]/layout.tsx` y los tokens
+      `--font-title`, `--title-weight` y `--title-stretch` en `app/globals.css`. Revisar después
+      el cuerpo de los títulos: Druk Wide es más ancha que el sustituto.
+- [ ] **[cliente]** ¿Druk Wide también en el rótulo «free lost» del hero (hoy Six Caps)? Plan 009, D2.
+- [ ] **[cliente]** ¿Foto de Guillem en el About, junto al crédito? Plan 009, D8.
+- [ ] Feel check del ritmo nuevo (`npm run dev`): «Lo que uso» → eslogan → About → contacto.
+      Eslogan (`blocks/slogan`): si se encuentra o se pierde, posición (64 % / 58 %), tramo de
+      aparición (0,25–0,5) y cuánto lo apaga la velocidad (`SPEED_DIM` 0,5). Si el eco no funciona,
+      probar el eslogan detrás del About (una línea en `content/pages/home.ts`). About
+      (`blocks/about`): ritmo de las máscaras de línea (`REVEAL_FROM`/`REVEAL_TO`), aire entre
+      entradilla, cuerpo y cierre, y la columna desplazada en portátiles bajos y en móvil.
+- [ ] Feel check de los títulos en la fuente ancha: carrete y equipo a clamp(1.6rem, 3vw, 3rem);
+      «EL QUE FAIG SERVIR» es el más largo. Titular del contacto en 3–4 líneas, también en móvil.
 - [ ] **[cliente]** Títulos reales de las 12 películas del carrete. Los de `content/reel.ts` salen
       de los nombres de carpeta y fichero ("Raz Surfcamp · Camp 12", "Ironman · FL3"…).
 - [ ] **[cliente]** Lista real de equipo para "Lo que uso". Hoy son tres categorías ("Cámara y
@@ -49,8 +61,10 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 
 ## Idiomas
 
-- [ ] **[cliente]** Revisar las traducciones EN/CA/ES de `content/` (las he escrito yo; el título
-      de contacto, "Lo que uso" y las etiquetas del carrete sobre todo).
+- [ ] **[cliente]** Revisar las traducciones EN/CA/ES de `content/` (las he escrito yo; "Lo que uso"
+      y las etiquetas del carrete sobre todo). Del copy de Guillem (7/10/2026), About
+      (`content/about.ts`) y Contact (`content/contact.ts`) los ha dado en inglés: ca/es son
+      traducción nuestra. Confirmar también "Qui som" / "Quiénes somos" como título del About.
 - [ ] Selector de idioma: feel check en móvil (cabe junto a sonido/pausa en `.controls` del hero) y
       decidir si recordar la elección (hoy `/` va siempre a `/en`, sin detectar el navegador).
 - [ ] Quitar los defaults en castellano de `labels` en `blocks/reel/index.ts` (ya se pasan desde
@@ -63,17 +77,12 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       su máscara. Si se hace largo o se pisa con el velo, ajustar el 0.5s o el 0.35; si «lost» asoma en alguna fuente de
       reserva, subir el 0.3em.
 
-- [ ] Hero rediseñado (la marca manda, no el vídeo): rótulo «free lost» en Six Caps y eslogan en
-      Instrument Serif cursiva, vídeo oscurecido (`.scrim`). Ver con `npm run dev`: tamaño del rótulo
-      (`min(46vw, 54svh)` calculado sin verlo), contraste sobre planos claros, apilado en móvil y la
-      salida (free sube / lost baja). `DESIGN.md` queda desfasado (una sola familia, «el metraje lidere»,
-      eslogan a la derecha): actualizar al cerrar.
-- [ ] Tipografía del hero (impeccable typeset): rótulo, hueco y eslogan cuelgan de `--brand`
-      (`.title` en `hero.module.css`), con el eslogan a 0,12 del rótulo. Medidos con las fuentes
-      reales, sin verlos en pantalla. Ver con `npm run dev` a 1440×900, 1920×1080 y un portátil
-      bajo (~1280×650): el eslogan pasa de 49 a 58 px y de 56 a 70 px en las dos primeras. El
-      nombre sube a 20 px (el rol de pie del carrete): comprobar en móviles bajos (360×640) que
-      los créditos no pisan el eslogan.
+- [ ] Hero rediseñado (la marca manda, no el vídeo): rótulo «free lost» en Six Caps, ya sin eslogan,
+      vídeo oscurecido (`.scrim`). Ver con `npm run dev`: tamaño del rótulo (`min(46vw, 58svh)`,
+      calculado sin verlo), contraste sobre planos claros, apilado en móvil y la salida (free sube /
+      lost baja). `DESIGN.md` aún dice «el metraje lidera»: revisar con la revisión final.
+- [ ] Nombre del hero a 20 px (el rol de pie del carrete): comprobar en móviles bajos (360×640)
+      que los créditos no pisan el rótulo.
 - [ ] Etiquetas: el hero ya usa `--label-size` / `--label-track` (0,72rem, 0,18em). El carrete
       (`11px`, 0,22em) y el pie (`.legal`, 0,7rem, 0,16em) aún llevan sus propios valores.
       Pasarlos al token, o documentar por qué difieren.
@@ -137,6 +146,11 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       ya no los usa ningún bloque (el carrete se arrastra). Decidir si se quedan en el núcleo.
 
 ## Hecho
+
+- [x] Peticiones de Guillem del 7/10/2026 (`plans/009-guille-plan.md`): Instrument Sans para el
+      texto y tokens de título (Archivo 125/900 hasta tener Druk Wide); Contact con su copy
+      (Email con la dirección en pequeño, e Instagram); bloque About; eslogan descubierto en su
+      escena entre «Lo que uso» y About; hero y pie sin eslogan; `DESIGN.md` al día.
 
 - [x] Optimización de carga (impeccable optimize):
   - Fuentes precargadas de ~390 KB a 113 KB: Archivo solo `latin` y sin cursiva. El eslogan del

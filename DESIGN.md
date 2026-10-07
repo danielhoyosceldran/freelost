@@ -1,52 +1,64 @@
 ---
 name: free lost
-description: Portfolio de Guillem Salvador. Una película a pantalla completa enmarcada como cartón de título; tinta azulada, blanco frío y un solo acento naranja.
+description: Portfolio de Guillem Salvador. Una película a pantalla completa enmarcada como cartón de título; tinta azulada, blanco frío y un solo acento naranja. Títulos anchos (Druk Wide), texto en Instrument Sans.
 colors:
   ink: "#060a0c"
   paper: "#eef1f0"
   ember: "#e0602a"
 typography:
+  brand:
+    fontFamily: "Six Caps, sans-serif"
+    fontSize: "min(46vw, 58svh)"
+    fontWeight: 400
+    lineHeight: 0.9
   display:
-    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
-    fontSize: "clamp(2.75rem, 6.4vw, 6rem)"
-    fontWeight: 800
-    lineHeight: 0.86
-    letterSpacing: "-0.012em"
-    fontVariation: "'wdth' 72"
+    fontFamily: "Druk Wide (sustituto: Archivo wdth 125 / 900), Arial Black, sans-serif"
+    fontSize: "clamp(2rem, 5vw, 4.75rem)"
+    fontWeight: 900
+    lineHeight: 0.92
+    letterSpacing: "0"
   headline:
-    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
-    fontSize: "clamp(2rem, 4.2vw, 4rem)"
-    fontWeight: 800
-    lineHeight: 0.86
-    letterSpacing: "-0.012em"
-    fontVariation: "'wdth' 72"
+    fontFamily: "Druk Wide (sustituto: Archivo wdth 125 / 900), Arial Black, sans-serif"
+    fontSize: "clamp(1.6rem, 3vw, 3rem)"
+    fontWeight: 900
+    lineHeight: 0.9
+    letterSpacing: "0"
+  lead:
+    fontFamily: "Instrument Sans, Helvetica Neue, Arial, sans-serif"
+    fontSize: "clamp(1.75rem, 3.4vw, 3rem)"
+    fontWeight: 400
+    lineHeight: 1.12
+    letterSpacing: "-0.01em"
+  slogan:
+    fontFamily: "Instrument Serif, Georgia, serif"
+    fontSize: "clamp(1.25rem, 1.8vw, 1.6rem)"
+    fontWeight: 400
+    fontStyle: "italic"
+    lineHeight: 1.1
   title:
-    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
+    fontFamily: "Instrument Sans, Helvetica Neue, Arial, sans-serif"
     fontSize: "20px"
     fontWeight: 600
     lineHeight: 1.25
     letterSpacing: "0.01em"
     fontVariation: "'wdth' 88"
   body:
-    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
+    fontFamily: "Instrument Sans, Helvetica Neue, Arial, sans-serif"
     fontSize: "clamp(1.125rem, 1.7vw, 1.6rem)"
-    fontWeight: 300
-    lineHeight: 1.15
+    fontWeight: 400
+    lineHeight: 1.35
     letterSpacing: "normal"
   label:
-    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
+    fontFamily: "Instrument Sans, Helvetica Neue, Arial, sans-serif"
     fontSize: "0.72rem"
     fontWeight: 500
     lineHeight: 1
     letterSpacing: "0.18em"
-    fontVariation: "'wdth' 112"
   wordmark:
-    fontFamily: "Archivo, Helvetica Neue, Arial, sans-serif"
-    fontSize: "0.95rem"
-    fontWeight: 600
+    fontFamily: "Druk Wide (sustituto: Archivo wdth 125 / 900), Arial Black, sans-serif"
+    fontSize: "0.8rem"
+    fontWeight: 900
     lineHeight: 1
-    letterSpacing: "0.01em"
-    fontVariation: "'wdth' 125"
 rounded:
   none: "0px"
 spacing:
@@ -87,8 +99,8 @@ Es una superficie de modo Experience: el artefacto (el metraje) lidera desde el 
 
 **Key Characteristics:**
 - Tinta azulada, blanco frío y un único acento, ember, que solo marca estado y progreso.
-- Una familia (Archivo) trabajada en su eje de anchura: condensada para titulares, expandida para la marca.
-- Mayúsculas condensadas para nombre y títulos; versalitas espaciadas para etiquetas.
+- Títulos en una grotesca muy ancha (Druk Wide, elección de Guillem), texto en Instrument Sans, el rótulo del hero en Six Caps y el eslogan en Instrument Serif cursiva.
+- Mayúsculas anchas para títulos; versalitas espaciadas para etiquetas.
 - Hilos de 1px y esquinas rectas; cero sombras, cero cristal, cero tarjetas.
 - Créditos en los márgenes: abajo a la izquierda el texto, arriba los controles.
 
@@ -110,28 +122,33 @@ Paleta tomada de la propia película del hero, sin ningún tono ajeno al plano.
 
 ## Typography
 
-**Display / Body / Label Font:** Archivo variable (con Helvetica Neue, Arial, sans-serif), eje de anchura `wdth` 62–125, cargada con `next/font`. Una sola familia, sin segunda fuente.
+Cuatro voces, cada una con un solo papel (Guillem, 7/10/2026):
 
-**Character:** El mismo tipo en tres anchos cuenta tres voces: condensado y rotundo para el nombre, expandido y sereno para el estudio, cursiva ligera para la promesa.
+- **Títulos:** Druk Wide (Commercial Type, de pago). Mientras no haya licencia la sustituye Archivo a `wdth` 125 y peso 900. Todo cuelga de tres tokens en `app/globals.css` (`--font-title`, `--title-weight`, `--title-stretch`): cambiar de fuente es cambiar esos tres y cargar el woff2 con `next/font/local`.
+- **Texto:** Instrument Sans variable (peso 400–700, anchura 75–100). Cuerpo, entradillas, etiquetas, pies y el índice del equipo.
+- **Rótulo del hero:** Six Caps, alta y estrecha como las hojas de la marca. Pendiente de decidir si pasa a Druk Wide (plan 009, D2).
+- **Eslogan:** Instrument Serif cursiva. Solo en la escena del eslogan; no se precarga.
 
 ### Hierarchy
-- **Display** (800, clamp(2.75rem, 6.4vw, 6rem), 0.86, wdth 72%, mayúsculas): nombre en el hero y titular del contacto. Cada palabra entra con máscara. En móvil el nombre se parte en dos líneas.
-- **Headline** (800, clamp(2rem, 4.2vw, 4rem), 0.86, wdth 72%, mayúsculas): títulos de sección (Proyectos, Lo que uso), arriba a la izquierda.
-- **Title** (600, 20px, 1.25, wdth 88%, mayúsculas): pie de foto del proyecto activo en el carrete.
-- **Body** (300, clamp(1.125rem, 1.7vw, 1.6rem), 1.15): eslogan en cursiva de 16ch como máximo; el correo, en 300 hasta 3,25rem.
-- **Label** (500, 0.72rem, 0,18em de tracking, wdth 112%, mayúsculas): rol, controles, canales, contador, aviso legal.
-- **Wordmark** (600, 0,95rem, wdth 125%, minúsculas «free lost»): junto a la marca en el hero y el pie.
+- **Display** (título, 900, clamp(2rem, 5vw, 4.75rem), 0.92, mayúsculas): titular del contacto, entre 3 y 4 líneas.
+- **Headline** (título, 900, clamp(1.6rem, 3vw, 3rem), 0.9, mayúsculas): títulos de sección (Proyectos, Lo que uso, About), arriba a la izquierda.
+- **Lead** (Instrument Sans 400, clamp(1.75rem, 3.4vw, 3rem), 1.12): entradilla y cierre del About.
+- **Title** (600, 20px, 1.25, wdth 88%, mayúsculas): pie de foto del proyecto activo en el carrete; el nombre en el hero.
+- **Body** (400, clamp(1.125rem, 1.7vw, 1.6rem), 1.35, papel 0,72): cuerpo del About; subtítulo del contacto algo menor.
+- **Label** (500, 0.72rem, 0,18em de tracking, mayúsculas): rol, controles, canales, contador, aviso legal, dirección de correo.
+- **Wordmark** (título a 0,8rem, minúsculas «free lost»): en el pie.
+- **Slogan** (Instrument Serif cursiva, clamp(1.25rem, 1.8vw, 1.6rem), papel 0,72 como máximo).
 
 ### Named Rules
-**The Width-Is-Voice Rule.** El ancho comunica el rol: 72% titulares, 88% pies, 112% etiquetas, 125% marca. No se añade otra familia para diferenciar.
+**The Wide-Is-Title Rule.** La fuente ancha es solo para títulos cortos y la marca escrita; nunca para párrafos ni para el eslogan.
 
-**The Tight Display Rule.** Los titulares condensados llevan interlineado 0,86 y tracking −0,012em; las máscaras de palabra reservan 0,06em de aire abajo para no cortar astas.
+**The Tight Display Rule.** Los títulos llevan interlineado 0,9 y tracking 0; las máscaras de palabra reservan aire abajo (0,06–0,12em) para no cortar astas ni descendentes.
 
 ## Layout
 
-Cada bloque es una pantalla a sangre (100svh) sin contenedor ni rejilla de columnas: el contenido se ancla a los márgenes del plano con `--gutter` (clamp(1.25rem, 2.6vw, 2.5rem)). Convención de créditos: título de sección arriba a la izquierda; texto de cierre abajo a la izquierda; controles arriba a la derecha; eslogan abajo a la derecha. El pie usa tres columnas (marca, aviso legal, eslogan) que en móvil se apilan.
+Cada bloque es una pantalla a sangre (100svh) sin contenedor ni rejilla de columnas: el contenido se ancla a los márgenes del plano con `--gutter` (clamp(1.25rem, 2.6vw, 2.5rem)). Convención de créditos: título de sección arriba a la izquierda; texto de cierre abajo a la izquierda; controles arriba a la derecha. El eslogan no tiene sitio fijo en el chrome: vive solo en su escena. El pie usa dos columnas (marca, aviso legal) que en móvil se apilan.
 
-Los bloques se apoyan en escenas de scroll (spacer + sticky): el hero es una escena fijada de 165vh, el carrete es una sola pantalla que la página rebasa con scroll normal, y «Lo que uso» fija un viewport por objeto. Breakpoint único de diseño: 720px (móvil), con composiciones distintas, no solo reducidas. Zonas táctiles mínimas de 44px. La lente curva del carrete es solo de puntero fino.
+Orden de la home: hero → carrete → «Lo que uso» → eslogan → About → contacto → pie. Los bloques se apoyan en escenas de scroll (spacer + sticky): el hero es una escena fijada de 160vh, el carrete es una sola pantalla que la página rebasa con scroll normal, «Lo que uso» baja encima del carrete y fija un viewport por objeto, el eslogan es una escena casi vacía de 180vh y el About es flujo normal (unos 300svh de lectura). Breakpoint único de diseño: 720px (móvil), con composiciones distintas, no solo reducidas. Zonas táctiles mínimas de 44px. La lente curva del carrete es solo de puntero fino.
 
 ## Elevation & Depth
 
@@ -152,13 +169,13 @@ Esquinas rectas en todo (0px). Contornos de 1px (papel al 16% en la marca gigant
 - **Press:** escala 0,96 en 0,14s. **Focus:** contorno de 1px ember, desplazamiento −6px.
 
 ### Mail link (el contacto)
-- Enlace grande en peso 300 con flecha; el subrayado de 1px papel al 25% se rellena de ember al hover o foco (0,28s). Hover solo con puntero fino. Foco: contorno de 1px ember a 6px.
+- Titular en display y subtítulo en body debajo. El enlace es la palabra «Email», grande, en peso 300 con flecha, y la dirección va debajo en etiqueta (seleccionable de un clic); el subrayado de 1px papel al 25% se rellena de ember al hover o foco (0,28s). Hover solo con puntero fino. Foco: contorno de 1px ember a 6px.
 
 ### Channel links
 - Etiquetas de 0,72rem con icono de 13px, papel al 72%, hit de 44px; pasan a papel pleno al hover.
 
 ### Footer
-- Hilo superior de 1px (papel 10%), fondo tinta; marca de 32px + «free lost», aviso legal en etiqueta (papel 60%), eslogan en cursiva 300 a la derecha.
+- Hilo superior de 1px (papel 10%), fondo tinta; marca de 32px + «free lost» en la fuente de título, aviso legal en etiqueta (papel 60%). Sin eslogan: se descubre antes, en su escena.
 
 ### Signature: la marca (loader → lockup)
 - Las dos hojas entran por la costura (F desde arriba, L desde abajo) en 0,6s y frenan en seco, sin pasarse; el relleno ember arranca en el mismo frame y sube a velocidad constante (0,7s mínimo). El velo se parte por la costura (mitad izquierda sube, derecha baja, 1,1s). Sin pausa, la marca ember se funde en 0,3s sobre la blanca, que vuela a la esquina del hero en 1,3s y se asienta junto a «free lost». En el contacto, la marca gigante en contorno repite el gesto.
@@ -166,8 +183,14 @@ Esquinas rectas en todo (0px). Contornos de 1px (papel al 16% en la marca gigant
 ### Carrete de proyectos
 - Tarjetas 16:9 con separación de 12px, arrastre con inercia, bucle infinito. La banda es el 50% de la altura de la sección. Marca de 1px ember sobre la tarjeta central; pie con título y contador de dígitos que ruedan; progreso de 1px ember. Desktop: lente curva en los bordes; táctil: tarjetas planas.
 
+### Eslogan
+- «Feel free to get lost.» a solas en una escena casi vacía, descentrado (tercio inferior, hacia la derecha), pequeño. Aparece en el tramo central de la escena con una subida de 10px y se apaga al salir; se atenúa a la mitad con la velocidad del scroll. Discreto: nunca centrado ni en la fuente de título.
+
+### About
+- Título de sección arriba a la izquierda; entradilla sola en su pantalla; cuerpo en una columna de 34ch desplazada a la derecha; cierre con media pantalla de aire encima; crédito de Guillem pequeño tras un hilo de 1px. Cada párrafo sube por líneas (máscara por palabra, agrupadas por línea) ligado al scroll, así que se rebobina.
+
 ### Equipo («Lo que uso»)
-- Lista de nombres en 800 condensado a papel al 30% (62% hover, pleno el activo) que hace de índice y progreso (hilo de 1px ember). Un único lienzo 3D rellena el escenario: objetos negros con brillo de borde y contorno claro; al cambiar de objeto la forma se funde en la siguiente (morph de campos de distancia, 0,5 s, siempre completo, sin partículas).
+- Lista de nombres en Instrument Sans 700 a 75% de ancho, papel al 62% (85% hover, pleno el activo, que se ensancha al 100%) que hace de índice y progreso (hilo de 1px ember). Un único lienzo 3D rellena el escenario: objetos negros con brillo de borde y contorno claro; al cambiar de objeto la forma se funde en la siguiente (morph de campos de distancia, 0,5 s, siempre completo, sin partículas).
 
 ## Do's and Don'ts
 
@@ -176,13 +199,13 @@ Esquinas rectas en todo (0px). Contornos de 1px (papel al 16% en la marca gigant
 - **Do** usar solo tinta (#060a0c), papel (#eef1f0) y ember (#e0602a); la jerarquía, por opacidad del papel.
 - **Do** mover con las curvas de la casa: `--ease-out` (cubic-bezier(0.23, 1, 0.32, 1)) para UI, `--ease-out-expo` (cubic-bezier(0.16, 1, 0.3, 1)) para entradas largas, `--ease-in-out` (cubic-bezier(0.77, 0, 0.175, 1)) para movimiento en pantalla.
 - **Do** respetar `prefers-reduced-motion`: sin traslación y con fundido de 0,4s.
-- **Do** revelar texto con máscara de palabra desde la línea de corte, con retraso escalonado.
+- **Do** revelar texto con máscara de palabra desde la línea de corte, con retraso escalonado o ligado al scroll.
 - **Do** mantener hit de 44px en todo lo clicable y foco visible con 1px ember.
 
 ### Don't:
 - **Don't** usar la identidad v4 (negro/oro, Cinzel, Cormorant, Syne), ni `glass-card`, `action-pill` ni los cortes angulares: son residuo heredado que se va con los bloques antiguos.
 - **Don't** poner tarjetas, cristal, sombras, esquinas redondeadas ni desenfoque en el chrome.
 - **Don't** usar ember como relleno de superficie, texto corrido ni decoración.
-- **Don't** añadir un segundo tipo de letra ni grises neutros.
+- **Don't** añadir una quinta familia ni grises neutros, ni usar la fuente de título en texto corrido.
 - **Don't** hardcodear copy en los componentes: viene de `content/` por props.
 - **Don't** afirmar créditos, clientes ni premios que el cliente no haya confirmado.

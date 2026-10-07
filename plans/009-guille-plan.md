@@ -1,6 +1,12 @@
 # 009 — Guille plan: About, eslogan descubierto, Contact y tipografía
 
-- **Status**: PROPUESTO (pendiente de las decisiones de la última sección)
+- **Status**: HECHO (pendiente del feel check y de la licencia de Druk Wide). Decisiones tomadas
+  con los defaults recomendados: D1 traducir, D3 sin eslogan en el pie, D4 Vimeo fuera del contacto,
+  D5 la palabra "Email" con la dirección debajo, D6 "Free Lost" en el texto. Abiertas: D2, D7, D8.
+- **Cambio sobre el plan**: «Lo que uso» no puede separarse del carrete (su escenario baja encima
+  de él mientras sigue clavado, `ENTRY_VH` en `blocks/gear/Gear.tsx`). El orden real es hero →
+  carrete → «Lo que uso» → **eslogan** → **About** → contacto. El eslogan va antes del About para
+  que el cierre de este sea un eco y no una repetición pegada.
 - **Origen**: mensajes de Guillem del 7/10/2026
 - **Severity**: HIGH (copy oficial del cliente y cambio de tipografía de todo el sitio)
 - **Category**: Contenido / ritmo del scroll / tipografía
