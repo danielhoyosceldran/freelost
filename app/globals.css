@@ -8,8 +8,8 @@
   --color-paper: #eef1f0;
   --color-ember: #e0602a;
 
-  /* Archivo con su eje de anchura: condensada para el nombre, expandida para la marca. */
-  --font-sans: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  /* Texto: Instrument Sans, con su eje de anchura (75–100) para los pies condensados. */
+  --font-sans: var(--font-instrument-sans), "Helvetica Neue", Arial, sans-serif;
 
   /* Heredado de v4: solo lo usan los bloques que aún no se han rediseñado (reel, gear,
      contact, footer, modal, toast). Se va con ellos. */
@@ -34,7 +34,6 @@
   --color-gray-900: #111827;
   --color-gray-950: #030712;
   --font-serif: Georgia, serif;
-  --font-display: var(--font-archivo), sans-serif;
 }
 
 :root {
@@ -43,11 +42,17 @@
      otra al pasar de uno a otro. */
   --mark-h: clamp(168px, 36svh, 380px);
   --gutter: clamp(1.25rem, 2.6vw, 2.5rem);
-  /* Etiquetas (rol, controles, idiomas): versalitas de Archivo expandida. Un solo cuerpo y un
+  /* Etiquetas (rol, controles, idiomas): versalitas espaciadas. Un solo cuerpo y un
      solo tracking para que la misma voz no salga en tres tamaños casi iguales. En :root por lo
      mismo que las curvas. */
   --label-size: 0.72rem;
   --label-track: 0.18em;
+  /* Títulos (secciones, contacto, marca escrita). Guillem quiere Druk Wide; mientras no haya
+     licencia, Archivo a 125 de ancho y 900 de peso. Al cambiar de fuente solo cambian estos tres:
+     Druk Wide trae el ancho de serie (stretch normal) y su peso es el del fichero que se compre. */
+  --font-title: var(--font-archivo), "Arial Black", sans-serif;
+  --title-weight: 900;
+  --title-stretch: 125%;
   /* Curvas de la casa. Van en :root y no en @theme: Tailwind solo emite las variables de @theme
      que ve usadas en sus utilidades, y los CSS modules se procesan aparte. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* UI que entra o sale */

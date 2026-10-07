@@ -23,10 +23,12 @@
   overflow: visible;
 }
 
+/* La marca escrita va en la fuente de título, a tamaño de firma. */
 .brand {
-  font-size: 0.9rem;
-  font-weight: 600;
-  font-stretch: 125%;
+  font-family: var(--font-title);
+  font-size: 0.8rem;
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
   line-height: 1;
 }
 

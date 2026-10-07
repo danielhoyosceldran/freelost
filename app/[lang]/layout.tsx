@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, Instrument_Serif, Six_Caps } from "next/font/google";
+import { Archivo, Instrument_Sans, Instrument_Serif, Six_Caps } from "next/font/google";
 import { notFound } from "next/navigation";
 import { preconnect } from "react-dom";
 import { PageProgress } from "@/components/ui/PageProgress";
@@ -8,10 +8,20 @@ import { isLocale, locales, type Locale } from "@/content/locales";
 import { mediaOrigins } from "@/lib/media";
 import "../globals.css";
 
-// Una sola familia variable: el eje de anchura (62–125) da el nombre condensado y la marca
-// expandida sin cargar una segunda fuente. Solo `latin` y sin cursiva: cada subconjunto y cada
-// estilo es otro fichero de ~95 KB precargado que compite con el vídeo del hero. `latin` ya cubre
-// el catalán (à, ç, l·l, ’); la única cursiva del sitio es el eslogan, que va en Instrument Serif.
+// Texto: Instrument Sans, la que eligió Guillem para todo lo que no es título. Variable en peso y
+// en anchura (75–100): el eje de anchura sigue dando la voz condensada a los pies y al índice del
+// equipo. Solo `latin` y sin cursiva: cada subconjunto y cada estilo es otro fichero precargado que
+// compite con el vídeo del hero. `latin` ya cubre el catalán (à, ç, l·l, ’).
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument-sans",
+  subsets: ["latin"],
+  axes: ["wdth"],
+});
+
+// Títulos: Guillem quiere Druk Wide (Commercial Type, de pago). Hasta tener la licencia hace de
+// sustituto Archivo en su anchura máxima y su peso más alto, lo más parecido entre las gratuitas.
+// Cuando llegue el woff2 se carga con next/font/local en este mismo sitio y se cambian los tokens
+// --title-* de globals.css. Solo se usa en títulos, nunca en texto corrido.
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin"],
@@ -19,7 +29,7 @@ const archivo = Archivo({
 });
 
 // Las dos voces de película del primer cartón: Six Caps, alta y estrecha como las hojas de la marca,
-// para el rótulo; Instrument Serif cursiva, de título de crédito, para el eslogan (hero y pie).
+// para el rótulo; Instrument Serif cursiva, de título de crédito, para el eslogan.
 const sixCaps = Six_Caps({ variable: "--font-six-caps", subsets: ["latin"], weight: "400" });
 const instrument = Instrument_Serif({
   variable: "--font-instrument",
@@ -54,7 +64,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   if (media.image) preconnect(media.image, { crossOrigin: "anonymous" });
   if (media.video) preconnect(media.video);
   return (
-    <html lang={lang} className={`${archivo.variable} ${sixCaps.variable} ${instrument.variable} scroll-smooth`}>
+    <html lang={lang} className={`${instrumentSans.variable} ${archivo.variable} ${sixCaps.variable} ${instrument.variable} scroll-smooth`}>
       <body className="font-sans antialiased">
         {children}
         <PageProgress />

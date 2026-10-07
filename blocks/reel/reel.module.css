@@ -57,11 +57,14 @@
   top: var(--gutter);
   left: var(--gutter);
   z-index: 40;
-  font-size: clamp(2rem, 4.2vw, 4rem);
-  font-weight: 800;
-  font-stretch: 72%;
-  line-height: 0.86;
-  letter-spacing: -0.012em;
+  /* Fuente de título (tokens en globals.css). Es ancha: cuerpo más pequeño que el que tenía en
+     Archivo condensada para ocupar lo mismo. */
+  font-family: var(--font-title);
+  font-size: clamp(1.6rem, 3vw, 3rem);
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
+  line-height: 0.9;
+  letter-spacing: 0;
   text-transform: uppercase;
   pointer-events: none;
   opacity: 0;
