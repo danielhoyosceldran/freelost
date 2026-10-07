@@ -43,6 +43,14 @@ const DIGITS = Array.from({ length: 10 }, (_, n) => n);
  */
 const ARRIVE_AT = 0.45;
 const RISE_DELAY = 200;
+/**
+ * Título: la primera vez entra en el centro, grande y detrás de las tarjetas (que suben encima
+ * de él), y SETTLE_DELAY ms después de que acabe el rise se va a su sitio arriba a la izquierda.
+ * En el centro ocupa TITLE_SPAN del ancho, sin pasar de TITLE_MAX_S veces su tamaño final.
+ */
+const SETTLE_DELAY = 250;
+const TITLE_SPAN = 0.78;
+const TITLE_MAX_S = 3.2;
 /** Ms sin cambios de tarjeta antes de que el título del pie vuelva a entrar. */
 const SWAP_SETTLE_MS = 80;
 /** Píxeles que avanza la cinta por cada píxel de scroll mientras el carrete está clavado. */
@@ -62,6 +70,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
 
   const sectionRef = useRef<HTMLElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const digitRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const placeRef = useRef<HTMLElement>(null);
@@ -116,6 +125,31 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
     const close = closeRef.current!;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    // El título vive en su sitio final (arriba a la izquierda); para la entrada se lleva al
+    // centro con un transform calculado aquí: depende del ancho del texto, que el CSS no sabe.
+    // Se mide con offset*, que no ven el transform, y se repite al llegar y al redimensionar
+    // por si la fuente o la pantalla han cambiado.
+    const title = titleRef.current!;
+    let settled = false;
+    let settleTimer = 0;
+    const centerTitle = () => {
+      if (settled) return;
+      const w = title.offsetWidth;
+      const h = title.offsetHeight;
+      if (!w || !h) return;
+      const s = Math.min(TITLE_MAX_S, (root.clientWidth * TITLE_SPAN) / w);
+      title.style.setProperty("--title-dx", `${root.clientWidth / 2 - (title.offsetLeft + w / 2)}px`);
+      title.style.setProperty("--title-dy", `${root.clientHeight / 2 - (title.offsetTop + h / 2)}px`);
+      title.style.setProperty("--title-s", String(s));
+    };
+    const settle = () => {
+      settled = true;
+      root.classList.add(styles.settled);
+    };
+    // Con movimiento reducido no hay viaje: el título aparece ya en su sitio.
+    if (reduced) settle();
+    else centerTitle();
+
     // La vista de proyecto se crea después que el motor (lo necesita), pero el motor ya avisa
     // de las selecciones: se le pasa por esta referencia.
     let select: (i: number) => void = () => {};
@@ -129,7 +163,10 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       readCardFrac: () => parseFloat(getComputedStyle(root).getPropertyValue("--reel-card")),
       onActive: setCaption,
       onSelect: (i) => select(i),
-      onRevealed: () => root.classList.add(styles.revealed),
+      onRevealed: () => {
+        root.classList.add(styles.revealed);
+        if (!settled) settleTimer = window.setTimeout(settle, SETTLE_DELAY);
+      },
     });
 
     if (!carousel) {
@@ -137,6 +174,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       // nadie de debajo.
       console.warn("[carrete] WebGL2 no disponible");
       root.classList.add(styles.arrived, styles.revealed);
+      settle();
       setCaption(0);
       releaseHold();
       // Una vuelta de todos los proyectos sin carrete: solo se destapa.
@@ -200,6 +238,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
     let arrived = !!back;
     if (back) {
       root.classList.add(styles.arrived);
+      settle();
       releaseHold();
     }
     const checkArrival = () => {
@@ -207,6 +246,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       if (arrived || !section || !useLifecycle.getState().ready) return;
       if (section.getBoundingClientRect().top > window.innerHeight * ARRIVE_AT) return;
       arrived = true;
+      centerTitle();
       root.classList.add(styles.arrived);
       riseTimer = window.setTimeout(() => carousel.start(), RISE_DELAY);
       // Ya estamos aquí: lo de debajo (three.js de "Lo que uso") puede empezar a cargar.
@@ -370,7 +410,10 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
     const onDocKey = (e: KeyboardEvent) => {
       if (view.isOpen && e.key === "Escape") view.exit();
     };
-    const onResize = () => view.onResize();
+    const onResize = () => {
+      view.onResize();
+      centerTitle();
+    };
     const onClose = () => view.exit();
 
     host.addEventListener("pointermove", onPointerMove);
@@ -402,13 +445,17 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       close.removeEventListener("click", onClose);
       offIntro();
       clearTimeout(riseTimer);
+      clearTimeout(settleTimer);
       clearTimeout(swapTimer.current);
       view.destroy();
       releaseInput?.();
       scrollController.unpin(PIN_OWNER);
       viewRef.current = null;
       carousel.destroy();
-      root.classList.remove(styles.revealed, styles.arrived);
+      root.classList.remove(styles.revealed, styles.arrived, styles.settled);
+      title.style.removeProperty("--title-dx");
+      title.style.removeProperty("--title-dy");
+      title.style.removeProperty("--title-s");
     };
   }, [provide, releaseHold, router, pathname, n, slides, gap, aspect, squeeze, setCaption]);
 
@@ -429,7 +476,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
     <section ref={sectionRef} id={anchor} className={styles.section}>
       <div ref={rootRef} className={styles.root}>
       {/* Dentro del root y no fuera: así se apaga con el resto del HUD al entrar en un proyecto. */}
-      <h2 className={styles.title}>{labels.title}</h2>
+      <h2 ref={titleRef} className={styles.title}>{labels.title}</h2>
 
       <div className={styles.marker} />
 
