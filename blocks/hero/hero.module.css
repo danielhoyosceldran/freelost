@@ -52,6 +52,38 @@
   object-fit: cover;
 }
 
+/* Película de Vimeo: un iframe no tiene object-fit, así que se le da la proporción del vídeo
+   (--ar, la pone vimeoFilm.ts) y se agranda hasta cubrir el plano, centrado. */
+.vimeo {
+  overflow: hidden;
+  container-type: size;
+}
+
+.vimeoPoster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vimeoFrame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100cqw, calc(100cqh * var(--ar, 16 / 9)));
+  height: max(100cqh, calc(100cqw / var(--ar, 16 / 9)));
+  translate: -50% -50%;
+  border: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* Hasta el primer fotograma se ve el póster, no el negro del player. */
+.vimeo[data-playing] .vimeoFrame {
+  opacity: 1;
+}
+
 /* La película es el fondo, no el protagonista: un velo de tinta uniforme la baja de tono para que
    el rótulo se lea sobre cualquier plano, más cerrado hacia el centro y los bordes por igual. */
 .scrim {
@@ -258,6 +290,62 @@
   color: rgb(238 241 240 / 0.74);
 }
 
+/* Pista de scroll, abajo a la derecha, frente a los créditos: etiqueta y un hilo de 1px (papel al
+   14%, como las pistas de progreso) por el que baja un trazo de papel. Sin caja ni flecha: es un
+   crédito más. Abajo a la izquierda ya está quién firma; arriba, los controles. */
+.hint {
+  position: absolute;
+  right: var(--gutter);
+  bottom: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  pointer-events: none;
+}
+
+.hintLabel {
+  font-size: var(--label-size);
+  font-weight: 500;
+  font-stretch: 112%;
+  letter-spacing: var(--label-track);
+  /* El tracking deja aire tras la última letra: se devuelve para que quede centrada sobre el hilo. */
+  margin-right: calc(-1 * var(--label-track));
+  line-height: 1;
+  text-transform: uppercase;
+  color: rgb(238 241 240 / 0.72);
+}
+
+.hintTrack {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 44px;
+  overflow: hidden;
+  background: rgb(238 241 240 / 0.14);
+}
+
+/* El trazo nace arriba y sale por abajo, con la curva de movimiento en pantalla; entre pasada y
+   pasada, una pausa (el último 30% del ciclo, fuera del hilo). */
+.hintTrack::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-paper);
+  transform: translateY(-100%);
+  animation: hint-fall 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes hint-fall {
+  0% {
+    transform: translateY(-100%);
+  }
+  70%,
+  100% {
+    transform: translateY(100%);
+  }
+}
+
 /* ---------- entrada, cuando el velo del loader se abre ---------- */
 
 /* El rótulo no espera a que el velo acabe: parte de cuando las dos mitades destapan el centro
@@ -278,7 +366,8 @@
 
 .name,
 .role,
-.controls {
+.controls,
+.hint {
   opacity: 0;
   transform: translateY(10px);
   transition:
@@ -293,6 +382,11 @@
 
 .role {
   transition-delay: calc(var(--t-title) + 0.85s);
+}
+
+/* La pista llega la última: primero se lee el cartón, luego se invita a bajar. */
+.hint {
+  transition-delay: calc(var(--t-title) + 1.4s);
 }
 
 /* La marca aterriza en la esquina y con ella aparecen los controles. */
@@ -317,7 +411,8 @@
 .hero[data-ready] .word,
 .hero[data-ready] .name,
 .hero[data-ready] .role,
-.hero[data-ready] .controls {
+.hero[data-ready] .controls,
+.hero[data-ready] .hint {
   opacity: 1;
   transform: none;
 }
@@ -336,9 +431,16 @@
   .word,
   .name,
   .role,
-  .controls {
+  .controls,
+  .hint {
     transform: none;
     transition: opacity 0.4s ease;
     transition-delay: 0s;
+  }
+
+  /* Sin trazo que baje: el hilo queda lleno, quieto. */
+  .hintTrack::after {
+    animation: none;
+    transform: none;
   }
 }

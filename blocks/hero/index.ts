@@ -42,6 +42,11 @@ export const heroSchema = z.object({
     poster: z.string(),
     /** En orden: el navegador usa la primera cuyo `media` encaje. */
     sources: z.array(z.object({ src: z.string(), media: z.string().optional() })).min(1),
+    /**
+     * Película en Vimeo, sin su interfaz: si está, se usa en lugar de `sources` y los botones del
+     * hero la controlan por su API. `id` es el numérico; `hash`, el h= de los vídeos ocultos.
+     */
+    vimeo: z.object({ id: z.string().regex(/^\d+$/), hash: z.string().optional() }).optional(),
   }),
   /**
    * Salida, sobre el progreso de la escena (que dura `height`): se van los créditos y la marca,
@@ -65,6 +70,8 @@ export const heroSchema = z.object({
     pause: z.string(),
     /** Nombre accesible del grupo de idiomas. */
     language: z.string(),
+    /** Pista de scroll, abajo a la derecha. Decorativa: los lectores de pantalla no la leen. */
+    scroll: z.string(),
   }),
   /** Selector de idioma: una ruta estática por idioma, en el orden en que se pintan. */
   languages: z

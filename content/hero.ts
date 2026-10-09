@@ -28,15 +28,15 @@ const SLOGAN_ART = [
 const text = {
   en: {
     filmLabel: "free lost film: urban downhill mountain biking.",
-    labels: { sound: "Sound", play: "Play", pause: "Pause", language: "Language" },
+    labels: { sound: "Sound", play: "Play", pause: "Pause", language: "Language", scroll: "Scroll" },
   },
   ca: {
     filmLabel: "Pel·lícula de free lost: descens urbà en bicicleta de muntanya.",
-    labels: { sound: "So", play: "Reproduir", pause: "Pausar", language: "Idioma" },
+    labels: { sound: "So", play: "Reproduir", pause: "Pausar", language: "Idioma", scroll: "Desplaça" },
   },
   es: {
     filmLabel: "Película de free lost: descenso urbano en bicicleta de montaña.",
-    labels: { sound: "Sonido", play: "Reproducir", pause: "Pausar", language: "Idioma" },
+    labels: { sound: "Sonido", play: "Reproducir", pause: "Pausar", language: "Idioma", scroll: "Desplaza" },
   },
 } satisfies Record<Locale, { filmLabel: string; labels: Record<string, string> }>;
 
@@ -50,7 +50,10 @@ export const heroContent = (lang: Locale) => ({
   slogan: { text: SLOGAN, lang: sloganLang(lang), lines: SLOGAN_ART },
   film: {
     label: text[lang].filmLabel,
-    poster: imageUrl("downurban-poster.jpg", 1920),
+    // A prueba: Lofoten desde Vimeo (sin su interfaz). Quitando `vimeo` vuelve Down Urban en MP4;
+    // entonces el póster vuelve a ser downurban-poster.jpg.
+    poster: imageUrl("films/lofoten.jpg", 1920),
+    vimeo: { id: "1234445182" },
     sources: [
       { src: videoUrl("downurban-720.mp4"), media: "(max-width: 960px)" },
       { src: videoUrl("downurban-1080.mp4") },

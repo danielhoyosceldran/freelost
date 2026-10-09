@@ -21,6 +21,8 @@ export const reelSchema = z.object({
       close: z.string().default("Salir del proyecto"),
       /** "3 de 12" en la región aria-live. */
       of: z.string().default("de"),
+      /** Pista de arrastre, abajo a la izquierda. Decorativa: los lectores de pantalla no la leen. */
+      drag: z.string().default("Arrastra"),
     })
     .prefault({}),
   /**

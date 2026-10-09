@@ -55,8 +55,8 @@ export const reelMore = (lang: Locale) => ({
   href: `/${lang}/projects`,
 });
 
-export const reelLabels: Record<Locale, { title: string; carousel: string; project: string; close: string; of: string }> = {
-  en: { title: "Projects", carousel: "Project reel", project: "Project", close: "Leave project", of: "of" },
-  ca: { title: "Projectes", carousel: "Carret de projectes", project: "Projecte", close: "Sortir del projecte", of: "de" },
-  es: { title: "Proyectos", carousel: "Carrete de proyectos", project: "Proyecto", close: "Salir del proyecto", of: "de" },
+export const reelLabels: Record<Locale, { title: string; carousel: string; project: string; close: string; of: string; drag: string }> = {
+  en: { title: "Projects", carousel: "Project reel", project: "Project", close: "Leave project", of: "of", drag: "Drag" },
+  ca: { title: "Projectes", carousel: "Carret de projectes", project: "Projecte", close: "Sortir del projecte", of: "de", drag: "Arrossega" },
+  es: { title: "Proyectos", carousel: "Carrete de proyectos", project: "Proyecto", close: "Salir del proyecto", of: "de", drag: "Arrastra" },
 };

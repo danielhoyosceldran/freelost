@@ -169,9 +169,9 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
 
     if (!carousel) {
       // Sin WebGL2 no hay carrete: queda el título y el pie de la primera, y no se retiene a
-      // nadie de debajo.
+      // nadie de debajo. Tampoco hay nada que arrastrar: la pista no sale.
       console.warn("[carrete] WebGL2 no disponible");
-      root.classList.add(styles.arrived, styles.revealed);
+      root.classList.add(styles.arrived, styles.revealed, styles.dragged);
       settle();
       setCaption(0);
       releaseHold();
@@ -297,6 +297,8 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       if (hover) host.setAttribute("data-hover", hover);
       else host.removeAttribute("data-hover");
     };
+    // La pista de arrastre se va con el primer gesto sobre la cinta y no vuelve.
+    const onPointerDown = () => root.classList.add(styles.dragged);
     const onPointerLeave = () => {
       hover = "";
       carousel.setLean(0, 0, false);
@@ -424,6 +426,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
     const onClose = () => view.exit();
 
     host.addEventListener("pointermove", onPointerMove);
+    host.addEventListener("pointerdown", onPointerDown);
     host.addEventListener("pointerleave", onPointerLeave);
     document.addEventListener("keydown", onDocKey);
     window.addEventListener("resize", onResize);
@@ -446,6 +449,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       box.style.removeProperty("--sweep-x");
       box.style.removeProperty("--box-k");
       host.removeEventListener("pointermove", onPointerMove);
+      host.removeEventListener("pointerdown", onPointerDown);
       host.removeEventListener("pointerleave", onPointerLeave);
       document.removeEventListener("keydown", onDocKey);
       window.removeEventListener("resize", onResize);
@@ -458,7 +462,7 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
       scrollController.unpin(PIN_OWNER);
       viewRef.current = null;
       carousel.destroy();
-      root.classList.remove(styles.revealed, styles.arrived, styles.rising, styles.settled);
+      root.classList.remove(styles.revealed, styles.arrived, styles.rising, styles.settled, styles.dragged);
       title.style.removeProperty("--title-dx");
       title.style.removeProperty("--title-dy");
       title.style.removeProperty("--title-s");
@@ -515,6 +519,12 @@ export function Reel({ anchor, slides, labels, more, gap, aspect, squeeze }: Ree
         <figcaption ref={placeRef} className={styles.place} />
       </figure>
       <div ref={liveRef} className={styles.live} aria-live="polite" aria-atomic="true" />
+
+      {/* Pista de arrastre, frente al enlace: un hilo por el que el trazo va y vuelve. */}
+      <div className={styles.drag} aria-hidden="true">
+        <span className={styles.dragTrack} />
+        <span className={styles.dragLabel}>{labels.drag}</span>
+      </div>
 
       {more && (
         <a ref={moreRef} href={more.href} className={styles.more}>

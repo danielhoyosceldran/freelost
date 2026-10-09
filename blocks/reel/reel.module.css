@@ -494,6 +494,88 @@
   outline-offset: 4px;
 }
 
+/* Pista de arrastre, abajo a la izquierda, frente a «todos los proyectos»: la hermana horizontal
+   de la del hero. Un hilo de 1px (papel al 14%) por el que un trazo de papel va y vuelve, como la
+   cinta, y la etiqueta. Entra con las tarjetas (.revealed) y se va con el primer gesto sobre la
+   cinta (.dragged). */
+.drag {
+  position: absolute;
+  left: var(--gutter);
+  bottom: var(--gutter);
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  /* Mismo alto que el enlace de la derecha: las dos piezas se leen en la misma línea. */
+  min-height: calc(11px * 3.1);
+  pointer-events: none;
+  opacity: 0;
+  translate: 0 10px;
+  transition:
+    opacity 0.9s var(--ease-out-expo),
+    translate 0.9s var(--ease-out-expo);
+}
+/* Llega un poco después que el enlace: primero las tarjetas, luego cómo se mueven. */
+.revealed .drag {
+  opacity: 1;
+  translate: 0 0;
+  transition-delay: 0.4s;
+}
+/* Ya se ha arrastrado: se va más rápido de lo que entró. */
+.revealed.dragged .drag {
+  opacity: 0;
+  translate: 0 0;
+  transition-duration: 0.4s;
+  transition-timing-function: var(--ease-out);
+  transition-delay: 0s;
+}
+/* Con el HUD: fuera al abrir un proyecto o al salir a todos los proyectos. Va aquí y no en la
+   lista de arriba porque tiene que ganar a .revealed .drag. */
+.splitting .drag,
+.inProject .drag,
+.leaving .drag {
+  opacity: 0;
+  transition-duration: 0.18s;
+  transition-timing-function: var(--ease-out);
+  transition-delay: 0s;
+}
+.dragLabel {
+  font-size: var(--label-size);
+  font-weight: 500;
+  font-stretch: 112%;
+  letter-spacing: var(--label-track);
+  line-height: 1;
+  text-transform: uppercase;
+  color: rgb(238 241 240 / 0.72);
+}
+.dragTrack {
+  position: relative;
+  display: block;
+  width: 44px;
+  height: 1px;
+  overflow: hidden;
+  background: rgb(238 241 240 / 0.14);
+}
+/* Un tercio del hilo que va de un extremo al otro y vuelve, con pausa en cada lado. */
+.dragTrack::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 34%;
+  background: var(--color-paper);
+  animation: drag-sway 2.4s var(--ease-in-out) infinite alternate;
+}
+@keyframes drag-sway {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+  85%,
+  100% {
+    transform: translateX(194%);
+  }
+}
+
 /* Salida a todos los proyectos (las fases las pone el JS en la sección): leaving mientras la
    cinta barre, opening con el recuadro a pantalla completa y closing mientras encoge (la vuelta).
    La sección sube por encima de "Lo que uso", que puede estar entrando por arriba. */
@@ -554,5 +636,10 @@
   .digitReel,
   .media > * {
     transition: none;
+  }
+  /* El trazo, quieto en el centro del hilo. */
+  .dragTrack::after {
+    animation: none;
+    left: 33%;
   }
 }

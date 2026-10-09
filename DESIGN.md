@@ -180,6 +180,9 @@ Esquinas rectas en todo (0px). Contornos de 1px (papel al 16% en la marca gigant
 ### Signature: la marca (loader → lockup)
 - Las dos hojas entran por la costura (F desde arriba, L desde abajo) en 0,6s y frenan en seco, sin pasarse; el relleno ember arranca en el mismo frame y sube a velocidad constante (0,7s mínimo). El velo se parte por la costura (mitad izquierda sube, derecha baja, 1,1s). Sin pausa, la marca ember se funde en 0,3s sobre la blanca, que vuela a la esquina del hero en 1,3s y se asienta junto a «free lost». En el contacto, la marca gigante en contorno repite el gesto.
 
+### Pistas (scroll y arrastre)
+- Dos hermanas con la misma gramática: etiqueta en label (papel 0,72) y un hilo de 1px a papel 14% por el que corre un trazo de papel con `--ease-in-out` (2,4s). Sin caja, flecha ni ember: son un crédito más. **Scroll**, en el hero, abajo a la derecha: hilo vertical de 44px, el trazo baja; entra la última de los créditos y se va con el primer scroll. **Arrastre**, en el carrete, abajo a la izquierda (frente a «todos los proyectos»): hilo horizontal de 44px, el trazo va y vuelve como la cinta; entra tras las tarjetas y se va con el primer gesto sobre ellas. Con movimiento reducido el trazo se queda quieto.
+
 ### Carrete de proyectos
 - Tarjetas 16:9 con separación de 12px, arrastre con inercia, bucle infinito. La banda es el 50% de la altura de la sección. Marca de 1px ember sobre la tarjeta central; pie con título y contador de dígitos que ruedan; progreso de 1px ember. Desktop: lente curva en los bordes; táctil: tarjetas planas.
 

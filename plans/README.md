@@ -14,6 +14,7 @@ cualquier agente. Ninguno arranca el sitio: el feel check lo hace el usuario con
 | 007 | [El scroll como montaje](007-montaje-del-scroll.md) | HIGH | EN CURSO |
 | 008 | [Loader: golpe, relleno y apertura en un solo gesto](008-loader-golpe-relleno-apertura.md) | HIGH | HECHO (feel check pendiente) |
 | 009 | [Guille plan: About, eslogan descubierto, Contact y tipografía](009-guille-plan.md) | HIGH | HECHO (feel check y Druk Wide pendientes) |
+| 010 | [Panel de administración (`/admingsz`)](010-panel-de-admin.md) | HIGH | BORRADOR (decisiones D1–D8) |
 
 ## Orden recomendado
 

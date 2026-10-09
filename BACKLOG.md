@@ -63,6 +63,10 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [ ] Host de los MP4 del hero (`downurban-720/1080.mp4`, 6 y 13 MB): CDN de vídeo (Bunny, R2) o
       enlaces de fichero de Vimeo si el plan los da. Se configura con `NEXT_PUBLIC_VIDEO_BASE`.
       Sigue siendo `<video>` nativo, no iframe (ver `content/hero.ts`).
+- [ ] **A prueba:** el hero pone Lofoten desde Vimeo (`film.vimeo` en `content/hero.ts`, iframe sin
+      interfaz, `blocks/hero/vimeoFilm.ts`). Decidir si se queda: mirar arranque, loader, la cámara
+      lenta de la salida y el sonido. Si se queda, el CLAUDE.md («el hero es `<video>` nativo») y
+      los textos de `filmLabel` (aún hablan de Down Urban) se actualizan; si no, quitar `vimeo`.
 - [ ] Al montar el CDN de imágenes, comprobar en el navegador que manda
       `Access-Control-Allow-Origin` (si no, las portadas del carrete no suben como textura) y que
       `Content-Length` llega con la imagen (el anillo de la vista de proyecto lo usa para el
@@ -156,6 +160,22 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       `core/transition/handoff.ts` (sin loader). Revisar en móvil (tarjetas a 0,26 del alto),
       el hueco entre la última y el recuadro (`SWEEP_MARGIN` en FlexCarousel) y que la home
       vuelva bien colocada (scroll, gear, hero) tras la vuelta.
+
+- [ ] Feel check de las pistas (`npm run dev`). Scroll en el hero (`.hint`, abajo a la derecha):
+      entra 1,4 s después del rótulo, el trazo baja por un hilo de 44px cada 2,4 s y se va con el
+      5 % de la escena. Arrastre en el carrete (`.drag`, abajo a la izquierda): entra 0,4 s tras
+      las tarjetas y se va con el primer `pointerdown` sobre la cinta. Mirar en móvil (360 px) que
+      la del hero no pise el nombre y la del carrete no pise «todos los proyectos»; y si «Arrastra»
+      convence en táctil o mejor «Desliza». Etiquetas en `content/hero.ts` y `content/reel.ts`.
+
+## Panel de administración
+
+- [ ] Plan `plans/010-panel-de-admin.md`: decidir D1–D8 (almacén y auth, Deploy Hook, proyectos
+      solo foto, categorías, zod en el panel, idioma del panel, contenido de la vista de proyecto).
+- [ ] Fase 0: modelo de contenido (`content/data/schema.ts` + `site.json`) y `content/*.ts`
+      leyendo de él, sin cambios visibles. `lib/media.ts` acepta URLs absolutas.
+- [ ] Fase 1: `/admingsz` local (localStorage + exportar `site.json`), sin escritura remota
+      mientras no haya autenticación.
 
 ## Limpieza de v4
 

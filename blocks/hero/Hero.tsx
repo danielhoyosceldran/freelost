@@ -10,6 +10,7 @@ import { LOGO_F, LOGO_L, LOGO_VIEWBOX } from "@/lib/brand/logo";
 import { morphWord } from "@/lib/morph/letters";
 import type { HeroProps } from "./index";
 import styles from "./hero.module.css";
+import { VimeoFilm, vimeoSrc } from "./vimeoFilm";
 
 /** Segundos de película cargados desde el principio para dar el loader por terminado. */
 const BUFFER_S = 6;
@@ -82,11 +83,14 @@ function offsetIn(el: HTMLElement, root: HTMLElement) {
 }
 
 /** Hasta dónde llega el tramo cargado que empieza en 0 (el que importa para arrancar). */
-function bufferedFromStart(v: HTMLVideoElement) {
+function bufferedFromStart(v: Film) {
   const b = v.buffered;
   for (let i = 0; i < b.length; i++) if (b.start(i) <= 0.25) return b.end(i);
   return 0;
 }
+
+/** El <video> o la película de Vimeo vestida de <video> (vimeoFilm.ts): el hero usa lo mismo de los dos. */
+type Film = HTMLVideoElement | VimeoFilm;
 
 /**
  * La primera pantalla es un cartón de título: el rótulo «free lost» manda, y la
@@ -112,10 +116,13 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
   const sloganWordRefs = useRef<(SVGGElement | null)[]>([]);
   const morphRef = useRef<SVGGElement>(null);
   const letterRefs = useRef<(SVGPathElement | null)[][]>([]);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<Film | null>(null);
+  const vimeoRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLElement>(null);
   const creditsRef = useRef<HTMLDivElement>(null);
+  const hintRef = useRef<HTMLDivElement>(null);
   const sloganRef = useRef<SVGSVGElement>(null);
   const sloganTextRef = useRef<SVGGElement>(null);
   /**
@@ -143,6 +150,12 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
   const ready = useReady();
   const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(true);
+
+  // Con Vimeo, el adaptador se crea una vez y antes que los efectos que lo usan (van en orden).
+  useEffect(() => {
+    if (videoRef.current || !vimeoRef.current || !iframeRef.current) return;
+    videoRef.current = new VimeoFilm(vimeoRef.current, iframeRef.current);
+  }, []);
 
   // Carga: el loader se llena con lo que lleva el vídeo, no con un temporizador.
   useEffect(() => {
@@ -202,7 +215,7 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
         v.play().catch(() => {});
       }
     });
-    io.observe(v);
+    io.observe(v instanceof VimeoFilm ? v.el : v);
     return () => io.disconnect();
   }, []);
 
@@ -231,6 +244,7 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
     const frame = frameRef.current;
     const top = topRef.current;
     const credits = creditsRef.current;
+    const hint = hintRef.current;
     const svg = sloganRef.current;
     const sloganText = sloganTextRef.current;
     if (!frame || !top || !credits || !svg || !sloganText) return;
@@ -321,6 +335,9 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
     };
     away(top, easeInOut(segment(p, 0, 0.12)), 0, -5);
     away(credits, easeIn(segment(p, 0.02, 0.16)), -8, 0);
+    // La pista ya ha cumplido con el primer gesto: es lo primero que se va, hacia abajo, por
+    // donde señalaba.
+    if (hint) away(hint, easeOut(segment(p, 0, 0.05)), 0, 3);
     wordRefs.current.forEach((line, i) => {
       if (!line) return;
       // Sin pareja en el eslogan (o sin movimiento): se abre por la costura.
@@ -379,8 +396,26 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
   return (
     <div ref={heroRef} className={styles.hero} data-ready={ready || undefined}>
       <div ref={frameRef} className={styles.frame}>
+      {film.vimeo ? (
+        // Sin la interfaz de Vimeo: el póster queda debajo hasta que hay imagen y el iframe no
+        // recibe puntero (la rueda y el táctil siguen siendo del scrollController).
+        <div ref={vimeoRef} className={`${styles.film} ${styles.vimeo}`} role="img" aria-label={film.label}>
+          {/* El export estático no optimiza imágenes: el ancho ya lo pide imageUrl(). */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className={styles.vimeoPoster} src={film.poster} alt="" draggable={false} />
+          <iframe
+            ref={iframeRef}
+            className={styles.vimeoFrame}
+            src={vimeoSrc(film.vimeo.id, film.vimeo.hash)}
+            allow="autoplay; fullscreen; picture-in-picture"
+            tabIndex={-1}
+            aria-hidden="true"
+            title={film.label}
+          />
+        </div>
+      ) : (
       <video
-        ref={videoRef}
+        ref={(el) => void (videoRef.current = el)}
         className={styles.film}
         muted
         playsInline
@@ -393,6 +428,7 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
           <source key={s.src} src={s.src} media={s.media} type="video/mp4" />
         ))}
       </video>
+      )}
         <div className={styles.scrim} aria-hidden="true" />
       </div>
 
@@ -487,6 +523,12 @@ function HeroStage({ studio, studioArt, name, role, slogan, film, labels, langua
       <div ref={creditsRef} className={styles.credits}>
         <p className={styles.name}>{name}</p>
         <p className={styles.role}>{role}</p>
+      </div>
+
+      {/* Pista de scroll, frente a los créditos: un hilo por el que baja un trazo. */}
+      <div ref={hintRef} className={styles.hint} aria-hidden="true">
+        <span className={styles.hintLabel}>{labels.scroll}</span>
+        <span className={styles.hintTrack} />
       </div>
       </div>
     </div>
