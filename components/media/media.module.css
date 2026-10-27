@@ -1,0 +1,62 @@
+/* Medios de proyecto: esquinas rectas, sin sombra, sin borde salvo el hilo del hueco. */
+.media {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  background: var(--color-ink);
+}
+
+.fill {
+  height: 100%;
+}
+
+/* El hueco: un poco más claro que la tinta para que se lea el rectángulo, con el hilo de 1 px
+   del sistema (papel al 10%). Todo en papel por opacidad, sin grises. */
+.slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: rgb(238 241 240 / 0.035);
+  outline: 1px solid rgb(238 241 240 / 0.1);
+  outline-offset: -1px;
+  color: rgb(238 241 240 / 0.6);
+}
+
+.cross {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  stroke: rgb(238 241 240 / 0.07);
+  stroke-width: 1;
+}
+
+/* La etiqueta corta las diagonales con la tinta de fondo: se lee aunque el marco sea pequeño. */
+.tag {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.75em 1em;
+  background: var(--color-ink);
+  font-size: var(--label-size);
+  font-weight: 500;
+  letter-spacing: var(--label-track);
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pending {
+  color: rgb(238 241 240 / 0.38);
+}
+
+@media (max-width: 720px) {
+  /* En marcos estrechos solo cabe el tipo y la proporción. */
+  .pending {
+    display: none;
+  }
+}

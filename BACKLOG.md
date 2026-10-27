@@ -151,8 +151,27 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       del panel, que se veía morada) y la onda al clic está apagada (`CLICK_BURST`). Mirar que el
       lienzo ya no se distinga del escenario.
 
-- [ ] Página de todos los proyectos (bloque `projects`, `content/pages/projects.ts`): hoy solo
-      es el fondo naranja y la cruz de volver. Falta el contenido.
+- [x] Página de todos los proyectos: índice del archivo sobre el naranja (bloque `projects`) y
+      una vista por proyecto en `/[lang]/projects/[slug]` (bloque `project`). Fichas en
+      `content/archive.ts` (de ahí salen también los títulos del carrete); medios sin `src` se
+      pintan como hueco (`components/media/Media.tsx`).
+- [ ] Feel check del archivo (`npm run dev`): entrada en ola de las filas tras la salida del
+      carrete, vista previa que sigue al puntero (`PREVIEW_GAP`, `PREVIEW_EASE` en
+      `blocks/projects/Projects.tsx`), filas largas («Raz Surfcamp · Resumen de verano») en
+      portátiles, y en móvil la línea de datos bajo el título. Vista de proyecto: título de la
+      apertura a 7vw en tres líneas como mucho, revelado de la secuencia (`data-develop`), ritmo
+      de la secuencia de huecos (`PLACEHOLDER_MEDIA` en `content/archive.ts`) y el siguiente
+      proyecto. Volver: índice → proyecto → volver → cruz debe acabar en la home deshaciendo el
+      carrete (`core/transition/trail.ts` + `handoff.ts`).
+- [ ] **[cliente]** Rellenar las fichas de `content/archive.ts`: año, descripción por idioma,
+      créditos confirmados, portada, fotos y clips (`media`, con `size` y proporción). Confirmar
+      Raz Surfcamp y Airtècnics como clientes (salen de los nombres de carpeta). La columna de
+      año del índice aparece sola cuando alguna ficha lo tenga.
+- [ ] Película de la vista de proyecto con Vimeo: hoy `Media` solo reproduce MP4 nativo (o pinta
+      el hueco). Cuando haya ids, montar el player de Vimeo (`blocks/reel/vimeo.ts`) para
+      `film`, o un iframe con `loading="lazy"`, que aquí no es LCP.
+- [ ] Decidir D8 del plan 010 a la luz de esto: ¿la vista de proyecto del carrete enlaza a la
+      página del proyecto? ¿Filtro por disciplina en el índice (D5)?
 - [ ] Salida del carrete a todos los proyectos y vuelta: feel check con `npm run dev`. Ida:
       barrido de `max(n, 15)` tarjetas en 1,15 s (`SWEEP_S` en `blocks/reel/Reel.tsx`) con el
       recuadro 50vw × 50vh como cola, que crece en 0,7 s (`.box` en `reel.module.css`). Vuelta

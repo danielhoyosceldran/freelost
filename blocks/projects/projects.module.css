@@ -1,13 +1,194 @@
-/* El naranja continúa el recuadro que crece al salir del carrete: el cambio de página no se ve. */
+/* El naranja continúa el recuadro que crece al salir del carrete: el cambio de página no se ve.
+   Encima, el índice del archivo en tinta. Es la única pantalla donde ember es superficie: la
+   impone la transición (la salida del carrete acaba en este color). Sobre el naranja todo el texto
+   va en tinta plena; la tinta atenuada no llega a 4,5:1, así que la jerarquía la da el cuerpo. */
 .root {
   position: relative;
   min-height: 100svh;
+  padding: var(--gutter) var(--gutter) clamp(6rem, 18svh, 10rem);
   background: var(--color-ember);
   color: var(--color-ink);
 }
 
-/* La cruz, la misma que cierra un proyecto en el carrete (52 px, trazos de 1,5 px) pero en
-   tinta sobre el naranja. Entra cuando el recuadro ya ha cubierto la pantalla. */
+.root ::selection {
+  background: var(--color-ink);
+  color: var(--color-ember);
+}
+
+/* ---------- cabecera ---------- */
+
+/* Título arriba a la izquierda, como el resto de secciones; deja libre la esquina de la cruz. */
+.header {
+  padding-right: 72px;
+}
+
+.title {
+  font-family: var(--font-title);
+  font-size: clamp(2rem, 5vw, 4.75rem);
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
+  line-height: 0.92;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.count {
+  margin-top: 1.1rem;
+  font-size: var(--label-size);
+  font-weight: 500;
+  letter-spacing: var(--label-track);
+  line-height: 1;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  animation: fade 0.6s var(--ease-out) 0.55s backwards;
+}
+
+/* ---------- tabla ---------- */
+
+/* Columna del título elástica y una por dato. La plantilla es la misma para la cabecera y para
+   cada fila, así que todo cae en la misma rejilla sin medir nada. */
+.table {
+  --grid: minmax(0, 1fr) repeat(var(--cols), minmax(8rem, 13rem));
+  margin-top: clamp(4rem, 14svh, 9rem);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: var(--grid);
+  gap: 1.5rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgb(6 10 12 / 0.22);
+  font-size: var(--label-size);
+  font-weight: 500;
+  letter-spacing: var(--label-track);
+  line-height: 1;
+  text-transform: uppercase;
+  animation: fade 0.6s var(--ease-out) 0.45s backwards;
+}
+
+.item {
+  border-bottom: 1px solid rgb(6 10 12 / 0.22);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: var(--grid);
+  gap: 1.5rem;
+  align-items: baseline;
+  padding-block: clamp(0.9rem, 1.6vw, 1.4rem);
+  transition: opacity 0.35s var(--ease-out);
+}
+
+.name {
+  font-family: var(--font-title);
+  font-size: clamp(1.6rem, 3vw, 3rem);
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
+  line-height: 0.9;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+/* En escritorio los datos son celdas de la rejilla; en móvil, una línea bajo el título. */
+.cells {
+  display: contents;
+}
+
+.cell {
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+/* Al señalar una fila, las demás se apagan: la lista se lee como una mesa de luz con un solo
+   negativo encendido. */
+@media (hover: hover) and (pointer: fine) {
+  .list:has(.row:hover) .row:not(:hover) {
+    opacity: 0.32;
+  }
+}
+
+.row:focus-visible {
+  outline: 1px solid var(--color-ink);
+  outline-offset: 4px;
+}
+
+/* ---------- máscaras de entrada ---------- */
+
+/* Cada título sube desde su línea de corte cuando el naranja ya ha cubierto la pantalla. Las
+   filas entran en ola (45 ms entre una y otra) y las de más abajo ya no se esperan. */
+.mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-block: 0.06em 0.1em;
+  margin-block: -0.06em -0.1em;
+}
+
+.line {
+  display: inline-block;
+  animation: rise 0.95s var(--ease-out-expo) calc(0.3s + min(var(--i, 0), 14) * 45ms) backwards;
+}
+
+.title .line {
+  animation-delay: 0.2s;
+}
+
+@keyframes rise {
+  from {
+    translate: 0 105%;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- vista previa ---------- */
+
+/* Sigue al puntero (translate desde el JS). Se abre desde su eje horizontal con clip-path, como
+   un obturador, y se cierra igual. */
+.preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 15;
+  width: clamp(15rem, 24vw, 25rem);
+  aspect-ratio: 16 / 9;
+  pointer-events: none;
+  background: var(--color-ink);
+  clip-path: inset(50% 0 50% 0);
+  transition: clip-path 0.4s var(--ease-out);
+}
+
+.preview[data-shown] {
+  clip-path: inset(0);
+  transition-duration: 0.5s;
+  transition-timing-function: var(--ease-out-expo);
+}
+
+.cover {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+
+.cover[data-on] {
+  visibility: visible;
+}
+
+/* Sin puntero fino no hay vista previa. */
+@media not ((hover: hover) and (pointer: fine)) {
+  .preview {
+    display: none;
+  }
+}
+
+/* ---------- la cruz ---------- */
+
+/* La misma que cierra un proyecto en el carrete (52 px, trazos de 1,5 px) pero en tinta sobre
+   el naranja. Entra cuando el recuadro ya ha cubierto la pantalla. */
 .close {
   --size: 52px;
   --inset: 26px;
@@ -58,13 +239,61 @@
   }
 }
 
-@media (max-width: 700px) {
+/* ---------- móvil ---------- */
+
+@media (max-width: 720px) {
   .close {
     --inset: 16px;
   }
+
+  .header {
+    padding-right: 56px;
+  }
+
+  /* Sin columnas: la cabecera sobra y los datos van en una línea de etiqueta bajo el título. */
+  .head {
+    display: none;
+  }
+
+  .table {
+    border-top: 1px solid rgb(6 10 12 / 0.22);
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.7rem;
+    padding-block: 1.1rem;
+  }
+
+  .cells {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+  }
+
+  .cell {
+    font-size: var(--label-size);
+    font-weight: 500;
+    letter-spacing: var(--label-track);
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .cell:empty {
+    display: none;
+  }
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .close {
+  .close,
+  .line,
+  .count,
+  .head {
     animation: none;
+  }
+
+  .preview,
+  .preview[data-shown] {
+    transition: none;
   }
 }
