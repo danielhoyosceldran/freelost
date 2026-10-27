@@ -30,11 +30,11 @@ typography:
     lineHeight: 1.12
     letterSpacing: "-0.01em"
   slogan:
-    fontFamily: "Instrument Serif, Georgia, serif"
-    fontSize: "clamp(1.25rem, 1.8vw, 1.6rem)"
+    fontFamily: "Instrument Sans, Helvetica Neue, Arial, sans-serif"
+    fontSize: "clamp(2.25rem, 4.6vw, 4.5rem)"
     fontWeight: 400
-    fontStyle: "italic"
-    lineHeight: 1.1
+    lineHeight: 1.02
+    letterSpacing: "-0.025em"
   title:
     fontFamily: "Instrument Sans, Helvetica Neue, Arial, sans-serif"
     fontSize: "20px"
@@ -99,7 +99,7 @@ Es una superficie de modo Experience: el artefacto (el metraje) lidera desde el 
 
 **Key Characteristics:**
 - Tinta azulada, blanco frío y un único acento, ember, que solo marca estado y progreso.
-- Títulos en una grotesca muy ancha (Druk Wide, elección de Guillem), también para el rótulo del hero; texto en Instrument Sans y el eslogan en Instrument Serif cursiva.
+- Títulos en una grotesca muy ancha (Druk Wide, elección de Guillem), también para el rótulo del hero; texto en Instrument Sans, también para el eslogan, que se cita.
 - Mayúsculas anchas para títulos; versalitas espaciadas para etiquetas.
 - Hilos de 1px y esquinas rectas; cero sombras, cero cristal, cero tarjetas.
 - Créditos en los márgenes: abajo a la izquierda el texto, arriba los controles.
@@ -127,7 +127,7 @@ Tres voces, cada una con un solo papel (Guillem, 7/10/2026):
 - **Títulos:** Druk Wide (Commercial Type, de pago). Mientras no haya licencia la sustituye Archivo a `wdth` 125 y peso 900. Todo cuelga de tres tokens en `app/globals.css` (`--font-title`, `--title-weight`, `--title-stretch`): cambiar de fuente es cambiar esos tres y cargar el woff2 con `next/font/local`.
 - **Texto:** Instrument Sans variable (peso 400–700, anchura 75–100). Cuerpo, entradillas, etiquetas, pies y el índice del equipo.
 - **Rótulo del hero:** Druk Wide ya, dibujado: contornos exportados de Figma (`public/media/words/*-hero.svg`, una `<path>` por letra) que se leen en el build (`content/words.ts`). «FREE» sobre «LOST» siempre apiladas, como las dos hojas de la marca; mayúsculas de 0,686em de `--brand` (min(21vw, 32svh)) y 0,154em entre líneas.
-- **Eslogan:** Instrument Serif cursiva, también dibujado (`*-slogan.svg`, una palabra por fichero). Ninguna de las dos fuentes se carga: el morph del hero necesita las formas como contornos.
+- **Eslogan:** Instrument Sans, como texto real: es una cita, no un rótulo (Guillem, 27/10/2026, sustituye a la Instrument Serif cursiva dibujada).
 
 ### Hierarchy
 - **Display** (título, 900, clamp(2rem, 5vw, 4.75rem), 0.92, mayúsculas): titular del contacto, entre 3 y 4 líneas.
@@ -137,7 +137,7 @@ Tres voces, cada una con un solo papel (Guillem, 7/10/2026):
 - **Body** (400, clamp(1.125rem, 1.7vw, 1.6rem), 1.35, papel 0,72): cuerpo del About; subtítulo del contacto algo menor.
 - **Label** (500, 0.72rem, 0,18em de tracking, mayúsculas): rol, controles, canales, contador, aviso legal, dirección de correo.
 - **Wordmark** (título a 0,8rem, minúsculas «free lost»): en el pie.
-- **Slogan** (Instrument Serif cursiva dibujada, «Feel free» / «to get lost.», a 0,92em entre líneas base y 0,24em entre palabras; sin cuerpo fijo: lo escala la salida del hero del 42 % al 94 % de lo que cabe en pantalla).
+- **Slogan** (Instrument Sans 400, clamp(2.25rem, 4.6vw, 4.5rem), 1,02, −0,025em; «Feel free» / «to get lost.» entre comillas colgadas): un escalón sobre el Lead, solo en The mission.
 
 ### Named Rules
 **The Wide-Is-Title Rule.** La fuente ancha es solo para títulos cortos y la marca escrita; nunca para párrafos ni para el eslogan.
@@ -146,9 +146,9 @@ Tres voces, cada una con un solo papel (Guillem, 7/10/2026):
 
 ## Layout
 
-Cada bloque es una pantalla a sangre (100svh) sin contenedor ni rejilla de columnas: el contenido se ancla a los márgenes del plano con `--gutter` (clamp(1.25rem, 2.6vw, 2.5rem)). Convención de créditos: título de sección arriba a la izquierda; texto de cierre abajo a la izquierda; controles arriba a la derecha. El eslogan no tiene sitio fijo en el chrome: vive solo en la salida del hero. El pie usa dos columnas (marca, aviso legal) que en móvil se apilan.
+Cada bloque es una pantalla a sangre (100svh) sin contenedor ni rejilla de columnas: el contenido se ancla a los márgenes del plano con `--gutter` (clamp(1.25rem, 2.6vw, 2.5rem)). Convención de créditos: título de sección arriba a la izquierda; texto de cierre abajo a la izquierda; controles arriba a la derecha. El eslogan no tiene sitio fijo en el chrome: vive solo en The mission, como cita. El pie usa dos columnas (marca, aviso legal) que en móvil se apilan.
 
-Orden de la home: hero (con el eslogan en su salida) → carrete → «Lo que uso» → About → contacto → pie. Los bloques se apoyan en escenas de scroll (spacer + sticky): el hero es una escena fijada de 340vh, el carrete es una sola pantalla que la página rebasa con scroll normal, «Lo que uso» baja encima del carrete y fija un viewport por objeto, y el About es flujo normal (unos 300svh de lectura). Breakpoint único de diseño: 720px (móvil), con composiciones distintas, no solo reducidas. Zonas táctiles mínimas de 44px. La lente curva del carrete es solo de puntero fino.
+Orden de la home: hero → carrete → «Lo que uso» → About → contacto → pie. Los bloques se apoyan en escenas de scroll (spacer + sticky): el hero es una escena fijada de 280vh, el carrete es una sola pantalla que la página rebasa con scroll normal, «Lo que uso» baja encima del carrete y fija un viewport por objeto, y el About es flujo normal (unos 300svh de lectura). Breakpoint único de diseño: 720px (móvil), con composiciones distintas, no solo reducidas. Zonas táctiles mínimas de 44px. La lente curva del carrete es solo de puntero fino.
 
 ## Elevation & Depth
 
@@ -187,7 +187,8 @@ Esquinas rectas en todo (0px). Contornos de 1px (papel al 16% en la marca gigant
 - Tarjetas 16:9 con separación de 12px, arrastre con inercia, bucle infinito. La banda es el 50% de la altura de la sección. Marca de 1px ember sobre la tarjeta central; pie con título y contador de dígitos que ruedan; progreso de 1px ember. Desktop: lente curva en los bordes; táctil: tarjetas planas.
 
 ### Eslogan
-- «Feel free to get lost.» es la salida del hero. Con el scroll se van los créditos y la película se queda quieta, a sangre. El rótulo no se va: se convierte en el eslogan. Cada letra de «FREE» y «LOST» se transforma en la suya de «free» y «lost.» (F→f, R→r… el contorno de una se deforma en el de la otra; los huecos que solo tiene una nacen o mueren en un punto, y el punto final crece desde el suyo) mientras la palabra viaja a su sitio en la frase y encoge (0,03–0,26 de la escena). Las letras arrancan escalonadas, de izquierda a derecha. Mientras tanto «Feel», «to get» y el punto aparecen alrededor (0,14–0,28). El eslogan, en papel y en dos líneas, crece de forma geométrica hasta 80vh de alto, o lo que quepa a lo ancho (0,3–0,55). Siempre es papel: no hay máscara. Mientras crece, la película (con su velo, en cámara lenta, 0,6×) encoge desde el centro hasta 70vh de alto; ahí se queda de ese tamaño y sube lo mismo que el scroll, como si la página la soltara, mientras el eslogan sigue quieto. Cuando sale, queda el eslogan en blanco sobre tinta y la escena se suelta sin costura con el carrete. Con movimiento reducido no crece: aparece a su tamaño final y solo cambian las opacidades. Nunca en la fuente de título.
+- «Feel free to get lost.» aparece una sola vez, al final: en The mission, antes del contacto, como cita. Arriba a la izquierda la frase (Lead); abajo a la derecha, la cita en Instrument Sans 400, clamp(2.25rem, 4.6vw, 4.5rem), interlineado 1,02, tracking −0,025em, en dos líneas («Feel free» / «to get lost.»), alineada a la izquierda y con la comilla de apertura colgada fuera de la caja. Las comillas las pone el CSS y no se leen. Cada línea sube por su máscara, escalonada, detrás de la frase; con las dos arriba pasa de papel al 22 % a papel entero. En móvil baja al pie, a la izquierda. Nunca en la fuente de título ni en una serif de display.
+- La salida del hero ya no lleva eslogan: se van los créditos, el rótulo se abre por la costura (0,03–0,2) y la película encoge a 70vh en cámara lenta (0,6×, 0,12–0,45); luego sube lo mismo que el scroll hasta dejar la tinta. Escena de 280vh.
 
 ### Carrete (título)
 - «Proyectos» entra en contorno (1px papel, sin relleno): la primera vez que se llega aparece solo en el centro, grande (78% del ancho, máx. 3,2× su tamaño), por detrás del lienzo. Las tarjetas esperan un tramo de scroll (hasta que la sección clavada ha subido 0,3 pantallas): al empezar a subir, el título del centro se desvanece, y al acabar el rise reaparece arriba a la izquierda (a 2,2 gutters del techo) como rótulo de fondo disimulado: relleno, sin contorno, papel al 12% y más grande (clamp(2.4rem, 7vw, 7.5rem)). Con movimiento reducido, o volviendo de todos los proyectos, está ya en su sitio.

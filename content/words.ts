@@ -2,10 +2,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { bounds, contours } from "@/lib/morph/path";
 
-// Palabras dibujadas: el rótulo del hero (Druk Wide) y el eslogan (Instrument Serif cursiva),
-// exportadas a contornos desde Figma en public/media/words, un fichero por palabra y una <path> por
-// letra. Se leen en el build y viajan como props: así el morph del hero va letra a letra con las
-// formas reales, sin cargar ninguna de las dos fuentes. Si cambia una palabra, basta con
+// Palabras dibujadas: el rótulo del hero (Druk Wide), exportado a contornos desde Figma en
+// public/media/words, un fichero por palabra y una <path> por letra. Se leen en el build y viajan
+// como props: así el rótulo lleva la forma real sin cargar la fuente. Si cambia una palabra, basta con
 // sustituir su SVG.
 
 export type WordArt = {

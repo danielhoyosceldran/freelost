@@ -19,21 +19,6 @@
   overflow: hidden;
 }
 
-/* El eslogan de la salida, encima del plano y debajo de los créditos. Va dibujado (Instrument Serif
-   cursiva, a contornos); su tamaño, posición y opacidades los escribe el scroll (Hero.tsx). */
-.slogan {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.sloganFill {
-  fill: var(--color-paper);
-}
-
 .chrome {
   position: absolute;
   inset: 0;

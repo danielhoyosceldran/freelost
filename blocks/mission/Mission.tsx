@@ -6,8 +6,8 @@ import type { MissionProps } from "./index";
 import styles from "./mission.module.css";
 
 /**
- * Tramos de la escena (progreso 0→1 del spacer). La frase sube primero; cada línea del eslogan sube
- * detrás, escalonada; con las dos arriba, las letras se rellenan de papel. El último tramo es el
+ * Tramos de la escena (progreso 0→1 del spacer). La frase sube primero; cada línea de la cita sube
+ * detrás, escalonada; con las dos arriba, la cita pasa de papel apagado a papel entero. El último tramo es el
  * fotograma quieto antes de soltar, para que el contacto no pise el cierre.
  */
 const STATEMENT = [0, 0.22] as const;
@@ -51,32 +51,18 @@ function Stage({ title, statement, slogan }: Omit<MissionProps, "anchor" | "heig
         </span>
       </p>
 
-      {/* El eslogan se lee entero; las líneas dibujadas son imagen. */}
-      <p className={styles.slogan} lang={slogan.lang}>
-        <span className={styles.sr}>{slogan.text}</span>
-        {slogan.lines.map((line, i) => (
-          <span
-            key={i}
-            className={styles.mask}
-            style={{ marginTop: i ? `${(line.gap / line.box[2]) * 100}%` : undefined } as CSSProperties}
-            aria-hidden="true"
-          >
-            <svg
-              className={styles.line}
-              viewBox={line.box.join(" ")}
-              style={{ "--k": `var(--l${i}, 0)` } as CSSProperties}
-            >
-              {line.words.map((w, j) => (
-                <g key={j} transform={`translate(${w.x} ${w.y})`}>
-                  {w.letters.map((d, k) => (
-                    <path key={k} d={d} />
-                  ))}
-                </g>
-              ))}
-            </svg>
-          </span>
-        ))}
-      </p>
+      {/* La cita: texto real, una máscara por línea. El espacio va dentro para que se lea entera. */}
+      <blockquote className={styles.quote} lang={slogan.lang}>
+        <p>
+          {slogan.lines.map((line, i) => (
+            <span key={i} className={styles.mask}>
+              <span className={styles.rise} style={{ "--k": `var(--l${i}, 0)` } as CSSProperties}>
+                {line}
+              </span>{" "}
+            </span>
+          ))}
+        </p>
+      </blockquote>
     </div>
   );
 }

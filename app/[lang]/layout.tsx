@@ -23,8 +23,7 @@ const instrumentSans = Instrument_Sans({
 // sustituto Archivo en su anchura máxima y su peso más alto, lo más parecido entre las gratuitas.
 // Cuando llegue el woff2 se carga con next/font/local en este mismo sitio y se cambian los tokens
 // --title-* de globals.css. Solo se usa en títulos, nunca en texto corrido. El rótulo del hero no
-// la usa: va dibujado en Druk Wide, igual que el eslogan en Instrument Serif (content/words.ts),
-// así que ninguna de las dos se carga como fuente.
+// la usa: va dibujado en Druk Wide (content/words.ts), así que no se carga como fuente.
 const archivo = Archivo({
   variable: "--font-archivo",
   subsets: ["latin"],

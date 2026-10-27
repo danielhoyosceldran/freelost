@@ -11,8 +11,8 @@ import { storyContent } from "@/content/story";
 const loading: Record<Locale, string> = { en: "Loading", ca: "Carregant", es: "Cargando" };
 
 // Orden de la home. Intercambiar, quitar o duplicar bloques = editar estas listas.
-// loader → hero (con el eslogan en su salida) → proyectos (carrete) → historia → fragmentos →
-// about → misión (el eslogan otra vez, de cierre) → contacto → pie. Texto e imagen se alternan.
+// loader → hero → proyectos (carrete) → historia → fragmentos →
+// about → misión (el eslogan, citado, de cierre) → contacto → pie. Texto e imagen se alternan.
 // Los capítulos del indicador (content/chapters.ts) siguen este orden: si cambia, cambiarlos también.
 export const home = (lang: Locale) =>
   ({
@@ -27,7 +27,7 @@ export const home = (lang: Locale) =>
       { type: "fragments", props: fragmentsContent(lang) },
       // Quién hace las películas y por qué.
       { type: "about", props: aboutContent(lang) },
-      // La frase y el eslogan dibujado antes del contacto.
+      // La frase y el eslogan, como cita, antes del contacto.
       { type: "mission", props: missionContent(lang) },
       { type: "contact", props: contactContent(lang) },
     ],

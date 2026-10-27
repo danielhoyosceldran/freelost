@@ -10,22 +10,14 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       `--font-title`, `--title-weight` y `--title-stretch` en `app/globals.css`. Revisar después
       el cuerpo de los títulos: Druk Wide es más ancha que el sustituto.
 - [ ] **[cliente]** ¿Foto de Guillem en el About, junto al crédito? Plan 009, D8.
-- [ ] Feel check del morph de contornos rótulo → eslogan (`npm run dev`). Tramos en `Hero.tsx`:
-      `MORPH` (0,03–0,26), `REST_IN` (0,14–0,28), `STAGGER`; el relevo rótulo → morph es un corte
-      seco en `e > 0` (si al arrancar se nota un saltito de forma, es el remuestreo, ver abajo). Composición del eslogan: `WORD_GAP` y `LEADING` (unidades de
-      los SVG). Mirar: salto al arrancar (rótulo → polígonos de 256 puntos) y al aterrizar
-      (polígonos → eslogan), esquinas de Druk algo redondeadas a tamaño grande (subir `N_OUTER` en
-      `lib/morph/letters.ts`), fluidez en móvil (se reescriben 9 `d` por fotograma), la vuelta
-      atrás con scroll, y movimiento reducido (solo fundido). El rótulo ya va en Druk Wide
-      dibujado: comprobar su tamaño (`--brand`, min(21vw, 32svh)) y el aire de la máscara de
-      entrada. `fit` ahora es la caja exacta de los glifos (antes, la del texto): quizá bajar `to`.
-- [ ] Borrar `morph-preview.svg` de la raíz (previsualización estática del morph).
-- [ ] Feel check de la salida del hero sin máscara (`npm run dev`): el eslogan crece en papel
-      (`SLOGAN_GROW` 0,3–0,55) mientras el plano encoge a 70vh (`SHRINK`, `SHRINK_TO` en
-      `Hero.tsx`) y luego sube 1:1 con el scroll. Escena de 340vh: tras encoger quedan ~108vh, 85
-      para que el plano salga y ~23vh de eslogan solo sobre tinta. El eslogan acaba a 80vh de alto
-      (`to` 0,8, capado al ancho), así que rebasa el plano de 70vh. Mirar si el velo debe irse al encoger, y
+- [ ] Feel check de la salida del hero sin eslogan (`npm run dev`): el rótulo se abre por la
+      costura (0,03–0,2) y el plano encoge a 70vh (`SHRINK` 0,12–0,45, `SHRINK_TO` en `Hero.tsx`) y
+      luego sube 1:1 con el scroll. Escena de 280vh (`exit.height`): tras encoger quedan ~99vh, 85
+      para que el plano salga. Mirar si sobra o falta escena, el hueco entre rótulo y encogido, y
       movimiento reducido (sin escala; el plano sube a sangre).
+- [ ] Borrar `morph-preview.svg` de la raíz (previsualización estática del morph, ya retirado) y,
+      si no se vuelven a usar, los `*-slogan.svg` de `public/media/words` y el remuestreo de
+      `lib/morph/path.ts` (solo `bounds` y `contours` siguen en uso).
 - [ ] Feel check del ritmo nuevo (`npm run dev`): «Lo que uso» → About → contacto. About
       (`blocks/about`): ritmo de las máscaras de línea (`REVEAL_FROM`/`REVEAL_TO`), aire entre
       entradilla, cuerpo y cierre, y la columna desplazada (38% del ancho) en portátiles bajos, pantallas
@@ -44,6 +36,9 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [ ] **[cliente]** URLs de Instagram y Vimeo (y si hay más redes). Los enlaces no tienen `href`.
 - [ ] Contacto funcional: `mailto:` real y `href` de las redes en `content/contact.ts`.
 - [ ] **[cliente]** Confirmar "Filmmaker" como rol bajo el nombre en el hero.
+- [x] Eslogan solo al final, como cita: fuera el morph rótulo → eslogan de la salida del hero
+      (y `lib/morph/letters.ts`); en The mission, texto real en Instrument Sans, más pequeño, con
+      comillas colgadas (27/10/2026).
 - [x] Fotos de `public/media/fotos/`: nueve van a Fragments (bloque `fragments`), exportadas a
       2000 px en `public/media/web/fotos/` (25–480 KB). Quedan 28 sin usar; para cambiar o añadir,
       exportar igual (sharp, mozjpeg q78) y añadir la fila en `content/fragments.ts`.
@@ -60,8 +55,9 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       0,08) y la vista en grande: flechas, Esc, clic fuera, foco de vuelta a la foto, y que la
       página no se mueva por debajo (pin + captura de entrada). Revisar en móvil las tres anchuras.
 - [ ] Feel check de The mission (`npm run dev`): escena de 220svh; tramos `STATEMENT`, `LINES`,
-      `FILL` en `blocks/mission/Mission.tsx`. El eslogan pasa de contorno a papel: comprobar que
-      no se lea como un segundo hero y el ancho en pantallas bajas (`min(100%, 150svh)`).
+      `FILL` en `blocks/mission/Mission.tsx`. El eslogan es ahora una cita en Instrument Sans,
+      abajo a la derecha: comprobar el tamaño (`.quote`, clamp(2.25rem, 4.6vw, 4.5rem)), la
+      comilla colgada y la diagonal con la frase; en móvil, al pie a la izquierda.
 - [ ] Feel check del indicador de capítulo (`components/ui/PageProgress.tsx`): nombre del capítulo
       junto al timecode, marcas sobre el hilo y el índice desplegable. Línea de cambio
       `CHAPTER_LINE` (0,4); que «Proyectos» entre a tiempo con la salida del hero (la escena
