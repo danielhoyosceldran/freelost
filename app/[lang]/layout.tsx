@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { preconnect } from "react-dom";
 import { PageProgress } from "@/components/ui/PageProgress";
 import { LifecycleBoot } from "@/core/lifecycle/LifecycleBoot";
+import { chapterLabels, chapters } from "@/content/chapters";
 import { isLocale, locales, type Locale } from "@/content/locales";
 import { mediaOrigins } from "@/lib/media";
 import "../globals.css";
@@ -59,7 +60,8 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
     <html lang={lang} className={`${instrumentSans.variable} ${archivo.variable} scroll-smooth`}>
       <body className="font-sans antialiased">
         {children}
-        <PageProgress />
+        {/* Los capítulos son los de la home; en las otras páginas sus anclas no están y no salen. */}
+        <PageProgress chapters={chapters(lang)} labels={chapterLabels[lang]} />
         {/* Último a propósito: su efecto corre después del de todos los bloques. */}
         <LifecycleBoot />
       </body>

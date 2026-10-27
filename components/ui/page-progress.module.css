@@ -1,5 +1,5 @@
-/* Hilo de progreso y timecode: viven en los márgenes, fuera del plano. Nacen con la página (tras
-   el loader) y se apartan con un proyecto abierto. */
+/* Hilo de progreso, timecode y capítulo: viven en los márgenes, fuera del plano. Nacen con la
+   página (tras el loader) y se apartan con la página clavada. */
 
 .root {
   position: fixed;
@@ -23,6 +23,13 @@
   transition-duration: 0.18s;
 }
 
+/* ---------- hilo ---------- */
+
+.track {
+  position: relative;
+  height: 1px;
+}
+
 .bar {
   height: 1px;
   background: var(--color-ember);
@@ -30,30 +37,247 @@
   transform: scaleX(0);
 }
 
+/* Inicio de cada capítulo: una marca de 1 × 5 px colgando del hilo. Papel tenue por delante;
+   ember (progreso) las ya pasadas. */
+.tick {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 5px;
+  background: rgb(238 241 240 / 0.3);
+  transition: background-color 0.3s var(--ease-out);
+}
+
+.tick[data-passed] {
+  background: var(--color-ember);
+}
+
+/* ---------- timecode y capítulo ---------- */
+
 /* Arriba al centro: el hero lleva los créditos abajo a la izquierda y los controles arriba a la
    derecha, así que el centro superior es lo único libre en todas las escenas. Centrado en
    vertical con los controles (hit de 44px). */
-.code {
+.slate {
   position: absolute;
   top: calc(var(--gutter) + 22px);
   left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
   translate: -50% -50%;
-  font-size: 0.72rem;
+  font-size: var(--label-size);
   font-weight: 500;
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.code {
   font-stretch: 112%;
-  letter-spacing: 0.18em;
   font-variant-numeric: tabular-nums;
   color: rgb(238 241 240 / 0.6);
 }
 
+/* Hilo vertical entre el timecode y el capítulo, como el corte de un rótulo. */
+.code + .nav::before {
+  content: "";
+  position: absolute;
+  left: -0.45rem;
+  top: 50%;
+  width: 1px;
+  height: 12px;
+  translate: 0 -50%;
+  background: rgb(238 241 240 / 0.2);
+}
+
+.nav {
+  position: relative;
+  pointer-events: auto;
+}
+
+.root:not([data-ready]) .nav,
+.root[data-away] .nav {
+  pointer-events: none;
+}
+
+/* El capítulo actual: control del sistema, sin caja, hit de 44 px. */
+.current {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 44px;
+  padding: 0 0.6rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: rgb(238 241 240 / 0.78);
+  transition:
+    color 0.2s var(--ease-out),
+    scale 0.14s var(--ease-out);
+}
+
+.current:active {
+  scale: 0.96;
+}
+
+.current:focus-visible {
+  outline: 1px solid var(--color-ember);
+  outline-offset: -6px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .current:hover {
+    color: var(--color-paper);
+  }
+}
+
+.current[aria-expanded="true"] {
+  color: var(--color-paper);
+}
+
+/* Ventana del rótulo: el nombre entra por su máscara al cambiar de capítulo. */
+.window {
+  display: inline-block;
+  overflow: hidden;
+  padding-block: 0.2em;
+  margin-block: -0.2em;
+}
+
+.name {
+  display: inline-block;
+  animation: pass 0.55s var(--ease-out-expo);
+}
+
+.name[data-dir="-1"] {
+  animation-name: pass-up;
+}
+
+@keyframes pass {
+  from {
+    translate: 0 110%;
+  }
+}
+
+@keyframes pass-up {
+  from {
+    translate: 0 -110%;
+  }
+}
+
+.chevron {
+  transition: rotate 0.3s var(--ease-out);
+}
+
+.current[aria-expanded="true"] .chevron {
+  rotate: 180deg;
+  color: var(--color-ember);
+}
+
+/* ---------- índice ---------- */
+
+/* Plano, como todo el sistema: tinta sólida y un hilo de 1 px, sin sombra ni cristal. */
+.list {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 50%;
+  min-width: 13rem;
+  padding: 0.4rem 0;
+  translate: -50% 0;
+  list-style: none;
+  background: var(--color-ink);
+  border: 1px solid rgb(238 241 240 / 0.1);
+  animation: drop 0.28s var(--ease-out);
+}
+
+.list[hidden] {
+  display: none;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  padding: 0 1.25rem 0 2rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left;
+  color: rgb(238 241 240 / 0.6);
+  transition: color 0.2s var(--ease-out);
+}
+
+/* Donde estás: papel entero y una marca ember de 1 px (estado). */
+.item[aria-current]::before {
+  content: "";
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  width: 0.4rem;
+  height: 1px;
+  background: var(--color-ember);
+}
+
+.item[aria-current] {
+  color: var(--color-paper);
+}
+
+.item:focus-visible {
+  outline: 1px solid var(--color-ember);
+  outline-offset: -6px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .item:hover {
+    color: var(--color-paper);
+  }
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    translate: -50% -0.4rem;
+  }
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Móvil: sin timecode; queda solo el capítulo. En el hero no sale: compartiría la franja superior
+   con los controles del vídeo y el idioma. */
 @media (max-width: 720px) {
   .code {
     display: none;
+  }
+
+  .slate[data-first] .nav {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .nav {
+    transition: opacity 0.4s var(--ease-out);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .root {
     transition-delay: 0s;
+  }
+
+  .name,
+  .list {
+    animation: none;
   }
 }

@@ -3,11 +3,14 @@ import { about } from "./about";
 import { contact } from "./contact";
 import { cut } from "./cut";
 import { footer } from "./footer";
+import { fragments } from "./fragments";
 import { hero } from "./hero";
 import { loader } from "./loader";
+import { mission } from "./mission";
 import { project } from "./project";
 import { projects } from "./projects";
 import { reel } from "./reel";
+import { story } from "./story";
 
 /**
  * Catálogo de bloques disponibles. Añadir un bloque = crear su carpeta en blocks/ y
@@ -18,11 +21,14 @@ export const registry = {
   contact,
   cut,
   footer,
+  fragments,
   hero,
   loader,
+  mission,
   project,
   projects,
   reel,
+  story,
 } as const;
 
 type Registry = typeof registry;

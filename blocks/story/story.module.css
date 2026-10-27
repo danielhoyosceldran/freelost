@@ -1,0 +1,169 @@
+/* Our story: la pregunta en la fuente ancha, fija a la izquierda mientras se lee, y los tres
+   apartados bajando por la derecha con aire de sobra entre ellos. Tinta y papel, sin imagen: la
+   imagen llega justo después, en los fragmentos. */
+
+.story {
+  position: relative;
+  padding: var(--gutter) var(--gutter) clamp(8rem, 26svh, 16rem);
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* Título de sección arriba a la izquierda, como el resto. */
+.title {
+  font-family: var(--font-title);
+  font-size: clamp(1.6rem, 3vw, 3rem);
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  column-gap: clamp(2rem, 6vw, 7rem);
+  margin-top: clamp(6rem, 22svh, 12rem);
+}
+
+/* La columna de la pregunta ocupa todo el alto de la rejilla para que el sticky tenga recorrido. */
+.aside {
+  position: relative;
+}
+
+.question {
+  position: sticky;
+  top: clamp(6rem, 24svh, 14rem);
+  max-width: 13ch;
+  font-family: var(--font-title);
+  font-size: clamp(2rem, 5vw, 4.75rem);
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
+  line-height: 0.92;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+/* Cada palabra pasa de papel al 16 % (el contorno gigante del sistema) a papel entero cuando el
+   progreso (--r) la alcanza. Dos palabras a la vez en transición: se lee como una luz que avanza y
+   no como un parpadeo palabra a palabra. */
+.word {
+  --t: clamp(0, var(--r, 0) * (var(--n, 1) + 2) - var(--i, 0), 2) / 2;
+  color: rgb(238 241 240 / calc(0.16 + 0.84 * var(--t)));
+}
+
+/* ---------- apartados ---------- */
+
+.parts {
+  display: grid;
+  /* Aire grande entre apartados: la pregunta fija necesita recorrido para encenderse. */
+  gap: clamp(8rem, 34svh, 20rem);
+  padding-top: clamp(10rem, 40svh, 22rem);
+  list-style: none;
+}
+
+/* Hilo de 1 px encima de cada apartado. Crece de izquierda a derecha al entrar. */
+.part {
+  position: relative;
+  padding-top: 1.5rem;
+}
+
+.part::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: rgb(238 241 240 / 0.16);
+  transform-origin: 0 50%;
+  scale: 0 1;
+  transition: scale 1.2s var(--ease-out-expo);
+}
+
+.heading,
+.text {
+  opacity: 0;
+  translate: 0 0.75rem;
+  transition:
+    opacity 0.9s var(--ease-out-expo),
+    translate 0.9s var(--ease-out-expo);
+}
+
+.part[data-in]::before {
+  scale: 1 1;
+}
+
+.part[data-in] .heading,
+.part[data-in] .text {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.part[data-in] .heading {
+  transition-delay: 0.15s;
+}
+
+.part[data-in] .text {
+  transition-delay: 0.28s;
+}
+
+/* El papel del Title del sistema: 20 px, 600, condensada y en mayúsculas. */
+.heading {
+  font-size: 20px;
+  font-weight: 600;
+  font-stretch: 88%;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.text {
+  max-width: 30ch;
+  margin-top: 1rem;
+  font-size: clamp(1.125rem, 1.7vw, 1.6rem);
+  line-height: 1.35;
+  color: rgb(238 241 240 / 0.72);
+  text-wrap: pretty;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Móvil: una columna. La pregunta deja de ser fija (taparía los apartados) y se enciende igual
+   con el scroll; los apartados van debajo con menos aire. */
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: clamp(4rem, 14svh, 7rem);
+  }
+
+  .question {
+    position: static;
+    font-size: clamp(2rem, 9.6vw, 2.75rem);
+  }
+
+  .parts {
+    gap: clamp(4rem, 14svh, 6rem);
+    padding-top: clamp(5rem, 18svh, 8rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .part::before {
+    scale: 1 1;
+    transition: none;
+  }
+
+  .heading,
+  .text {
+    opacity: 1;
+    translate: none;
+    transition: none;
+  }
+}

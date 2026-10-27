@@ -1,0 +1,81 @@
+/* The mission: una pantalla fijada. Arriba a la izquierda la frase, como los créditos; en el centro
+   el eslogan dibujado a todo lo ancho. Las letras nacen como el contorno gigante del contacto
+   (1 px, papel al 16 %) y se rellenan de papel: el cierre se escribe mientras se llega a él. */
+
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  padding: calc(var(--gutter) + 44px + 2rem) var(--gutter) var(--gutter);
+  color: var(--color-paper);
+}
+
+/* Cuerpo del Lead del sistema, en papel entero: es la frase que sostiene el eslogan. */
+.statement {
+  max-width: 22ch;
+  font-size: clamp(1.75rem, 3.4vw, 3rem);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.slogan {
+  align-self: center;
+  justify-self: center;
+  /* Lo que quepa: el ancho del plano o, en pantallas bajas, lo que permite el alto (el eslogan es
+     ~2,2:1 en dos líneas). */
+  width: min(100%, 150svh);
+}
+
+/* Máscara de línea del sistema: recorta la subida; aire abajo para los descendentes (g de get). */
+.mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.12em;
+}
+
+/* --k (0→1) lo escribe el scroll. Sale con ease-out cuadrática, (1 − t)², como el About. */
+.rise {
+  display: inline-block;
+  translate: 0 calc((1 - var(--k, 0)) * (1 - var(--k, 0)) * 110%);
+}
+
+.line {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  translate: 0 calc((1 - var(--k, 0)) * (1 - var(--k, 0)) * 110%);
+}
+
+.line path {
+  fill: var(--color-paper);
+  fill-opacity: var(--fill, 0);
+  stroke: rgb(238 241 240 / calc(0.16 + 0.5 * (1 - var(--fill, 0))));
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .statement {
+    font-size: clamp(1.5rem, 6.4vw, 1.9rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .line {
+    translate: none;
+  }
+}

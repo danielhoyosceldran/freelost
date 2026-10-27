@@ -44,9 +44,29 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
 - [ ] **[cliente]** URLs de Instagram y Vimeo (y si hay más redes). Los enlaces no tienen `href`.
 - [ ] Contacto funcional: `mailto:` real y `href` de las redes en `content/contact.ts`.
 - [ ] **[cliente]** Confirmar "Filmmaker" como rol bajo el nombre en el hero.
-- [ ] Fotos de `public/media/fotos/` (Bikes, Viatges, escalada): sin usar. Decidir dónde van
-      (¿en el carrete, en una galería, en la vista de proyecto?) y exportarlas a tamaño web; los
-      originales pesan de 2 a 106 MB.
+- [x] Fotos de `public/media/fotos/`: nueve van a Fragments (bloque `fragments`), exportadas a
+      2000 px en `public/media/web/fotos/` (25–480 KB). Quedan 28 sin usar; para cambiar o añadir,
+      exportar igual (sharp, mozjpeg q78) y añadir la fila en `content/fragments.ts`.
+- [ ] **[cliente]** Texto exacto de «Our Story» (pregunta, origen, propósito, elección) y de «The
+      mission». `content/story.ts` parafrasea la web actual (free-lost.com) y la frase de la misión
+      es la suya; ca/es son traducción nuestra. Confirmar también la entradilla de Fragments
+      («Stills from the road, between takes.») y los pies por disciplina.
+- [ ] Feel check de Our story (`npm run dev`): la pregunta fija se enciende palabra a palabra
+      (`LIT_FROM`, `LIT_SPAN` en `blocks/story/Story.tsx`); mirar que acabe encendida antes del
+      último apartado y que el aire entre apartados (`.parts` gap) no se haga largo. En móvil la
+      pregunta no es fija.
+- [ ] Feel check de Fragments (`npm run dev`): patrón de nueve posiciones (`.item:nth-child` en
+      `fragments.module.css`), revelado de arriba abajo (clip-path 1,3 s), parallax (`PARALLAX`
+      0,08) y la vista en grande: flechas, Esc, clic fuera, foco de vuelta a la foto, y que la
+      página no se mueva por debajo (pin + captura de entrada). Revisar en móvil las tres anchuras.
+- [ ] Feel check de The mission (`npm run dev`): escena de 220svh; tramos `STATEMENT`, `LINES`,
+      `FILL` en `blocks/mission/Mission.tsx`. El eslogan pasa de contorno a papel: comprobar que
+      no se lea como un segundo hero y el ancho en pantallas bajas (`min(100%, 150svh)`).
+- [ ] Feel check del indicador de capítulo (`components/ui/PageProgress.tsx`): nombre del capítulo
+      junto al timecode, marcas sobre el hilo y el índice desplegable. Línea de cambio
+      `CHAPTER_LINE` (0,4); que «Proyectos» entre a tiempo con la salida del hero (la escena
+      fijada empieza arriba) y que en móvil no pise los controles del hero (ahí se oculta en el
+      primer capítulo). Si cambia el orden de la home, cambiar `content/chapters.ts`.
 
 ## Medios y despliegue
 

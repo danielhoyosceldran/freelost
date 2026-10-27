@@ -1,0 +1,301 @@
+/* Fragments: hoja de contactos sobre tinta. Rejilla de 12 columnas con un patrón de nueve
+   posiciones (anchos y desfases distintos) que se repite: ritmo de revista, no de cuadrícula. Sin
+   tarjetas ni bordes: la foto es el contenedor, y su pie es una etiqueta. */
+
+.fragments {
+  position: relative;
+  padding: var(--gutter) var(--gutter) clamp(8rem, 24svh, 14rem);
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* ---------- cabecera ---------- */
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: clamp(4rem, 14svh, 9rem);
+}
+
+.title {
+  font-family: var(--font-title);
+  font-size: clamp(1.6rem, 3vw, 3rem);
+  font-weight: var(--title-weight);
+  font-stretch: var(--title-stretch);
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.intro {
+  max-width: 28ch;
+  font-size: clamp(1.125rem, 1.7vw, 1.6rem);
+  line-height: 1.35;
+  color: rgb(238 241 240 / 0.72);
+  text-align: right;
+  text-wrap: pretty;
+}
+
+/* ---------- la hoja ---------- */
+
+.sheet {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  row-gap: clamp(4rem, 16svh, 10rem);
+  list-style: none;
+}
+
+/* El patrón de nueve. Cada par comparte fila (el segundo empieza a la derecha del primero) y se
+   desencaja en vertical; el colocado automático abre fila nueva cuando la columna no cabe. */
+.item:nth-child(9n + 1) { grid-column: 1 / span 8; }
+.item:nth-child(9n + 2) { grid-column: 10 / span 3; align-self: end; }
+.item:nth-child(9n + 3) { grid-column: 2 / span 5; }
+.item:nth-child(9n + 4) { grid-column: 8 / span 5; margin-top: clamp(4rem, 18svh, 12rem); }
+.item:nth-child(9n + 5) { grid-column: 1 / span 3; align-self: end; }
+.item:nth-child(9n + 6) { grid-column: 5 / span 8; }
+.item:nth-child(9n + 7) { grid-column: 1 / span 6; }
+.item:nth-child(9n + 8) { grid-column: 8 / span 4; margin-top: clamp(5rem, 22svh, 14rem); }
+.item:nth-child(9n + 9) { grid-column: 3 / span 8; }
+
+/* El marco recorta la foto. Revelado: se abre de arriba abajo, como un fotograma que se expone, y
+   la foto se asienta de una escala mayor a la del parallax. */
+.frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: rgb(238 241 240 / 0.04);
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 1.3s var(--ease-out-expo);
+  cursor: zoom-in;
+}
+
+.frame[data-in] {
+  clip-path: inset(0 0 0 0);
+}
+
+.frame:focus-visible {
+  outline: 1px solid var(--color-ember);
+  outline-offset: 6px;
+}
+
+/* --py lo escribe el scroll (Fragments.tsx); sin transición, iría con retraso. */
+.shift {
+  position: absolute;
+  inset: 0;
+  translate: 0 var(--py, 0%);
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  scale: 1.32;
+  transition:
+    scale 1.6s var(--ease-out-expo),
+    filter 0.5s var(--ease-out);
+}
+
+.frame[data-in] .img {
+  /* 1,1 deja aire para el parallax (±4 % del marco) sin enseñar el borde. */
+  scale: 1.1;
+}
+
+/* Hover solo con puntero fino: la foto se acerca un poco y el pie se enciende. */
+@media (hover: hover) and (pointer: fine) {
+  .frame[data-in]:hover .img {
+    scale: 1.14;
+  }
+
+  .item:has(.frame:hover) .caption {
+    color: var(--color-paper);
+  }
+}
+
+.caption {
+  margin-top: 0.9rem;
+  font-size: var(--label-size);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: rgb(238 241 240 / 0.6);
+  transition: color 0.3s var(--ease-out);
+}
+
+/* ---------- vista en grande ---------- */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgb(6 10 12 / 0.97);
+  color: var(--color-paper);
+  overscroll-behavior: contain;
+}
+
+.lightbox[open] {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  animation: fade 0.35s var(--ease-out);
+}
+
+.lightbox::backdrop {
+  background: transparent;
+}
+
+.stage {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: var(--gutter) var(--gutter) 0;
+  cursor: zoom-out;
+}
+
+.full {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  cursor: default;
+  animation: arrive 0.6s var(--ease-out-expo);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem var(--gutter) calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+.count {
+  display: flex;
+  gap: 1.25rem;
+  font-size: var(--label-size);
+  font-weight: 500;
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+}
+
+.of {
+  color: rgb(238 241 240 / 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  display: flex;
+}
+
+/* Control del sistema: sin caja, icono de trazo 1,5, hit de 44 px. */
+.control {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgb(238 241 240 / 0.78);
+  transition:
+    color 0.2s var(--ease-out),
+    scale 0.14s var(--ease-out);
+}
+
+.control:active {
+  scale: 0.96;
+}
+
+.control:focus-visible {
+  outline: 1px solid var(--color-ember);
+  outline-offset: -6px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .control:hover {
+    color: var(--color-paper);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+
+/* ---------- móvil ---------- */
+
+/* Una columna con tres anchos que se alternan (sangre a sangre, y dos tercios a cada lado):
+   sigue leyéndose como una hoja desordenada y no como una lista. */
+@media (max-width: 720px) {
+  .head {
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .intro {
+    text-align: left;
+  }
+
+  .sheet {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    row-gap: clamp(3rem, 10svh, 5rem);
+  }
+
+  .item:nth-child(n) {
+    grid-column: 1 / -1;
+    margin-top: 0;
+    align-self: auto;
+  }
+
+  .item:nth-child(3n + 2) {
+    grid-column: 3 / -1;
+  }
+
+  .item:nth-child(3n) {
+    grid-column: 1 / span 4;
+  }
+
+  /* El parallax en móvil sobra: en táctil se nota a tirones. */
+  .shift {
+    translate: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame {
+    clip-path: none;
+    transition: none;
+  }
+
+  .img,
+  .frame[data-in] .img {
+    scale: 1;
+    transition: none;
+  }
+
+  .shift {
+    translate: none;
+  }
+
+  .lightbox[open],
+  .full {
+    animation: none;
+  }
+}
