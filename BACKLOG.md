@@ -37,16 +37,9 @@ que se termina. Lo marcado **[cliente]** depende de material o decisiones de Gui
       variable enseña solapes de contornos dentro de las letras (pasa con `text-stroke` en fuentes
       variables); con Druk Wide no debería. «PROJECTES» en móvil. El rótulo de fondo (papel al
       12%): que se lea sin competir con las tarjetas.
-- [ ] Feel check de los títulos en la fuente ancha: equipo a clamp(1.6rem, 3vw, 3rem);
-      «EL QUE FAIG SERVIR» es el más largo. Titular del contacto en 3–4 líneas, también en móvil.
+- [ ] Feel check de los títulos en la fuente ancha. Titular del contacto en 3–4 líneas, también en móvil.
 - [ ] **[cliente]** Títulos reales de las 12 películas del carrete. Los de `content/reel.ts` salen
       de los nombres de carpeta y fichero ("Raz Surfcamp · Camp 12", "Ironman · FL3"…).
-- [ ] **[cliente]** Lista real de equipo para "Lo que uso". Hoy son tres categorías ("Cámara y
-      ópticas", "Dron", "Edición") con modelos 3D procedurales genéricos (`lib/three/gearModels.ts`).
-      Las etiquetas de cada categoría (`content/gear.ts`) solo nombran la Sony A7 IV: falta el
-      modelo de dron y qué software de edición usa, por si quiere nombrarlos.
-- [ ] Feel check de las etiquetas de "Lo que uso" con `npm run dev`, sobre todo en móvil: las
-      cinco de "Edición" alargan la lista y pueden pisar el lienzo (`.stack` acaba en 34vh).
 - [ ] **[cliente]** Correo de contacto. `hola@freelost.com` en `content/contact.ts` es provisional.
 - [ ] **[cliente]** URLs de Instagram y Vimeo (y si hay más redes). Los enlaces no tienen `href`.
 - [ ] Contacto funcional: `mailto:` real y `href` de las redes en `content/contact.ts`.

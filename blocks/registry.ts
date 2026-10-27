@@ -3,7 +3,6 @@ import { about } from "./about";
 import { contact } from "./contact";
 import { cut } from "./cut";
 import { footer } from "./footer";
-import { gear } from "./gear";
 import { hero } from "./hero";
 import { loader } from "./loader";
 import { project } from "./project";
@@ -19,7 +18,6 @@ export const registry = {
   contact,
   cut,
   footer,
-  gear,
   hero,
   loader,
   project,
